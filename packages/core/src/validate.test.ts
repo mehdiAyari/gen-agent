@@ -197,6 +197,23 @@ tools:
       expect(warningsOf(result)).toEqual([expect.stringMatching(/^agent.tools.0: .*approval/)]);
     });
 
+    it('refuses a Java reserved word as a tool parameter name, since the generated code would not compile', () => {
+      const result = validateAgentYaml(
+        withAgent('tools:\n  - { name: lookup, type: java, params: [{ name: default, type: string }] }\n'),
+      );
+
+      expect(errorsOf(result)).toEqual([expect.stringMatching(/^agent.tools.0.params.0.name: .*reserved/)]);
+    });
+
+    it.each(['../secrets.md', '/etc/passwd', 'prompts/../../x.md'])(
+      'keeps the system prompt inside the project: %s',
+      (path) => {
+        const result = validateAgentYaml(withAgent(`prompt:\n  system: "${path}"\n`));
+
+        expect(errorsOf(result)).toEqual([expect.stringMatching(/^agent.prompt.system: /)]);
+      },
+    );
+
     it('warns when a tool has no description', () => {
       const result = validateAgentYaml(
         withAgent('tools:\n  - { name: forecast, type: http, url: https://example.org/a }\n'),

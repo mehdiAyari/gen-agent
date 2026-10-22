@@ -19,6 +19,25 @@ const javaPackage = z
 /** Exact semantic version: `latest` and ranges are refused. */
 const exactVersion = z.string().regex(/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/, 'must be an exact version, e.g. 1.0.0');
 
+// Java keywords and literals: a tool parameter becomes a Java parameter name.
+const JAVA_RESERVED = new Set(
+  (
+    'abstract assert boolean break byte case catch char class const continue default do double else enum extends ' +
+    'final finally float for goto if implements import instanceof int interface long native new package private ' +
+    'protected public return short static strictfp super switch synchronized this throw throws transient try void ' +
+    'volatile while true false null var yield record'
+  ).split(' '),
+);
+
+/** A path relative to src/main/resources, that cannot escape the project. */
+const resourcePath = z
+  .string()
+  .min(1)
+  .refine(
+    (path) => !path.startsWith('/') && !path.split('/').includes('..'),
+    'must be a relative path inside the project, without ".."',
+  );
+
 const duration = z.string().regex(/^\d+[smhd]$/, 'must be a duration such as 60s, 10m, 24h or 30d');
 const rate = z.string().regex(/^\d+\/(sec|min|hour|day)$/, 'must be a rate such as 30/min or 50000/day');
 
@@ -40,7 +59,10 @@ const model = z.strictObject({
 });
 
 const toolParam = z.strictObject({
-  name: z.string().regex(/^[a-z][a-zA-Z0-9]*$/, 'must be a camelCase identifier'),
+  name: z
+    .string()
+    .regex(/^[a-z][a-zA-Z0-9]*$/, 'must be a camelCase identifier')
+    .refine((name) => !JAVA_RESERVED.has(name), 'is a reserved word in Java, choose another name'),
   type: z.enum(['string', 'number', 'integer', 'boolean']),
   required: z.boolean().default(false),
   description: z.string().min(1).optional(),
@@ -84,7 +106,7 @@ const agent = z.strictObject({
   model,
   prompt: z
     .strictObject({
-      system: z.string().min(1).default('prompts/system.md'),
+      system: resourcePath.default('prompts/system.md'),
       aiDisclosure: z.boolean().default(true),
     })
     .default({ system: 'prompts/system.md', aiDisclosure: true }),
@@ -179,3 +201,4 @@ export const agentFileSchema = z.strictObject({ agent });
 export type AgentFile = z.output<typeof agentFileSchema>;
 export type AgentDefinition = AgentFile['agent'];
 export type Tool = AgentDefinition['tools'][number];
+export type ToolParamType = Tool['params'][number]['type'];

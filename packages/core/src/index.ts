@@ -1,3 +1,5 @@
+export { buildModel, unsupportedFeatures } from './model.js';
+export type { GenerationModel, ModelTool, ProviderSettings, ToolParameter } from './model.js';
 export { agentJsonSchema } from './json-schema.js';
 export { EU_PROVIDERS, PROVIDERS, SUPPORTED_SPRING_AI } from './schema.js';
 export type { AgentDefinition, AgentFile, Provider, Tool } from './schema.js';
