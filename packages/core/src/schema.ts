@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+/** Version of gen-agent recorded in .gen-agent.json, by the CLI and the web UI alike (kept equal to the CLI package version). */
+export const GENERATOR_VERSION = '0.1.0';
+
 /** Spring AI version the templates are pinned to (latest stable on Maven Central, checked 2026-10-22). */
 export const SUPPORTED_SPRING_AI = '2.0.1';
 /** Spring Boot version Spring AI 2.0.1 is built against. */
@@ -9,6 +12,14 @@ export const PROVIDERS = ['openai', 'anthropic', 'mistral', 'ollama'] as const;
 /** Providers acceptable when `gdpr.euOnly` is set: hosted in the EU, or self-hosted. */
 export const EU_PROVIDERS: readonly Provider[] = ['mistral', 'ollama'];
 export type Provider = (typeof PROVIDERS)[number];
+
+/** Model suggested when a provider is picked (CLI and web UI); any model name the provider accepts can be used instead. */
+export const SUGGESTED_MODELS: Record<Provider, string> = {
+  openai: 'gpt-5-mini',
+  anthropic: 'claude-sonnet-5',
+  mistral: 'mistral-small-latest',
+  ollama: 'llama3.1',
+};
 
 const kebabCase = z
   .string()

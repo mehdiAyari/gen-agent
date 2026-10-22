@@ -1,16 +1,8 @@
 import { cancel, confirm, isCancel, select, text } from '@clack/prompts';
 
-import { PROVIDERS, type Provider } from '@gen-agent/core';
+import { PROVIDERS, SUGGESTED_MODELS, type Provider } from '@gen-agent/core';
 
 import type { NewAnswers, NewTool } from './commands.js';
-
-/** Suggested model per provider; any model name the provider accepts can be typed instead. */
-const DEFAULT_MODELS: Record<Provider, string> = {
-  openai: 'gpt-5-mini',
-  anthropic: 'claude-sonnet-5',
-  mistral: 'mistral-small-latest',
-  ollama: 'llama3.1',
-};
 
 const PROVIDER_HINTS: Record<Provider, string> = {
   openai: 'OPENAI_API_KEY',
@@ -44,7 +36,7 @@ export async function askNewAnswers(name: string): Promise<Omit<NewAnswers, 'pro
         options: PROVIDERS.map((value) => ({ value, label: value, hint: PROVIDER_HINTS[value] })),
       }),
     );
-    const model = answer(await text({ message: 'Model name', initialValue: DEFAULT_MODELS[provider] }));
+    const model = answer(await text({ message: 'Model name', initialValue: SUGGESTED_MODELS[provider] }));
     const javaPackage = answer(
       await text({ message: 'Java package', initialValue: `com.example.${name.replaceAll('-', '')}` }),
     );
