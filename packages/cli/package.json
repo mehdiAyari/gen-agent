@@ -1,0 +1,36 @@
+{
+  "name": "gen-agent",
+  "version": "0.1.0",
+  "description": "Describe your agent, get a production-ready Spring AI project.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "gen-agent": "./dist/bin.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "spring-ai",
+    "spring-boot",
+    "agent",
+    "generator",
+    "llm",
+    "java"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.8.1",
+    "@gen-agent/core": "workspace:*",
+    "@gen-agent/templates": "workspace:*",
+    "commander": "^15.0.0",
+    "yaml": "^2.9.1"
+  }
+}
