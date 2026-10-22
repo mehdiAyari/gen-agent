@@ -40,4 +40,5 @@ jobs:
           java-version: '21'
           cache: maven
       - run: pnpm install --frozen-lockfile
+      # Maven builds of the reference projects, then the web generator in the runner's Google Chrome.
       - run: pnpm e2e
