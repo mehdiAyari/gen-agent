@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "title": "gen-agent — générateur d'agents Spring AI",
+    "title": "gen-agent — générateur d’agents Spring AI",
     "description": "Décrivez votre agent, obtenez un projet Spring AI prêt pour la production. Généré dans votre navigateur."
   },
   "nav": {
@@ -19,51 +19,51 @@
     "steps": {
       "describe": {
         "title": "Décrire",
-        "text": "Nom, modèle, outils. Avec le formulaire ou directement dans agent.yaml : les deux restent synchronisés."
+        "text": "Nom, modèle, outils. Avec le formulaire ou directement dans agent.yaml : les deux restent synchronisés."
       },
       "generate": {
         "title": "Générer",
-        "text": "Un projet Maven Java 21, généré dans votre navigateur. Rien n'est envoyé à un serveur."
+        "text": "Un projet Maven Java 21, généré dans votre navigateur. Rien n’est envoyé à un serveur."
       },
       "run": {
         "title": "Lancer",
-        "text": "Seul Java est nécessaire : le Maven Wrapper télécharge le reste. Les tests utilisent un faux modèle et ne coûtent rien."
+        "text": "Seul Java est nécessaire : le Maven Wrapper télécharge le reste. Les tests utilisent un faux modèle et ne coûtent rien."
       }
     },
     "ownershipTitle": "Votre code et le code généré ne se mélangent jamais",
-    "ownershipText": "Tout ce qui est sous generated/ appartient à gen-agent ; l'implémentation des outils et le prompt système vous appartiennent. .gen-agent.json note à qui appartient chaque fichier, pour régénérer le projet sans risque."
+    "ownershipText": "Tout ce qui est sous generated/ appartient à gen-agent ; l’implémentation des outils et le prompt système vous appartiennent. .gen-agent.json note à qui appartient chaque fichier, pour régénérer le projet sans risque."
   },
   "footer": {
-    "note": "Open source sous licence Apache 2.0. Les projets sont générés dans votre navigateur : rien n’est envoyé à un serveur."
+    "note": "Open source sous licence Apache 2.0. Les projets sont générés dans votre navigateur : rien n’est envoyé à un serveur."
   },
   "generator": {
     "metaTitle": "Générateur — gen-agent",
     "title": "Générateur",
-    "lead": "Décrivez votre agent : le projet est généré dans votre navigateur, fichier par fichier, pendant que vous tapez.",
+    "lead": "Décrivez votre agent : le projet est généré dans votre navigateur, fichier par fichier, pendant que vous tapez.",
     "agent": {
       "legend": "Agent",
       "name": "Nom",
-      "nameHint": "en kebab-case, c'est aussi le dossier du projet",
+      "nameHint": "en kebab-case, c’est aussi le dossier du projet",
       "description": "Description",
       "package": "Package Java",
-      "packageHint": "Vide : com.example.{name}"
+      "packageHint": "Vide : com.example.{name}"
     },
     "model": {
       "legend": "Modèle",
       "provider": "Fournisseur",
       "name": "Modèle",
-      "nameHint": "Suggéré pour {provider} : {model}",
+      "nameHint": "Suggéré pour {provider} : {model}",
       "temperature": "Température",
-      "temperatureHint": "De 0 à 2. Vide : valeur par défaut du fournisseur",
+      "temperatureHint": "De 0 à 2. Vide : valeur par défaut du fournisseur",
       "maxTokens": "Tokens max",
-      "maxTokensHint": "Vide : valeur par défaut du fournisseur",
+      "maxTokensHint": "Vide : valeur par défaut du fournisseur",
       "euHosted": "UE",
       "local": "local"
     },
     "behaviour": {
       "legend": "Comportement",
       "systemPrompt": "Fichier du prompt système",
-      "systemPromptHint": "À vous de l'écrire, sous src/main/resources",
+      "systemPromptHint": "À vous de l’écrire, sous src/main/resources",
       "memoryWindow": "Fenêtre de mémoire",
       "memoryWindowHint": "Messages gardés par conversation",
       "aiDisclosure": "Signaler les réponses générées par IA",
@@ -71,15 +71,15 @@
     },
     "gdpr": {
       "legend": "Protection des données",
-      "euOnly": "Fournisseurs hébergés dans l'UE uniquement",
+      "euOnly": "Fournisseurs hébergés dans l’UE uniquement",
       "euOnlyHint": "Refuse OpenAI et Anthropic",
       "allowNonEu": "Autoriser quand même un fournisseur hors UE",
-      "allowNonEuHint": "Pour un fournisseur que vous hébergez vous-même dans l'UE"
+      "allowNonEuHint": "Pour un fournisseur que vous hébergez vous-même dans l’UE"
     },
     "tools": {
       "legend": "Outils",
-      "hint": "Fonctions que le modèle peut appeler. Un outil HTTP appelle une API ; un outil Java appelle du code que vous écrivez.",
-      "empty": "Aucun outil : l'agent se contente de discuter.",
+      "hint": "Fonctions que le modèle peut appeler. Un outil HTTP appelle une API ; un outil Java appelle du code que vous écrivez.",
+      "empty": "Aucun outil : l’agent se contente de discuter.",
       "add": "Ajouter un outil",
       "remove": "Supprimer {name}",
       "untitled": "Outil {index}",
@@ -88,7 +88,7 @@
       "http": "API HTTP",
       "java": "Code Java",
       "description": "Description",
-      "descriptionHint": "Le modèle la lit pour décider quand appeler l'outil",
+      "descriptionHint": "Le modèle la lit pour décider quand appeler l’outil",
       "method": "Méthode",
       "url": "URL",
       "params": "Paramètres",
@@ -97,14 +97,16 @@
       "paramName": "Nom",
       "paramType": "Type",
       "required": "Obligatoire",
-      "paramDescription": "Description"
+      "paramDescription": "Description",
+      "removed": "{name} supprimé",
+      "paramRemoved": "Paramètre {name} supprimé"
     },
     "preview": {
       "label": "Aperçu",
       "yaml": "agent.yaml",
       "files": "Fichiers",
       "editorLabel": "Éditeur de agent.yaml",
-      "yamlInvalid": "Ce YAML ne peut pas être chargé ; le formulaire garde sa dernière version valide.",
+      "yamlInvalid": "Ce YAML ne peut pas être chargé ; le formulaire garde sa dernière version valide.",
       "generating": "Génération…",
       "fixErrors": "Corrigez les erreurs du formulaire pour voir les fichiers.",
       "fileList": "Fichiers générés",
@@ -114,31 +116,36 @@
         "generated": "gen-agent"
       },
       "ownerHint": {
-        "user": "À vous : modifiez librement, jamais écrasé",
-        "merged": "Partagé : gen-agent met à jour ses parties, garde les vôtres",
-        "generated": "gen-agent : régénéré, ne pas modifier"
-      }
+        "user": "À vous : modifiez librement, jamais écrasé",
+        "merged": "Partagé : gen-agent met à jour ses parties, garde les vôtres",
+        "generated": "gen-agent : régénéré, ne pas modifier"
+      },
+      "generationFailed": "Les fichiers ne peuvent pas être générés. C’est un bug de gen-agent : signalez-le avec votre agent.yaml."
     },
     "actions": {
       "label": "Actions sur le projet",
       "download": "Télécharger le projet",
       "downloading": "Préparation…",
       "copyCli": "Copier la commande CLI",
-      "copied": "Copiée : collez-la dans un terminal avec Node 22",
-      "import": "Importer",
+      "copied": "Copiée : collez-la dans un terminal avec Node 22",
+      "import": "Ouvrir un agent.yaml",
       "importLabel": "Importer un fichier agent.yaml",
       "export": "Enregistrer agent.yaml",
       "imported": "{file} chargé",
       "importFailed": "{file} ne peut pas être chargé",
       "errors": "{count, plural, =0 {Prêt} one {# erreur à corriger} other {# erreurs à corriger}}",
       "warnings": "{count, plural, one {# avertissement} other {# avertissements}}",
-      "downloadFailed": "Le projet ne peut pas être généré"
+      "downloadFailed": "Le projet ne peut pas être généré",
+      "undo": "Annuler",
+      "startOver": "Recommencer",
+      "cleared": "Formulaire vidé",
+      "copyFailed": "Le navigateur a bloqué le presse-papiers : enregistrez agent.yaml puis lancez npx gen-agent generate --from agent.yaml"
     }
   },
   "gallery": {
     "metaTitle": "Exemples — gen-agent",
     "title": "Exemples",
-    "lead": "Des agents prêts à l'emploi. Ouvrez-en un dans le générateur, adaptez ce qu'il faut, téléchargez le projet.",
+    "lead": "Des agents prêts à l’emploi. Ouvrez-en un dans le générateur, adaptez ce qu’il faut, téléchargez le projet.",
     "open": "Ouvrir dans le générateur",
     "tools": "{count, plural, =0 {Aucun outil} one {# outil} other {# outils}}",
     "euOnly": "UE uniquement",
@@ -154,11 +161,11 @@
       },
       "devops-agent": {
         "title": "Agent DevOps",
-        "summary": "Vérifie l'état de GitHub et liste les derniers déploiements d'un service."
+        "summary": "Vérifie l’état de GitHub et liste les derniers déploiements d’un service."
       },
       "weather-agent": {
         "title": "Agent météo",
-        "summary": "Donne la météo actuelle partout, avec une API gratuite et un modèle local : aucune clé d'API."
+        "summary": "Donne la météo actuelle partout, avec une API gratuite et un modèle local : aucune clé d’API."
       }
     }
   }

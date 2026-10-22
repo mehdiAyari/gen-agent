@@ -38,11 +38,13 @@ export default function GalleryPage() {
             <li key={example.id} className="flex flex-col gap-4 rounded-xl border bg-card p-6">
               <div className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold">{title}</h2>
-                <p className="font-mono text-sm text-muted-foreground">{agent.name}</p>
+                <p className="font-mono text-sm text-muted-foreground" translate="no">
+                  {agent.name}
+                </p>
               </div>
               <p className="text-pretty">{t(`items.${example.id}.summary`)}</p>
               <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                <span className="font-mono">
+                <span className="font-mono" translate="no">
                   {agent.model.provider} · {agent.model.name}
                 </span>
                 {agent.gdpr?.euOnly === true ? <span className="text-owned">{t('euOnly')}</span> : null}
@@ -50,7 +52,9 @@ export default function GalleryPage() {
               <ul aria-label={t('toolsLabel', { name: title })} className="flex flex-col gap-1.5 border-t pt-4 text-sm">
                 {agent.tools.map((tool) => (
                   <li key={tool.name} className="flex flex-wrap items-baseline gap-x-2">
-                    <span className="font-mono">{tool.name}</span>
+                    <span className="font-mono" translate="no">
+                      {tool.name}
+                    </span>
                     <span className="text-xs text-muted-foreground uppercase">
                       {tool.type === 'http' ? `${tool.method} http` : 'java'}
                     </span>

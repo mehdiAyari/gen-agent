@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Atkinson_Hyperlegible_Next, JetBrains_Mono } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
@@ -20,6 +20,14 @@ const atkinson = Atkinson_Hyperlegible_Next({
 });
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono' });
 
+// Browser chrome matches the page background (Paper / dark green), as in app/globals.css.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f6f7f4' },
+    { media: '(prefers-color-scheme: dark)', color: '#14211a' },
+  ],
+};
+
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
@@ -39,7 +47,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider>
           <SiteHeader />
-          <div id="content" className="flex flex-1 flex-col">
+          <div id="content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
             {children}
           </div>
           <SiteFooter />

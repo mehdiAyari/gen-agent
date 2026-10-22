@@ -2,6 +2,7 @@
 
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 
 import type { AgentForm } from '@/lib/agent-form';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,9 @@ interface ToolFieldsProps {
 
 export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFieldsProps) {
   const t = useTranslations('generator.tools');
+  const tActions = useTranslations('generator.actions');
   const path = `tools.${String(index)}`;
+  const addParamId = `${controlId(path)}-add-param`;
   const title = tool.name.trim() === '' ? t('untitled', { index: index + 1 }) : tool.name;
 
   const update = (patch: Partial<ToolForm>): void => {
@@ -44,19 +47,22 @@ export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFie
   };
 
   return (
-    <FieldSet className="rounded-lg border bg-card p-4">
-      <div className="flex items-center justify-between gap-4">
-        <FieldLegend className="mb-0 truncate font-mono">{title}</FieldLegend>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={onRemove}
-          aria-label={t('remove', { name: title })}
-        >
-          <Trash2Icon aria-hidden="true" />
-        </Button>
-      </div>
+    // The legend stays the first child of the fieldset, so it names the group for assistive technologies;
+    // floated, it is laid out as content instead of cutting the border.
+    <FieldSet className="relative rounded-lg border bg-card p-4">
+      <FieldLegend className="float-left mb-0 w-full truncate pr-10 font-mono" translate="no">
+        {title}
+      </FieldLegend>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="absolute top-3 right-3"
+        onClick={onRemove}
+        aria-label={t('remove', { name: title })}
+      >
+        <Trash2Icon aria-hidden="true" />
+      </Button>
       <FieldGroup>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
@@ -176,7 +182,17 @@ export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFie
                   size="icon-sm"
                   className="sm:mt-7"
                   onClick={() => {
+                    const previous = tool;
                     update({ params: tool.params.filter((_, i) => i !== paramIndex) });
+                    requestAnimationFrame(() => document.getElementById(addParamId)?.focus());
+                    toast(t('paramRemoved', { name: paramTitle }), {
+                      action: {
+                        label: tActions('undo'),
+                        onClick: () => {
+                          onChange(previous);
+                        },
+                      },
+                    });
                   }}
                   aria-label={t('removeParam', { name: paramTitle })}
                 >
@@ -197,7 +213,7 @@ export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFie
               </div>
             );
           })}
-          <Button type="button" variant="outline" size="sm" className="self-start" onClick={addParam}>
+          <Button id={addParamId} type="button" variant="outline" size="sm" className="self-start" onClick={addParam}>
             <PlusIcon data-icon="inline-start" aria-hidden="true" />
             {t('addParam')}
           </Button>

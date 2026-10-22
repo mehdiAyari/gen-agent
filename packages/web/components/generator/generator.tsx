@@ -1,13 +1,22 @@
 'use client';
 
-import { CopyIcon, DownloadIcon, FileDownIcon, TriangleAlertIcon, UploadIcon } from 'lucide-react';
+import {
+  CopyIcon,
+  DownloadIcon,
+  FileDownIcon,
+  FolderOpenIcon,
+  Loader2Icon,
+  RotateCcwIcon,
+  TriangleAlertIcon,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useReducer, useRef, useState, type ChangeEvent } from 'react';
 import { toast } from 'sonner';
 
-import { formFromYaml, formToYaml, validateForm } from '@/lib/agent-form';
+import { defaultForm, describePath, formFromYaml, formToYaml, validateForm } from '@/lib/agent-form';
 import { saveFile } from '@/lib/download';
+import { readDraft, writeDraft } from '@/lib/draft';
 import { exampleById } from '@/lib/examples';
 import { cliCommand, generatorReducer, initialGeneratorState } from '@/lib/generator-state';
 import { useProjectFiles } from '@/lib/use-project-files';
@@ -22,7 +31,7 @@ import { FilesView } from './files-view';
 // CodeMirror is only needed once the YAML tab is shown: kept out of the first load.
 const YamlEditor = dynamic(() => import('./yaml-editor'), {
   ssr: false,
-  loading: () => <div className="h-full animate-pulse bg-muted/40" />,
+  loading: () => <div className="h-full bg-muted/40 motion-safe:animate-pulse" />,
 });
 
 /** Form fields that show their own error; any other error is listed under the form. */
@@ -39,12 +48,26 @@ export function Generator() {
   const [tab, setTab] = useState<Tab>('files');
   const [downloading, setDownloading] = useState(false);
   const importInput = useRef<HTMLInputElement>(null);
+  const restored = useRef(false);
 
-  // Opened from the gallery: /generator/?example=weather-agent. Read once, after the static page is hydrated.
+  // The static page starts from the default agent. Once hydrated, it opens the example asked by the gallery
+  // (/generator/?example=weather-agent), or else the draft of this tab.
   useEffect(() => {
     const example = exampleById(new URLSearchParams(window.location.search).get('example'));
-    if (example !== undefined) dispatch({ type: 'yaml', text: example.yaml });
+    if (example !== undefined) {
+      dispatch({ type: 'yaml', text: example.yaml });
+      // A reload now keeps the edits (the draft) instead of reopening the example.
+      window.history.replaceState(null, '', window.location.pathname);
+    } else {
+      const draft = readDraft();
+      if (draft !== undefined) dispatch({ type: 'yaml', text: draft });
+    }
+    restored.current = true;
   }, []);
+
+  useEffect(() => {
+    if (restored.current) writeDraft(state.yaml);
+  }, [state.yaml]);
 
   const { form } = state;
   const validation = useMemo(() => validateForm(form), [form]);
@@ -72,6 +95,8 @@ export function Generator() {
       const zip = await projectZip(form);
       if (zip.ok) saveFile(zip.fileName, zip.bytes as Uint8Array<ArrayBuffer>, 'application/zip');
       else toast.error(t('actions.downloadFailed'), { description: zip.errors.join('\n') });
+    } catch (error) {
+      toast.error(t('actions.downloadFailed'), { description: error instanceof Error ? error.message : String(error) });
     } finally {
       setDownloading(false);
     }
@@ -82,8 +107,12 @@ export function Generator() {
       revealErrors();
       return;
     }
-    await navigator.clipboard.writeText(cliCommand(formToYaml(form)));
-    toast.success(t('actions.copied'));
+    try {
+      await navigator.clipboard.writeText(cliCommand(formToYaml(form)));
+      toast.success(t('actions.copied'));
+    } catch {
+      toast.error(t('actions.copyFailed'));
+    }
   };
 
   const importFile = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
@@ -98,6 +127,21 @@ export function Generator() {
       toast.error(t('actions.importFailed', { file: file.name }));
       setTab('yaml');
     }
+  };
+
+  const startOver = (): void => {
+    const previous = state.yaml;
+    dispatch({ type: 'form', form: defaultForm() });
+    setVisited(new Set());
+    setShowAllErrors(false);
+    toast(t('actions.cleared'), {
+      action: {
+        label: t('actions.undo'),
+        onClick: () => {
+          dispatch({ type: 'yaml', text: previous });
+        },
+      },
+    });
   };
 
   return (
@@ -120,7 +164,9 @@ export function Generator() {
               <AlertDescription>
                 <ul>
                   {otherErrors.map(([path, message]) => (
-                    <li key={path}>{message}</li>
+                    <li key={path}>
+                      {describePath(form, path)}: {message}
+                    </li>
                   ))}
                 </ul>
               </AlertDescription>
@@ -153,18 +199,12 @@ export function Generator() {
           >
             <TabsList className="mx-4">
               <TabsTrigger value="files">{t('preview.files')}</TabsTrigger>
-              <TabsTrigger value="yaml" className="font-mono">
+              <TabsTrigger value="yaml" className="font-mono" translate="no">
                 {t('preview.yaml')}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="files" className="flex min-h-0 flex-1 flex-col">
-              {project.result?.ok === true ? (
-                <FilesView files={project.result.files} pending={project.pending} />
-              ) : (
-                <p className="px-4 text-sm text-muted-foreground" aria-live="polite">
-                  {project.result === undefined || errorCount === 0 ? t('preview.generating') : t('preview.fixErrors')}
-                </p>
-              )}
+              <FilesPanel project={project} errorCount={errorCount} />
             </TabsContent>
             <TabsContent value="yaml" className="flex min-h-0 flex-1 flex-col gap-3 border-t">
               {state.yamlErrors.length > 0 ? (
@@ -195,14 +235,14 @@ export function Generator() {
       <div
         role="region"
         aria-label={t('actions.label')}
-        className="sticky bottom-0 z-10 -mx-6 mt-10 flex flex-wrap items-center gap-2 sm:gap-3 border-t bg-background/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+        className="sticky bottom-0 z-10 -mx-6 mt-10 flex flex-wrap items-center gap-2 border-t bg-background/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:gap-3"
       >
         <p aria-live="polite" className="mr-auto flex items-center gap-4 text-sm">
           {errorCount > 0 ? (
             <button
               type="button"
               onClick={revealErrors}
-              className="text-destructive underline-offset-4 hover:underline"
+              className="rounded-sm text-destructive underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
             >
               {t('actions.errors', { count: errorCount })}
             </button>
@@ -210,7 +250,10 @@ export function Generator() {
             <span className="text-owned">{t('actions.errors', { count: 0 })}</span>
           )}
           {validation.warnings.length > 0 ? (
-            <a href="#warnings" className="text-warning underline-offset-4 hover:underline">
+            <a
+              href="#warnings"
+              className="rounded-sm text-warning underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            >
               {t('actions.warnings', { count: validation.warnings.length })}
             </a>
           ) : null}
@@ -224,13 +267,19 @@ export function Generator() {
           aria-label={t('actions.importLabel')}
           onChange={(event) => void importFile(event)}
         />
-        <Button type="button" variant="ghost" onClick={() => importInput.current?.click()}>
-          <UploadIcon data-icon="inline-start" aria-hidden="true" />
+        {/* Below sm the secondary actions show their icon only; the label stays for assistive technologies. */}
+        <Button type="button" variant="ghost" title={t('actions.startOver')} onClick={startOver}>
+          <RotateCcwIcon data-icon="inline-start" aria-hidden="true" />
+          <span className="sr-only sm:not-sr-only">{t('actions.startOver')}</span>
+        </Button>
+        <Button type="button" variant="ghost" title={t('actions.import')} onClick={() => importInput.current?.click()}>
+          <FolderOpenIcon data-icon="inline-start" aria-hidden="true" />
           <span className="sr-only sm:not-sr-only">{t('actions.import')}</span>
         </Button>
         <Button
           type="button"
           variant="ghost"
+          title={t('actions.export')}
           onClick={() => {
             saveFile('agent.yaml', formToYaml(form), 'application/yaml');
           }}
@@ -238,16 +287,59 @@ export function Generator() {
           <FileDownIcon data-icon="inline-start" aria-hidden="true" />
           <span className="sr-only sm:not-sr-only">{t('actions.export')}</span>
         </Button>
-        <Button type="button" variant="outline" onClick={() => void copyCli()}>
+        <Button type="button" variant="outline" title={t('actions.copyCli')} onClick={() => void copyCli()}>
           <CopyIcon data-icon="inline-start" aria-hidden="true" />
           <span className="sr-only sm:not-sr-only">{t('actions.copyCli')}</span>
         </Button>
         <Button type="button" size="lg" disabled={downloading} onClick={() => void download()}>
-          <DownloadIcon data-icon="inline-start" aria-hidden="true" />
+          {downloading ? (
+            <Loader2Icon data-icon="inline-start" aria-hidden="true" className="motion-safe:animate-spin" />
+          ) : (
+            <DownloadIcon data-icon="inline-start" aria-hidden="true" />
+          )}
           {downloading ? t('actions.downloading') : t('actions.download')}
         </Button>
       </div>
       <Toaster />
     </>
+  );
+}
+
+interface FilesPanelProps {
+  project: ReturnType<typeof useProjectFiles>;
+  errorCount: number;
+}
+
+/** The generated files, or why there are none yet. */
+function FilesPanel({ project: { pending, result }, errorCount }: FilesPanelProps) {
+  const t = useTranslations('generator.preview');
+
+  if (result?.ok === true) return <FilesView files={result.files} pending={pending} />;
+  if (result === undefined) {
+    return (
+      <p className="px-4 text-sm text-muted-foreground" aria-live="polite">
+        {t('generating')}
+      </p>
+    );
+  }
+  if (errorCount > 0) {
+    return (
+      <p className="px-4 text-sm text-muted-foreground" aria-live="polite">
+        {t('fixErrors')}
+      </p>
+    );
+  }
+  return (
+    <Alert variant="destructive" className="mx-4 w-auto">
+      <TriangleAlertIcon aria-hidden="true" />
+      <AlertDescription>
+        <p>{t('generationFailed')}</p>
+        <ul className="font-mono text-xs">
+          {result.errors.map((error) => (
+            <li key={error}>{error}</li>
+          ))}
+        </ul>
+      </AlertDescription>
+    </Alert>
   );
 }

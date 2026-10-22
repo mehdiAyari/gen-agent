@@ -190,6 +190,18 @@ function fieldOf(path: string): string {
   return path.startsWith('agent.tools.') ? path.slice('agent.'.length) : '';
 }
 
+/**
+ * Where a diagnostic is, in the words of the form: `current-weather › url` rather than `agent.tools.0.url`.
+ * Parameters keep their position when unnamed: `current-weather › params.1.name`.
+ */
+export function describePath(form: AgentForm, path: string): string {
+  const tool = /^(?:agent\.)?tools\.(\d+)(?:\.(.+))?$/.exec(path);
+  if (tool === null) return path.replace(/^agent\./, '');
+  const name = form.tools[Number(tool[1])]?.name.trim() ?? '';
+  const label = name === '' ? `tools.${tool[1] ?? ''}` : name;
+  return tool[2] === undefined ? label : `${label} › ${tool[2]}`;
+}
+
 export interface FormValidation {
   /** Form field path (`tools.0.url`) → message. */
   errors: Record<string, string>;
@@ -206,5 +218,8 @@ export function validateForm(form: AgentForm): FormValidation {
       errors[field] ??= error.message;
     }
   }
-  return { errors, warnings: result.warnings.map((warning) => `${warning.path}: ${warning.message}`) };
+  return {
+    errors,
+    warnings: result.warnings.map((warning) => `${describePath(form, warning.path)}: ${warning.message}`),
+  };
 }

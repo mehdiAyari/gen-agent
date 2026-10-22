@@ -4,9 +4,10 @@
     <meta charset="utf-8" />
     <title>gen-agent</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Static hosting has no server-side redirect: pick the visitor's language, English otherwise. -->
+    <!-- Static hosting has no server-side redirect: the first of the visitor's languages the site has, English otherwise. -->
     <script>
-      location.replace(navigator.language.toLowerCase().startsWith('fr') ? '/fr/' : '/en/');
+      const supported = (navigator.languages ?? [navigator.language]).find((tag) => /^(en|fr)\b/i.test(tag));
+      location.replace(supported?.toLowerCase().startsWith('fr') ? '/fr/' : '/en/');
     </script>
     <meta http-equiv="refresh" content="0; url=/en/" />
   </head>

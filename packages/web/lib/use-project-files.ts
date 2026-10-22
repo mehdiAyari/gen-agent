@@ -22,6 +22,11 @@ export function useProjectFiles(form: AgentForm): ProjectFilesState {
       setState((previous) => ({ ...previous, pending: true }));
       void import('./project-zip')
         .then(({ projectFiles }) => projectFiles(form))
+        // A template that fails to render is a bug of gen-agent: show it instead of waiting forever.
+        .catch((error: unknown): ProjectFiles => ({
+          ok: false,
+          errors: [error instanceof Error ? error.message : String(error)],
+        }))
         .then((result) => {
           if (!cancelled) setState({ pending: false, result });
         });

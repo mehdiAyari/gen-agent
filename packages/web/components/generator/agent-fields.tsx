@@ -4,6 +4,7 @@ import { EU_PROVIDERS, PROVIDERS, SUGGESTED_MODELS, type Provider } from '@gen-a
 import { PlusIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { FocusEvent } from 'react';
+import { toast } from 'sonner';
 
 import type { AgentForm } from '@/lib/agent-form';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,8 @@ const PROVIDER_NAMES: Record<Provider, string> = {
   mistral: 'Mistral',
   ollama: 'Ollama',
 };
+
+const ADD_TOOL_ID = 'add-tool';
 
 interface AgentFieldsProps {
   form: AgentForm;
@@ -199,11 +202,22 @@ export function AgentFields({ form, errorOf, onChange, onVisit }: AgentFieldsPro
                 update({ tools: form.tools.map((existing, i) => (i === index ? changed : existing)) });
               }}
               onRemove={() => {
+                const previous = form;
                 update({ tools: form.tools.filter((_, i) => i !== index) });
+                // The removed tool had focus: move it to a control that stays.
+                requestAnimationFrame(() => document.getElementById(ADD_TOOL_ID)?.focus());
+                toast(t('tools.removed', { name: tool.name.trim() || t('tools.untitled', { index: index + 1 }) }), {
+                  action: {
+                    label: t('actions.undo'),
+                    onClick: () => {
+                      onChange(previous);
+                    },
+                  },
+                });
               }}
             />
           ))}
-          <Button type="button" variant="outline" className="self-start" onClick={addTool}>
+          <Button id={ADD_TOOL_ID} type="button" variant="outline" className="self-start" onClick={addTool}>
             <PlusIcon data-icon="inline-start" aria-hidden="true" />
             {t('tools.add')}
           </Button>

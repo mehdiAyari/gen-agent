@@ -75,7 +75,13 @@ describe('validateForm', () => {
     const errors = validateForm({ ...weather, tools: [{ ...currentWeather, method: 'POST' }] });
 
     expect(errors.errors).toEqual({});
-    expect(errors.warnings).toEqual([expect.stringMatching(/POST has side effects/)]);
+    expect(errors.warnings).toEqual([expect.stringMatching(/^current-weather: POST has side effects/)]);
+  });
+
+  it('names the tool and the field a warning is about, not its path in agent.yaml', () => {
+    const { warnings } = validateForm({ ...weather, tools: [{ ...currentWeather, description: '' }] });
+
+    expect(warnings).toEqual([expect.stringMatching(/^current-weather › description: missing/)]);
   });
 
   it('rejects a number that is not a number', () => {

@@ -48,6 +48,7 @@ export default function HomePage() {
         </div>
         <figure
           aria-hidden="true"
+          translate="no"
           className="flex flex-col overflow-hidden rounded-xl border bg-card font-mono text-xs"
         >
           <figcaption className="border-b px-4 py-2 text-muted-foreground">agent.yaml</figcaption>

@@ -16,7 +16,7 @@ export function SiteHeader() {
         {t('skipToContent')}
       </a>
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-3 px-6 py-4">
-        <Link href="/" className="font-mono text-lg font-semibold">
+        <Link href="/" translate="no" className="font-mono text-lg font-semibold">
           gen-agent
         </Link>
         <nav

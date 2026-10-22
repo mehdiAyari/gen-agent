@@ -11,7 +11,11 @@ import { useEffect, useRef } from 'react';
 const theme = EditorView.theme({
   '&': { height: '100%', backgroundColor: 'transparent', color: 'var(--foreground)', fontSize: '13px' },
   '&.cm-focused': { outline: 'none' },
-  '.cm-scroller': { fontFamily: 'var(--font-jetbrains-mono), monospace', lineHeight: '1.6' },
+  '.cm-scroller': {
+    fontFamily: 'var(--font-jetbrains-mono), monospace',
+    lineHeight: '1.6',
+    overscrollBehavior: 'contain',
+  },
   '.cm-content': { caretColor: 'var(--foreground)' },
   '.cm-gutters': { backgroundColor: 'transparent', color: 'var(--muted-foreground)', border: 'none' },
   '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)' },
@@ -72,5 +76,5 @@ export default function YamlEditor({ value, onChange, label }: YamlEditorProps) 
     }
   }, [value]);
 
-  return <div ref={parent} className="h-full min-h-0 overflow-hidden" />;
+  return <div ref={parent} translate="no" className="h-full min-h-0 overflow-hidden" />;
 }

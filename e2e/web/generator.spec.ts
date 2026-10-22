@@ -54,7 +54,44 @@ test('shows errors once a field is left, and points to them instead of downloadi
 test('opens an example from the gallery', async ({ page }) => {
   await page.goto('/fr/gallery/');
   await page.getByRole('link', { name: 'Ouvrir dans le générateur' }).first().click();
-  await expect(page).toHaveURL(/\/fr\/generator\/\?example=support-bot$/);
+  await expect(page).toHaveURL(/\/fr\/generator\/$/);
   await expect(page.getByLabel('Nom', { exact: true }).first()).toHaveValue('support-bot');
   await expect(page.getByText('1 avertissement')).toBeVisible();
+});
+
+test('undoes the removal of a tool, and keeps the focus on the form', async ({ page }) => {
+  await page.goto('/en/generator/?example=devops-agent');
+  await expect(page.getByLabel('Name', { exact: true }).first()).toHaveValue('devops-agent');
+
+  await page.getByRole('button', { name: 'Remove github-status' }).click();
+  await expect(page.getByRole('group', { name: 'github-status' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add a tool' })).toBeFocused();
+
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.getByRole('group', { name: 'github-status' })).toBeVisible();
+});
+
+test('keeps the agent being edited across a reload and a language switch', async ({ page }) => {
+  await page.goto('/en/generator/?example=weather-agent');
+  const name = page.getByLabel('Name', { exact: true }).first();
+  await expect(name).toHaveValue('weather-agent');
+  await expect(page).toHaveURL(/\/en\/generator\/$/);
+  await name.fill('my-weather');
+
+  await page.reload();
+  await expect(page.getByLabel('Name', { exact: true }).first()).toHaveValue('my-weather');
+
+  await page.getByRole('link', { name: 'Français' }).click();
+  await expect(page.getByLabel('Nom', { exact: true }).first()).toHaveValue('my-weather');
+});
+
+test('starts over, with a way back', async ({ page }) => {
+  await page.goto('/en/generator/?example=support-bot');
+  const name = page.getByLabel('Name', { exact: true }).first();
+  await expect(name).toHaveValue('support-bot');
+
+  await page.getByRole('button', { name: 'Start over' }).click();
+  await expect(name).toHaveValue('my-agent');
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(name).toHaveValue('support-bot');
 });

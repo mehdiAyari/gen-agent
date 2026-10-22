@@ -97,7 +97,9 @@
       "paramName": "Name",
       "paramType": "Type",
       "required": "Required",
-      "paramDescription": "Description"
+      "paramDescription": "Description",
+      "removed": "{name} removed",
+      "paramRemoved": "Parameter {name} removed"
     },
     "preview": {
       "label": "Preview",
@@ -117,7 +119,8 @@
         "user": "Yours: edit freely, never overwritten",
         "merged": "Shared: gen-agent updates its parts, keeps yours",
         "generated": "gen-agent: regenerated, do not edit"
-      }
+      },
+      "generationFailed": "The files cannot be generated. This is a bug of gen-agent: please report it with your agent.yaml."
     },
     "actions": {
       "label": "Project actions",
@@ -125,14 +128,18 @@
       "downloading": "Preparing…",
       "copyCli": "Copy CLI command",
       "copied": "Copied: paste it in a terminal with Node 22",
-      "import": "Import",
+      "import": "Open agent.yaml",
       "importLabel": "Import an agent.yaml file",
       "export": "Save agent.yaml",
       "imported": "{file} loaded",
       "importFailed": "{file} cannot be loaded",
       "errors": "{count, plural, =0 {Ready} one {# error to fix} other {# errors to fix}}",
       "warnings": "{count, plural, one {# warning} other {# warnings}}",
-      "downloadFailed": "The project cannot be generated"
+      "downloadFailed": "The project cannot be generated",
+      "undo": "Undo",
+      "startOver": "Start over",
+      "cleared": "Form cleared",
+      "copyFailed": "The browser blocked the clipboard: save agent.yaml instead and run npx gen-agent generate --from agent.yaml"
     }
   },
   "gallery": {

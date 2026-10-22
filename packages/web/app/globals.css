@@ -96,10 +96,37 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans;
+    /* Native controls and scrollbars follow the theme. */
+    color-scheme: light dark;
+    /* The generator's action bar is sticky at the bottom: keep focused fields and anchors above it. */
+    scroll-padding-block: 1rem 6rem;
+  }
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    @apply font-sans;
+  a,
+  button,
+  input,
+  label,
+  select,
+  textarea,
+  [role='button'],
+  [role='tab'] {
+    /* No double-tap zoom delay on touch screens. */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: color-mix(in oklab, var(--primary) 20%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
