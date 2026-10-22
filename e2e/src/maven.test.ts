@@ -20,11 +20,11 @@ describe.each(readdirSync(references).filter((name) => name.endsWith('.yaml')))(
     rmSync(project, { recursive: true, force: true });
     for (const file of await generateProject(result.config, '0.0.0-e2e')) {
       mkdirSync(dirname(join(project, file.path)), { recursive: true });
-      writeFileSync(join(project, file.path), file.content);
+      writeFileSync(join(project, file.path), file.content, file.executable === true ? { mode: 0o755 } : {});
     }
 
-    // Throws with Maven's output when the build fails.
-    execFileSync('mvn', ['--batch-mode', '--no-transfer-progress', 'verify'], {
+    // Through the generated Maven Wrapper, as a developer would. Throws with Maven's output when the build fails.
+    execFileSync(join(project, 'mvnw'), ['--batch-mode', '--no-transfer-progress', 'verify'], {
       cwd: project,
       stdio: 'pipe',
       encoding: 'utf8',

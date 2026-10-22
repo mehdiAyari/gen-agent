@@ -5,10 +5,12 @@ Spring Boot 4.1.1, Spring AI 2.0.1, Java 21.
 
 ## Run
 
+Java 21 is the only requirement: `./mvnw` downloads Maven (checked against its SHA-256) on first use.
+
 Start [Ollama](https://ollama.com) and pull the model (`ollama pull llama3.1`), then:
 
 ```bash
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
 Talk to the agent:
@@ -23,7 +25,7 @@ Send back the returned `conversationId` with the next message to continue the sa
 ## Test
 
 ```bash
-mvn verify
+./mvnw verify
 ```
 
 The tests use a fake model: they never call ollama and cost nothing.

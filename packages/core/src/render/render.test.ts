@@ -133,6 +133,23 @@ public class Hello {
     expect(files.find((f) => f.path === 'PAGE.md')?.content).toBe('Hello demo\n');
   });
 
+  it('copies raw files byte for byte, and keeps the executable flag', async () => {
+    const script = '#!/bin/sh\r\necho "<%= not a template %>"  \r\n\n\n';
+    const set: TemplateSet = {
+      sources: { mvnw: script },
+      entries: [{ template: 'mvnw', owner: 'generated', raw: true, executable: true, output: () => 'mvnw' }],
+    };
+
+    const { files } = await renderProject(model, set, VERSION);
+
+    expect(files.find((f) => f.path === 'mvnw')).toEqual({
+      path: 'mvnw',
+      owner: 'generated',
+      content: script,
+      executable: true,
+    });
+  });
+
   it('exposes the escaping helpers to templates', async () => {
     const set: TemplateSet = {
       sources: { 'x.ejs': "<%= javaString('a') %> <%= xmlText('<b>') %> <%= yamlString('on') %>" },

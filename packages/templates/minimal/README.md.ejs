@@ -9,16 +9,18 @@ Spring Boot <%= versions.springBoot %>, Spring AI <%= versions.springAi %>, Java
 
 ## Run
 
+Java <%= agent.java %> is the only requirement: `./mvnw` downloads Maven (checked against its SHA-256) on first use.
+
 <%_ if (provider.apiKeyEnv) { _%>
 ```bash
 export <%= provider.apiKeyEnv %>=...   # never commit the key
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 <%_ } else { _%>
 Start [Ollama](https://ollama.com) and pull the model (`ollama pull <%= provider.model %>`), then:
 
 ```bash
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 <%_ } _%>
 
@@ -37,7 +39,7 @@ Every reply carries `"aiGenerated": true`, so clients can tell users they are ta
 ## Test
 
 ```bash
-mvn verify
+./mvnw verify
 ```
 
 The tests use a fake model: they never call <%= provider.id %> and cost nothing.

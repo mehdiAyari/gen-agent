@@ -14,7 +14,9 @@ export function minimalTemplates(): TemplateSet {
   const root = fileURLToPath(MINIMAL_DIR);
   const sources: Record<string, string> = {};
   for (const name of readdirSync(root, { recursive: true, encoding: 'utf8' })) {
-    if (name.endsWith('.ejs')) sources[name.replaceAll('\\', '/')] = readFileSync(new URL(name, MINIMAL_DIR), 'utf8');
+    const path = name.replaceAll('\\', '/');
+    if (path.endsWith('.ejs') || path.startsWith('maven-wrapper/'))
+      sources[path] = readFileSync(new URL(name, MINIMAL_DIR), 'utf8');
   }
   return { sources, entries: minimalEntries };
 }

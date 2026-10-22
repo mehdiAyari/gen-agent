@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -53,6 +53,7 @@ describe('gen-agent generate --from', () => {
     expect(code).toBe(0);
     expect(existsSync(join(cwd, 'weather-bot/pom.xml'))).toBe(true);
     expect(existsSync(join(cwd, 'weather-bot/.gen-agent.json'))).toBe(true);
+    expect(statSync(join(cwd, 'weather-bot/mvnw')).mode & 0o111).not.toBe(0);
     expect(out.text()).toMatch(/MISTRAL_API_KEY/);
     expect(out.text()).toMatch(/warn: agent.yaml:7 agent.tools.0: POST has side effects/);
   });

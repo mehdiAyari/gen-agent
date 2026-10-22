@@ -109,7 +109,7 @@ async function generateFromSource(
   beforeWrite?.(directory);
   for (const file of files) {
     mkdirSync(dirname(join(directory, file.path)), { recursive: true });
-    writeFileSync(join(directory, file.path), file.content);
+    writeFileSync(join(directory, file.path), file.content, file.executable === true ? { mode: 0o755 } : {});
   }
 
   const { provider } = buildModel(result.config);
@@ -118,7 +118,7 @@ async function generateFromSource(
       `Created ${result.config.agent.name} in ${shown} (${String(files.length)} files). Next steps:`,
       `  cd ${shown}`,
       provider.apiKeyEnv ? `  export ${provider.apiKeyEnv}=...` : `  ollama pull ${provider.model}`,
-      '  mvn spring-boot:run',
+      '  ./mvnw spring-boot:run',
     ].join('\n'),
   );
   return 0;

@@ -7,6 +7,15 @@ const test = (m: GenerationModel, path: string): string => `src/test/java/${m.pr
 export const minimalEntries: TemplateEntry[] = [
   { template: 'pom.xml.ejs', owner: 'merged', output: () => 'pom.xml' },
   { template: 'gitignore.ejs', owner: 'merged', output: () => '.gitignore' },
+  // Maven Wrapper 3.3.4 (Apache 2.0), copied as distributed; pins Maven 3.9.16 and checks its SHA-256.
+  { template: 'maven-wrapper/mvnw', owner: 'generated', raw: true, executable: true, output: () => 'mvnw' },
+  { template: 'maven-wrapper/mvnw.cmd', owner: 'generated', raw: true, output: () => 'mvnw.cmd' },
+  {
+    template: 'maven-wrapper/maven-wrapper.properties',
+    owner: 'generated',
+    raw: true,
+    output: () => '.mvn/wrapper/maven-wrapper.properties',
+  },
   { template: 'README.md.ejs', owner: 'merged', output: () => 'README.md' },
   { template: 'application.yml.ejs', owner: 'merged', output: () => 'src/main/resources/application.yml' },
   { template: 'system-prompt.md.ejs', owner: 'user', output: (m) => `src/main/resources/${m.prompt.resource}` },

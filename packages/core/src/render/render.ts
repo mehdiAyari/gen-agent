@@ -15,6 +15,10 @@ interface SingleEntry {
   template: string;
   owner: FileOwner;
   each?: undefined;
+  /** Copied byte for byte: no EJS, no formatting (third-party files such as the Maven Wrapper). */
+  raw?: boolean;
+  /** Written with the executable permission (scripts). */
+  executable?: boolean;
   when?: (model: GenerationModel) => boolean;
   output: (model: GenerationModel) => string;
   locals?: (model: GenerationModel) => Locals;
@@ -45,6 +49,7 @@ export interface GeneratedFile {
   path: string;
   content: string;
   owner: FileOwner;
+  executable?: boolean;
 }
 
 export const MANIFEST_PATH = '.gen-agent.json';
@@ -70,8 +75,17 @@ export async function renderProject(
   for (const entry of templates.entries) {
     switch (entry.each) {
       case undefined:
-        if (entry.when === undefined || entry.when(model))
+        if (entry.when !== undefined && !entry.when(model)) break;
+        if (entry.raw === true) {
+          rendered.push({
+            path: entry.output(model),
+            owner: entry.owner,
+            content: sourceOf(templates, entry.template),
+            ...(entry.executable === true ? { executable: true } : {}),
+          });
+        } else {
           await render(entry, entry.output(model), entry.locals?.(model) ?? {});
+        }
         break;
       case 'tool':
         for (const tool of model.tools)
@@ -104,8 +118,7 @@ async function renderFile(
   model: GenerationModel,
   locals: Locals,
 ): Promise<string> {
-  const source = templates.sources[name];
-  if (source === undefined) throw new Error(`Template not found: ${name}`);
+  const source = sourceOf(templates, name);
 
   const javaPackage = JAVA_SOURCE_ROOT.exec(path)?.[1]?.replaceAll('/', '.');
   const imports = new JavaImports(javaPackage ?? '');
@@ -151,6 +164,12 @@ async function renderFile(
     tabWidth: 4,
     printWidth: 120,
   });
+}
+
+function sourceOf(templates: TemplateSet, name: string): string {
+  const source = templates.sources[name];
+  if (source === undefined) throw new Error(`Template not found: ${name}`);
+  return source;
 }
 
 async function manifestOf(

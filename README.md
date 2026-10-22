@@ -20,7 +20,7 @@ Then:
 ```bash
 cd my-assistant
 export MISTRAL_API_KEY=...              # or OPENAI_API_KEY, ANTHROPIC_API_KEY; nothing for Ollama
-mvn spring-boot:run
+./mvnw spring-boot:run
 curl -s localhost:8080/api/chat -H 'Content-Type: application/json' -d '{"message": "Hello"}'
 ```
 
@@ -57,12 +57,12 @@ autocompletion in your editor.
 
 ## What you get
 
-A Spring Boot 4.1.1 / Spring AI 2.0.1 / Java 21 Maven project:
+A Spring Boot 4.1.1 / Spring AI 2.0.1 / Java 21 Maven project, with the Maven Wrapper (only Java is needed):
 
 - a `ChatClient` with the system prompt in `src/main/resources/prompts/system.md` and a windowed conversation memory;
 - `POST /api/chat`, validated input, errors as `ProblemDetail`, replies flagged `"aiGenerated": true` (EU AI Act);
 - each HTTP tool as a `RestClient` call with its URL in `application.yml`; each Java tool as an interface you implement;
-- tests that start the application with a fake model: `mvn verify` never calls a provider and costs nothing.
+- tests that start the application with a fake model: `./mvnw verify` never calls a provider and costs nothing.
 
 Generated code and your code never mix: everything under `…generated` belongs to gen-agent, the tool implementations
 and the system prompt belong to you, and `.gen-agent.json` records who owns each file and its fingerprint, so future
