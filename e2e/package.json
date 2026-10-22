@@ -1,0 +1,13 @@
+{
+  "name": "@gen-agent/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "e2e": "vitest run"
+  },
+  "dependencies": {
+    "@gen-agent/core": "workspace:*",
+    "@gen-agent/templates": "workspace:*"
+  }
+}
