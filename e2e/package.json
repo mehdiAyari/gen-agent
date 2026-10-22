@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "e2e": "vitest run && playwright test"
+    "e2e": "vitest run && playwright test",
+    "demo": "node scripts/record-demo.js"
   },
   "dependencies": {
     "@gen-agent/core": "workspace:*",

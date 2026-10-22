@@ -14,10 +14,11 @@ A version is released only when all its end-to-end tests pass. Each version adds
 - [x] Single `gen-agent` npm package, tested from its packed tarball
 - [ ] npm publication, release
 
-## V2 — The showcase
+## V2 — The showcase ✅
 
-- [ ] Next.js web UI on the `minimal` profile, generating the zip in the browser
-- [ ] Template gallery (customer support, HR assistant, document analyst)
+- [x] Next.js web UI on the `minimal` profile, generating the zip in the browser (English and French, dark mode)
+- [x] Examples gallery (customer support, HR assistant, DevOps agent, weather agent)
+- [x] Playwright tests: zip identical to the CLI output and passing `./mvnw verify`, accessibility checked with axe
 
 ## V3 — Flagship features
 

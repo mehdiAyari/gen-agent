@@ -6,14 +6,38 @@ gen-agent is an open source generator of [Spring AI](https://spring.io/projects/
 JHipster: describe your agent in an `agent.yaml` file (or answer a few questions) and get a complete Spring Boot project
 that compiles, passes its tests and runs.
 
-**Status: V1** — `minimal` profile, command line only. See [what V1 does not do yet](#limits-of-v1).
+**Status:** `minimal` profile, from the command line or a web generator that runs entirely in your browser. See
+[what is not done yet](#limits).
+
+![The web generator: an example opened from the gallery, a parameter added, the project downloaded](docs/demo/web-demo.gif)
+
+<sub>The web generator: pick an example, change it, watch the files follow, download the project. The browser renders
+exactly what the CLI writes, with the same templates.</sub>
+
+## Web generator
+
+A form and an `agent.yaml` editor kept in sync, a live preview of every generated file with who owns it, ready-made
+examples, and a zip of the project. Nothing leaves the browser: validation, templates and Java formatting run client
+side.
+
+| Generator                                                                        | Dark mode                                                      |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| ![Generator with the HR assistant example](docs/screenshots/generator-light.png) | ![Generator in dark mode](docs/screenshots/generator-dark.png) |
+
+```bash
+pnpm install
+pnpm build                              # core and templates, used by the site
+pnpm --filter @gen-agent/web dev        # http://localhost:3000
+```
+
+## Command line
 
 ![From agent.yaml to a running agent calling its tool, with a local model](docs/demo/demo.gif)
 
 <sub>Recorded with a local model (Ollama, qwen2.5:3b): the agent calls the Open-Meteo API through its generated HTTP
 tool and remembers the conversation. Script: [`docs/demo`](docs/demo).</sub>
 
-## Quick start
+### Quick start
 
 ```bash
 npx gen-agent new my-assistant          # answer a few questions
@@ -73,7 +97,7 @@ Generated code and your code never mix: everything under `…generated` belongs 
 and the system prompt belong to you, and `.gen-agent.json` records who owns each file and its fingerprint, so future
 versions can regenerate safely ([ADR 0001](docs/adr/0001-separate-generated-and-user-code.md)).
 
-## Limits of V1
+## Limits
 
 - Only the `minimal` profile. A valid `agent.yaml` may describe the whole specification (`profile: production`, RAG,
   MCP, security, cache…); gen-agent then refuses to generate and says which version brings each feature.
@@ -82,20 +106,24 @@ versions can regenerate safely ([ADR 0001](docs/adr/0001-separate-generated-and-
 
 ## Contributing
 
-Node 22+, pnpm, JDK 21 and Maven.
+Node 22+, pnpm, JDK 21 and Google Chrome (for the web tests).
 
 ```bash
 pnpm install
 pnpm lint && pnpm typecheck && pnpm test   # unit and snapshot tests
-pnpm e2e                                   # generates the reference projects and runs mvn verify on each
+pnpm e2e                                   # mvn verify on the reference projects, then the web generator in Chrome
 ```
+
+The end-to-end tests download a project from the web generator, check it is identical to the CLI output and build it
+with its Maven Wrapper; they also check the pages with [axe](https://github.com/dequelabs/axe-core).
 
 | Package              | Role                                                                          |
 | -------------------- | ----------------------------------------------------------------------------- |
 | `packages/core`      | `agent.yaml` schema and rules, normalized model, rendering (Node and browser) |
 | `packages/templates` | templates of the `minimal` profile, reference agents and their snapshots      |
 | `packages/cli`       | the `gen-agent` command                                                       |
-| `e2e`                | builds the reference projects with Maven                                      |
+| `packages/web`       | the web generator (Next.js static export, English and French)                 |
+| `e2e`                | Maven builds of the reference projects, Playwright tests of the web generator |
 
 ## License
 
