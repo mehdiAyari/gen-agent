@@ -1,0 +1,15 @@
+agent:
+  name: weather-agent
+  description: Tells the current weather anywhere in the world
+  model:
+    provider: ollama
+    name: qwen2.5:3b
+    temperature: 0
+  tools:
+    - name: current-weather
+      type: http
+      description: Current temperature and wind speed at a location
+      url: https://api.open-meteo.com/v1/forecast?current=temperature_2m,wind_speed_10m
+      params:
+        - { name: latitude, type: number, required: true, description: Latitude in degrees }
+        - { name: longitude, type: number, required: true, description: Longitude in degrees }

@@ -10,7 +10,9 @@ A version is released only when all its end-to-end tests pass. Each version adds
 - [x] Separation of generated and user code, `.gen-agent.json` (prepares `add` and `upgrade`)
 - [x] CLI `gen-agent new` (interactive) and `gen-agent generate`
 - [x] End-to-end tests: generated projects compile and pass `./mvnw verify`
-- [ ] Demo GIF, npm publication, release
+- [x] Demo GIF (local model, real tool call)
+- [x] Single `gen-agent` npm package, tested from its packed tarball
+- [ ] npm publication, release
 
 ## V2 — The showcase
 

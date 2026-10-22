@@ -8,6 +8,11 @@ that compiles, passes its tests and runs.
 
 **Status: V1** — `minimal` profile, command line only. See [what V1 does not do yet](#limits-of-v1).
 
+![From agent.yaml to a running agent calling its tool, with a local model](docs/demo/demo.gif)
+
+<sub>Recorded with a local model (Ollama, qwen2.5:3b): the agent calls the Open-Meteo API through its generated HTTP
+tool and remembers the conversation. Script: [`docs/demo`](docs/demo).</sub>
+
 ## Quick start
 
 ```bash
