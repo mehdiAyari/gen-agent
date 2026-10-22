@@ -25,10 +25,12 @@ Ask of every generated file: *would a senior Spring developer have written exact
 
 ## Imports
 
-- Never write an import line by hand in a template. Templates declare the types they use; the renderer
-  collects them, removes duplicates and unused ones, and sorts them.
-- Order: one block, lexicographic (`com.`, `jakarta.`, `java.`, `org.` …), then static imports in a
-  separate block. No wildcard imports. No import of a type from the same package or `java.lang`.
+- Never write an import line by hand in a template. Write every type through the `type('fully.qualified.Name')`
+  helper (and `staticImport(...)` for static members): it prints the simple name and records the import only when
+  that line is actually rendered. The template keeps a single `<%- imports %>` line after the package declaration.
+- Result: only used imports, no duplicates, nothing from the same package or `java.lang`, no wildcard. If two types
+  share a simple name, the second one is written fully qualified.
+- Order is applied by prettier-plugin-java: static imports first, then the others in lexicographic order.
 - A conditional feature that adds a type adds its import through the same mechanism, so turning the
   feature off removes the import too.
 
@@ -65,7 +67,7 @@ Ask of every generated file: *would a senior Spring developer have written exact
 ## Formatting
 
 Java output goes through **prettier-plugin-java** after rendering (project decision — no Spotless, no
-other formatter in the generator). Do not hand-align code in templates; write it plainly and let the
+other formatter in the generator), with 4-space indentation and a 120-column line width. Do not hand-align code in templates; write it plainly and let the
 formatter decide. Non-Java files (`pom.xml`, `application.yml`, Markdown) are formatted by their template
 and checked by snapshots.
 

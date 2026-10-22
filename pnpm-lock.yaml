@@ -205,12 +205,25 @@ importers:
 
   packages/core:
     dependencies:
+      ejs:
+        specifier: ^7.0.2
+        version: 7.0.2
+      prettier:
+        specifier: ^3.9.10
+        version: 3.9.10
+      prettier-plugin-java:
+        specifier: ^2.11.0
+        version: 2.11.0(prettier@3.9.10)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
       zod:
         specifier: ^4.6.7
         version: 4.6.7
+    devDependencies:
+      '@types/ejs':
+        specifier: ^3.1.5
+        version: 3.1.5
 
 packages:
 
@@ -537,6 +550,9 @@ packages:
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
+  '@types/ejs@3.1.5':
+    resolution: {integrity: sha512-nv+GSx77ZtXiJzwKdsASqi+YQ5Z7vwHsTP0JY2SiQgjGckkBRKZnk8nIM+7oUZ1VCtuTz0+By4qVR7fqzp/Dfg==}
+
   '@types/esrecurse@4.3.1':
     resolution: {integrity: sha512-xJBAbDifo5hpffDBuHl0Y8ywswbiAp/Wi7Y/GtAgSlZyIABppyurxVueOPE8LUQOxdlgi6Zqce7uoEpqNTeiUw==}
 
@@ -721,6 +737,11 @@ packages:
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
+
+  ejs@7.0.2:
+    resolution: {integrity: sha512-LcDSEP6Oclb9sTiSyG0MpG0RuKvLDRxCOOt+2sIk+kdk1rMkFU8SRnT0qaNt5zvU0LOV1YXXOvIoZL/sKwabvw==}
+    engines: {node: '>=0.12.18'}
+    hasBin: true
 
   emoji-regex@10.6.0:
     resolution: {integrity: sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A==}
@@ -1137,6 +1158,11 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
+  prettier-plugin-java@2.11.0:
+    resolution: {integrity: sha512-pLwm2wHvVvW5eVVLf1cq2orY2ATaIj5ngN8hJ5ZdXYzUHzxrfaZkk2xmu8Mz/duBXAc2xT/cUH5+dK414HQSTw==}
+    peerDependencies:
+      prettier: ^3.0.0
+
   prettier@3.9.10:
     resolution: {integrity: sha512-skGHTH1Yb9QvaTC4hWnRTzEYtCpApF0UMBPz+t/0ZPzP8ihefo/btKd+QA7pUE0fEwA1SbS/NmhyEcstdXOIdA==}
     engines: {node: '>=14'}
@@ -1330,6 +1356,9 @@ packages:
         optional: true
       jsdom:
         optional: true
+
+  web-tree-sitter@0.27.0:
+    resolution: {integrity: sha512-XK08gj6RwTMQatAG7uVRP8MunqotL/XC19vHgkSPKmELgbGPBj4ECvB8haHOUnyj6ls2B8t42UTro14zxGgAHg==}
 
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
@@ -1659,6 +1688,8 @@ snapshots:
 
   '@types/deep-eql@4.0.2': {}
 
+  '@types/ejs@3.1.5': {}
+
   '@types/esrecurse@4.3.1': {}
 
   '@types/estree@1.0.9': {}
@@ -1860,6 +1891,8 @@ snapshots:
   deep-is@0.1.4: {}
 
   detect-libc@2.1.2: {}
+
+  ejs@7.0.2: {}
 
   emoji-regex@10.6.0: {}
 
@@ -2215,6 +2248,11 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
+  prettier-plugin-java@2.11.0(prettier@3.9.10):
+    dependencies:
+      prettier: 3.9.10
+      web-tree-sitter: 0.27.0
+
   prettier@3.9.10: {}
 
   punycode@2.3.1: {}
@@ -2357,6 +2395,8 @@ snapshots:
       '@types/node': 22.20.5
     transitivePeerDependencies:
       - msw
+
+  web-tree-sitter@0.27.0: {}
 
   which@2.0.2:
     dependencies:
