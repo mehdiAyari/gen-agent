@@ -46,6 +46,11 @@ export const minimalEntries: TemplateEntry[] = [
     output: (m) => main(m, 'generated/chat/ChatService.java'),
   },
   {
+    template: 'java/generated/chat/ChatExceptionHandler.java.ejs',
+    owner: 'generated',
+    output: (m) => main(m, 'generated/chat/ChatExceptionHandler.java'),
+  },
+  {
     template: 'java/generated/chat/ChatMessageRequest.java.ejs',
     owner: 'generated',
     output: (m) => main(m, 'generated/chat/ChatMessageRequest.java'),

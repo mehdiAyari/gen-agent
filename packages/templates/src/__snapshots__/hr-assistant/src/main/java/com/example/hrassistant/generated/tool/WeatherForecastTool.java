@@ -1,6 +1,7 @@
 // Managed by gen-agent: changes here are overwritten. Edit the tool in agent.yaml and regenerate.
 package com.example.hrassistant.generated.tool;
 
+import java.util.Objects;
 import java.util.Optional;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -19,10 +20,12 @@ public class WeatherForecastTool {
 
     @Tool(description = "Weather forecast for a location")
     public String weatherForecast(
-        @ToolParam(description = "Latitude in degrees") double latitude,
-        @ToolParam(description = "Longitude in degrees") double longitude,
+        @ToolParam(description = "Latitude in degrees") Double latitude,
+        @ToolParam(description = "Longitude in degrees") Double longitude,
         @ToolParam(required = false, description = "Number of days to forecast") Long forecastDays
     ) {
+        Objects.requireNonNull(latitude, "latitude is required");
+        Objects.requireNonNull(longitude, "longitude is required");
         return restClient
             .get()
             .uri(uri ->

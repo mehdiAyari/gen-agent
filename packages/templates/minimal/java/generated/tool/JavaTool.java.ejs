@@ -14,6 +14,7 @@ public class <%= item.className %> {
     }
 
 <%- include('tool-method-signature', { tool: item }) %> {
+<%- include('required-arguments', { tool: item }) -%>
         return handler.<%= item.methodName %>(<%= item.params.map((param) => param.name).join(', ') %>);
     }
 }

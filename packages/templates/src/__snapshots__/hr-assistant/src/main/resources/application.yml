@@ -8,9 +8,6 @@ spring:
         model: mistral-large-latest
         temperature: 0.3
         max-tokens: 2000
-  mvc:
-    problemdetails:
-      enabled: true
 
 agent:
   system-prompt: classpath:prompts/system.md

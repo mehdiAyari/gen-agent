@@ -2,6 +2,7 @@
 package com.example.ticketbot.generated.tool;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -34,5 +35,12 @@ class CreateTicketToolTests {
 
         assertThat(tool.createTicket("test", null)).isEqualTo("{\"ok\":true}");
         server.verify();
+    }
+
+    @Test
+    void tellsTheModelWhichRequiredArgumentIsMissing() {
+        assertThatNullPointerException()
+            .isThrownBy(() -> tool.createTicket(null, null))
+            .withMessage("title is required");
     }
 }

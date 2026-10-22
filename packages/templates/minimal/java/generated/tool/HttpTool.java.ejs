@@ -18,6 +18,7 @@ public class <%= item.className %> {
 <%_ } _%>
 
 <%- include('tool-method-signature', { tool: item }) %> {
+<%- include('required-arguments', { tool: item }) -%>
 <%_ if (item.sendsBody) { _%>
         return restClient
                 .<%= item.clientMethod %>()

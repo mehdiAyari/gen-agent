@@ -14,9 +14,6 @@ spring:
 <%_ if (provider.maxTokens !== undefined) { _%>
         <%= provider.maxTokensProperty %>: <%= provider.maxTokens %>
 <%_ } _%>
-  mvc:
-    problemdetails:
-      enabled: true
 
 agent:
   system-prompt: classpath:<%= prompt.resource %>

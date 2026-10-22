@@ -80,19 +80,20 @@ describe('buildModel', () => {
     expect(ollama.provider).toMatchObject({ apiKeyEnv: undefined, maxTokensProperty: 'num-predict' });
   });
 
-  it('names tools the way a Java developer would, with Java types for parameters', () => {
+  it('names tools the way a Java developer would, with boxed Java types: the model may omit any argument', () => {
     const [http, java] = buildModel(assistant).tools;
 
     expect(http).toMatchObject({
       kind: 'http',
       className: 'WeatherForecastTool',
       methodName: 'weatherForecast',
+      firstRequiredParam: 'latitude',
       method: 'GET',
       clientMethod: 'get',
       sendsBody: false,
       url: 'https://api.open-meteo.com/v1/forecast',
       params: [
-        { name: 'latitude', javaType: 'double', required: true, sample: '1.0' },
+        { name: 'latitude', javaType: 'Double', required: true, sample: '1.0' },
         { name: 'days', javaType: 'Long', required: false, sample: 'null' },
       ],
     });

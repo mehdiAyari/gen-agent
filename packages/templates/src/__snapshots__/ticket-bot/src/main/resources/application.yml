@@ -7,9 +7,6 @@ spring:
       chat:
         model: claude-sonnet-5
         max-tokens: 1024
-  mvc:
-    problemdetails:
-      enabled: true
 
 agent:
   system-prompt: classpath:prompts/system.md

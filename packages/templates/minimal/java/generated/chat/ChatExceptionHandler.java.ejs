@@ -1,0 +1,23 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.chat;
+
+<%- imports %>
+
+/**
+ * Answers every error as an RFC 9457 problem detail. Spring MVC errors (validation…) keep their status; anything else
+ * becomes a generic 500 whose details stay in the logs, never in the response.
+ */
+@<%= type('org.springframework.web.bind.annotation.RestControllerAdvice') %>
+class ChatExceptionHandler extends <%= type('org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler') %> {
+
+    private static final <%= type('org.slf4j.Logger') %> log = <%= type('org.slf4j.LoggerFactory') %>.getLogger(ChatExceptionHandler.class);
+
+    @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>(Exception.class)
+    <%= type('org.springframework.http.ProblemDetail') %> handleUnexpected(Exception exception) {
+        log.error("The agent could not answer", exception);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                <%= type('org.springframework.http.HttpStatus') %>.INTERNAL_SERVER_ERROR, "The agent could not answer. Try again later.");
+        problem.setTitle("Agent error");
+        return problem;
+    }
+}

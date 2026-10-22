@@ -1,0 +1,6 @@
+<%# Required arguments come from the model and may still be missing: the message goes back to the model, which can retry. _%>
+<%_ for (const param of tool.params) { _%>
+<%_   if (param.required) { _%>
+        <%= type('java.util.Objects') %>.requireNonNull(<%= param.name %>, "<%= param.name %> is required");
+<%_   } _%>
+<%_ } _%>

@@ -11,4 +11,15 @@ class <%= item.className %>Tests {
 
         <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(tool.<%= item.methodName %>(<%= item.params.map((param) => param.sample).join(', ') %>)).isEqualTo("handled");
     }
+<%_ if (item.firstRequiredParam) { _%>
+
+    @Test
+    void tellsTheModelWhichRequiredArgumentIsMissing() {
+        <%= item.className %> tool = new <%= item.className %>((<%= item.params.map((param) => param.name).join(', ') %>) -> "handled");
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThatNullPointerException') %>()
+                .isThrownBy(() -> tool.<%= item.methodName %>(<%_ item.params.forEach((param, index) => { _%><%= index > 0 ? ', ' : '' %><%= param.name === item.firstRequiredParam ? 'null' : param.sample %><%_ }) _%>))
+                .withMessage("<%= item.firstRequiredParam %> is required");
+    }
+<%_ } _%>
 }

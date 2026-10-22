@@ -1,6 +1,7 @@
 // Managed by gen-agent: changes here are overwritten. Implement the tool in DefaultBookLeaveHandler.
 package com.example.hrassistant.generated.tool;
 
+import java.util.Objects;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ public class BookLeaveTool {
         @ToolParam(description = "Day off, ISO-8601") String date,
         @ToolParam(required = false) Boolean halfDay
     ) {
+        Objects.requireNonNull(date, "date is required");
         return handler.bookLeave(date, halfDay);
     }
 }

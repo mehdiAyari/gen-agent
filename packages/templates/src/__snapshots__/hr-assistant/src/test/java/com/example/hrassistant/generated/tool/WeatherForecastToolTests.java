@@ -2,6 +2,7 @@
 package com.example.hrassistant.generated.tool;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -34,5 +35,12 @@ class WeatherForecastToolTests {
 
         assertThat(tool.weatherForecast(1.0, 1.0, null)).isEqualTo("{\"ok\":true}");
         server.verify();
+    }
+
+    @Test
+    void tellsTheModelWhichRequiredArgumentIsMissing() {
+        assertThatNullPointerException()
+            .isThrownBy(() -> tool.weatherForecast(null, 1.0, null))
+            .withMessage("latitude is required");
     }
 }

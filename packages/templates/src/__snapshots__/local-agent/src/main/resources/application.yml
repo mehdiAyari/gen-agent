@@ -5,9 +5,6 @@ spring:
     ollama:
       chat:
         model: llama3.1
-  mvc:
-    problemdetails:
-      enabled: true
 
 agent:
   system-prompt: classpath:prompts/local-agent.md

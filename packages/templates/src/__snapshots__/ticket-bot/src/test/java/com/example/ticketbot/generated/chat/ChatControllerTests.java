@@ -59,4 +59,25 @@ class ChatControllerTests {
             .hasStatus(HttpStatus.BAD_REQUEST)
             .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
     }
+
+    @Test
+    void hidesInternalErrorsBehindAGenericProblemDetail() {
+        given(chatService.reply(any())).willThrow(new IllegalStateException("connection refused to internal host"));
+
+        assertThat(
+            mockMvc
+                .post()
+                .uri("/api/chat")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"message": "Hello"}
+                    """
+                )
+        )
+            .hasStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyText()
+            .doesNotContain("internal host");
+    }
 }

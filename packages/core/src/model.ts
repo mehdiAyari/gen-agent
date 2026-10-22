@@ -55,6 +55,8 @@ interface ModelToolBase {
   methodName: string;
   description: string | undefined;
   params: ToolParameter[];
+  /** Name of the first required parameter, used by the generated test of a missing argument. */
+  firstRequiredParam: string | undefined;
 }
 
 export type ModelTool =
@@ -107,12 +109,15 @@ const PROVIDERS: Record<Provider, Omit<ProviderSettings, 'id' | 'model' | 'tempe
   },
 };
 
-/** Required parameters use primitives; optional ones are boxed so the model can omit them (null). */
-const JAVA_TYPES: Record<ToolParamType, { required: string; optional: string; sample: string }> = {
-  string: { required: 'String', optional: 'String', sample: '"test"' },
-  number: { required: 'double', optional: 'Double', sample: '1.0' },
-  integer: { required: 'long', optional: 'Long', sample: '1L' },
-  boolean: { required: 'boolean', optional: 'Boolean', sample: 'true' },
+/**
+ * Arguments come from the model and are untrusted: it may omit even a required one. Boxed types let the tool receive
+ * null and answer with a clear error the model can act on, instead of failing the conversion before the call.
+ */
+const JAVA_TYPES: Record<ToolParamType, { javaType: string; sample: string }> = {
+  string: { javaType: 'String', sample: '"test"' },
+  number: { javaType: 'Double', sample: '1.0' },
+  integer: { javaType: 'Long', sample: '1L' },
+  boolean: { javaType: 'Boolean', sample: 'true' },
 };
 
 const pascalCase = (kebab: string): string =>
@@ -156,6 +161,7 @@ export function buildModel(file: AgentFile): GenerationModel {
     prompt: { resource: agent.prompt.system, aiDisclosure: agent.prompt.aiDisclosure },
     memory: { window: agent.memory.window },
     tools: agent.tools.map((tool): ModelTool => {
+      const firstRequired = tool.params.find((param) => param.required);
       const base: ModelToolBase = {
         name: tool.name,
         className: `${pascalCase(tool.name)}Tool`,
@@ -165,12 +171,13 @@ export function buildModel(file: AgentFile): GenerationModel {
           const types = JAVA_TYPES[param.type];
           return {
             name: param.name,
-            javaType: param.required ? types.required : types.optional,
+            javaType: types.javaType,
             required: param.required,
             description: param.description,
             sample: param.required ? types.sample : 'null',
           };
         }),
+        firstRequiredParam: firstRequired?.name,
       };
       return tool.type === 'http'
         ? {
