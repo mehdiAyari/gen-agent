@@ -1,0 +1,13 @@
+pre-commit:
+  parallel: true
+  commands:
+    prettier:
+      glob: '*.{ts,js,json,yml,yaml,md}'
+      run: pnpm exec prettier --check {staged_files}
+    eslint:
+      glob: '*.{ts,js}'
+      run: pnpm exec eslint {staged_files}
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm exec commitlint --edit {1}
