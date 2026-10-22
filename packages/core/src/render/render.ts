@@ -140,7 +140,7 @@ async function renderFile(
         yamlString,
       },
       {
-        filename: name,
+        // No `filename`: with one, EJS checks partials on disk (fs.existsSync), which breaks in browsers.
         escape: String,
         // Partials are resolved next to the rendered template, from the in-memory set: no file system needed.
         includer: (partial: string) => {

@@ -4,6 +4,7 @@
   "description": "gen-agent templates of the generated Spring AI project",
   "license": "Apache-2.0",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

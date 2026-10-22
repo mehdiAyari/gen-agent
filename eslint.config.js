@@ -25,7 +25,7 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: { allowDefaultProject: ['packages/core/vitest.config.ts'] },
         tsconfigRootDir: import.meta.dirname,
       },
     },

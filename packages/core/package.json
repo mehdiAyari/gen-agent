@@ -4,6 +4,7 @@
   "description": "gen-agent engine: agent.yaml schema, normalized model and template rendering",
   "license": "Apache-2.0",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

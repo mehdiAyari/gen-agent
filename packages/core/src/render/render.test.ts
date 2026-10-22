@@ -1,9 +1,18 @@
 import { createHash } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { buildModel } from '../model.js';
 import { validateAgentYaml } from '../validate.js';
 import { javaString, renderProject, xmlText, yamlString, type TemplateSet } from './render.js';
+
+// Browsers have no file system: rendering must never touch it (EJS does when given a `filename`).
+vi.mock('fs', async (importOriginal) => {
+  const fs = await importOriginal<typeof import('fs')>();
+  const existsSync = (): never => {
+    throw new Error('no file system in browsers');
+  };
+  return { ...fs, existsSync, default: { ...fs, existsSync } };
+});
 
 function modelOf(yaml: string) {
   const result = validateAgentYaml(yaml);
