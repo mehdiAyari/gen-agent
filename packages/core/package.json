@@ -1,0 +1,28 @@
+{
+  "name": "@gen-agent/core",
+  "version": "0.0.0",
+  "description": "gen-agent engine: agent.yaml schema, normalized model and template rendering",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./agent.schema.json": "./schema/agent.schema.json"
+  },
+  "files": [
+    "dist",
+    "schema"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "schema": "tsc -p tsconfig.build.json && node scripts/write-schema.js && prettier --write schema/agent.schema.json"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  }
+}

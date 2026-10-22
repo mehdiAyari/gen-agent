@@ -1,0 +1,94 @@
+agent:
+  name: hr-assistant
+  description: Assistant RH interne
+  profile: production # minimal | standard | production
+  java: 21
+  build: maven # maven | gradle
+  springAi: 1.0.0 # version exacte, figée dans les templates
+
+  model:
+    provider: mistral # openai | anthropic | mistral | ollama
+    name: mistral-large-latest
+    temperature: 0.3
+    maxTokens: 2000
+    routing: # petit modèle pour les tâches simples
+      strategy: rules # rules (heuristiques documentées) | classifier
+      simple: mistral-small-latest
+      complex: mistral-large-latest
+    fallback: # doit aussi respecter gdpr.euOnly
+      provider: ollama
+      name: llama3.1
+
+  prompt:
+    system: prompts/system.md # fichier versionné, jamais en dur dans le code
+    aiDisclosure: true # informer l'utilisateur qu'il parle à une IA
+
+  memory:
+    type: jdbc # in-memory | jdbc | redis
+    window: 20
+    summarize: true
+    retention: 30d
+
+  tools:
+    - name: meteo
+      type: http
+      url: https://api.open-meteo.com/v1/forecast
+      cacheTtl: 10m
+    - name: poser-conge
+      type: java
+      approval: # validation humaine
+        required: true
+        expiresAfter: 24h # demande annulée si personne ne valide
+  openapi:
+    - spec: specs/rh-api.yaml
+      include: [getConges, createConge]
+
+  mcp:
+    - name: filesystem
+      package: '@modelcontextprotocol/server-filesystem'
+      version: 1.0.0 # version exacte obligatoire, latest refusé
+      runtime: node # l'image du conteneur embarque Node
+      sandbox: docker
+
+  rag:
+    enabled: true
+    vectorStore: pgvector
+    topK: 4
+    rerank: true
+    chunkSize: 500
+
+  security:
+    auth: oidc
+    rateLimit: 30/min
+    tokenBudget: 50000/day
+    piiMasking: true
+    injectionDetection: true
+
+  cache:
+    exact: redis
+    semantic:
+      threshold: 0.95
+      scope: user # obligatoire : jamais de cache partagé entre utilisateurs
+
+  limits:
+    maxIterations: 8
+    timeout: 60s
+
+  observability:
+    otel: true
+    metrics: prometheus
+    grafanaDashboard: true
+    feedback: true # boutons pouce haut / bas reliés aux traces
+
+  gdpr:
+    euOnly: true # cohérent : Mistral (UE) en principal, Ollama auto-hébergé en secours
+    erasureEndpoint: true
+    logsWithoutPii: true
+
+  evals:
+    dataset: evals/golden.yaml
+    redTeam: true
+    ciModel: ollama # pas d'appel payant en CI
+
+  interface: [rest, chat-ui]
+  deploy: [docker-compose, helm]

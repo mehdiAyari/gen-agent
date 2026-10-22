@@ -1,0 +1,509 @@
+{
+  "title": "gen-agent agent.yaml",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "agent": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "package": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+        },
+        "profile": {
+          "default": "minimal",
+          "type": "string",
+          "enum": ["minimal", "standard", "production"]
+        },
+        "java": {
+          "default": 21,
+          "type": "number",
+          "const": 21
+        },
+        "build": {
+          "default": "maven",
+          "type": "string",
+          "enum": ["maven", "gradle"]
+        },
+        "springAi": {
+          "default": "2.0.1",
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$"
+        },
+        "model": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "enum": ["openai", "anthropic", "mistral", "ollama"]
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "temperature": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "maxTokens": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "routing": {
+              "type": "object",
+              "properties": {
+                "strategy": {
+                  "type": "string",
+                  "enum": ["rules", "classifier"]
+                },
+                "simple": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "complex": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["strategy", "simple", "complex"],
+              "additionalProperties": false
+            },
+            "fallback": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": ["openai", "anthropic", "mistral", "ollama"]
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["provider", "name"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["provider", "name"],
+          "additionalProperties": false
+        },
+        "prompt": {
+          "default": {
+            "system": "prompts/system.md",
+            "aiDisclosure": true
+          },
+          "type": "object",
+          "properties": {
+            "system": {
+              "default": "prompts/system.md",
+              "type": "string",
+              "minLength": 1
+            },
+            "aiDisclosure": {
+              "default": true,
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "memory": {
+          "default": {
+            "type": "in-memory",
+            "window": 20
+          },
+          "type": "object",
+          "properties": {
+            "type": {
+              "default": "in-memory",
+              "type": "string",
+              "enum": ["in-memory", "jdbc", "redis"]
+            },
+            "window": {
+              "default": 20,
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "summarize": {
+              "type": "boolean"
+            },
+            "retention": {
+              "type": "string",
+              "pattern": "^\\d+[smhd]$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "tools": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "params": {
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-zA-Z0-9]*$"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": ["string", "number", "integer", "boolean"]
+                        },
+                        "required": {
+                          "default": false,
+                          "type": "boolean"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["name", "type"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "approval": {
+                    "type": "object",
+                    "properties": {
+                      "required": {
+                        "type": "boolean"
+                      },
+                      "expiresAfter": {
+                        "type": "string",
+                        "pattern": "^\\d+[smhd]$"
+                      }
+                    },
+                    "required": ["required"],
+                    "additionalProperties": false
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "http"
+                  },
+                  "method": {
+                    "default": "GET",
+                    "type": "string",
+                    "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "cacheTtl": {
+                    "type": "string",
+                    "pattern": "^\\d+[smhd]$"
+                  }
+                },
+                "required": ["name", "type", "url"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "params": {
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-zA-Z0-9]*$"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": ["string", "number", "integer", "boolean"]
+                        },
+                        "required": {
+                          "default": false,
+                          "type": "boolean"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["name", "type"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "approval": {
+                    "type": "object",
+                    "properties": {
+                      "required": {
+                        "type": "boolean"
+                      },
+                      "expiresAfter": {
+                        "type": "string",
+                        "pattern": "^\\d+[smhd]$"
+                      }
+                    },
+                    "required": ["required"],
+                    "additionalProperties": false
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "java"
+                  }
+                },
+                "required": ["name", "type"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "openapi": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "spec": {
+                "type": "string",
+                "minLength": 1
+              },
+              "include": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": ["spec"],
+            "additionalProperties": false
+          }
+        },
+        "mcp": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+              },
+              "package": {
+                "type": "string",
+                "minLength": 1
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$"
+              },
+              "runtime": {
+                "type": "string",
+                "enum": ["node", "python"]
+              },
+              "sandbox": {
+                "default": "docker",
+                "type": "string",
+                "enum": ["docker", "none"]
+              }
+            },
+            "required": ["name", "package", "version", "runtime"],
+            "additionalProperties": false
+          }
+        },
+        "rag": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "vectorStore": {
+              "type": "string",
+              "enum": ["pgvector"]
+            },
+            "topK": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "rerank": {
+              "type": "boolean"
+            },
+            "chunkSize": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": ["enabled"],
+          "additionalProperties": false
+        },
+        "security": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "string",
+              "enum": ["none", "oidc"]
+            },
+            "rateLimit": {
+              "type": "string",
+              "pattern": "^\\d+\\/(sec|min|hour|day)$"
+            },
+            "tokenBudget": {
+              "type": "string",
+              "pattern": "^\\d+\\/(sec|min|hour|day)$"
+            },
+            "piiMasking": {
+              "type": "boolean"
+            },
+            "injectionDetection": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "cache": {
+          "type": "object",
+          "properties": {
+            "exact": {
+              "type": "string",
+              "enum": ["none", "redis"]
+            },
+            "semantic": {
+              "type": "object",
+              "properties": {
+                "threshold": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "scope": {
+                  "default": "user",
+                  "type": "string",
+                  "enum": ["user", "global"]
+                }
+              },
+              "required": ["threshold"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "maxIterations": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "timeout": {
+              "type": "string",
+              "pattern": "^\\d+[smhd]$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "observability": {
+          "type": "object",
+          "properties": {
+            "otel": {
+              "type": "boolean"
+            },
+            "metrics": {
+              "type": "string",
+              "enum": ["none", "prometheus"]
+            },
+            "grafanaDashboard": {
+              "type": "boolean"
+            },
+            "feedback": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "gdpr": {
+          "type": "object",
+          "properties": {
+            "euOnly": {
+              "type": "boolean"
+            },
+            "allowNonEuProviders": {
+              "type": "boolean"
+            },
+            "erasureEndpoint": {
+              "type": "boolean"
+            },
+            "logsWithoutPii": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "evals": {
+          "type": "object",
+          "properties": {
+            "dataset": {
+              "type": "string",
+              "minLength": 1
+            },
+            "redTeam": {
+              "type": "boolean"
+            },
+            "ciModel": {
+              "type": "string",
+              "enum": ["ollama"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "interface": {
+          "default": ["rest"],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["rest", "chat-ui"]
+          }
+        },
+        "deploy": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["docker-compose", "helm"]
+          }
+        }
+      },
+      "required": ["name", "model"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["agent"],
+  "additionalProperties": false
+}
