@@ -54,7 +54,13 @@ interface ModelToolBase {
 
 export type ModelTool =
   | (ModelToolBase & { kind: 'http'; method: string; url: string })
-  | (ModelToolBase & { kind: 'java'; baseClassName: string });
+  | (ModelToolBase & {
+      kind: 'java';
+      /** Generated interface the tool delegates to. */
+      handlerInterface: string;
+      /** User-owned implementation, created once and never rewritten. */
+      handlerClass: string;
+    });
 
 /** Spring AI starter and configuration keys per provider (non-deprecated keys of Spring AI 2.0.1). */
 const PROVIDERS: Record<Provider, Omit<ProviderSettings, 'id' | 'model' | 'temperature' | 'maxTokens'>> = {
@@ -146,7 +152,12 @@ export function buildModel(file: AgentFile): GenerationModel {
       };
       return tool.type === 'http'
         ? { ...base, kind: 'http', method: tool.method, url: tool.url }
-        : { ...base, kind: 'java', baseClassName: `${pascalCase(tool.name)}ToolBase` };
+        : {
+            ...base,
+            kind: 'java',
+            handlerInterface: `${pascalCase(tool.name)}Handler`,
+            handlerClass: `Default${pascalCase(tool.name)}Handler`,
+          };
     }),
   };
 }

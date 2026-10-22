@@ -97,7 +97,8 @@ describe('buildModel', () => {
     expect(java).toMatchObject({
       kind: 'java',
       className: 'BookLeaveTool',
-      baseClassName: 'BookLeaveToolBase',
+      handlerInterface: 'BookLeaveHandler',
+      handlerClass: 'DefaultBookLeaveHandler',
       methodName: 'bookLeave',
       params: [
         { name: 'date', javaType: 'String', required: true },
