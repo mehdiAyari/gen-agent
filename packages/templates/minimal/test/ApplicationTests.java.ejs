@@ -1,0 +1,91 @@
+package <%= project.basePackage %>;
+
+<%- imports %>
+
+/**
+ * Starts the whole application with a fake model: checks the wiring (system prompt, memory, tools) and the REST
+ * endpoint without calling a real provider.
+ */
+<%_ if (provider.apiKeyEnv) { _%>
+@<%= type('org.springframework.boot.test.context.SpringBootTest') %>(properties = "<%= provider.propertyPrefix %>.api-key=test-key")
+<%_ } else { _%>
+@<%= type('org.springframework.boot.test.context.SpringBootTest') %>
+<%_ } _%>
+@<%= type('org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc') %>
+class <%= project.applicationClass %>Tests {
+
+    @<%= type('org.springframework.beans.factory.annotation.Autowired') %>
+    <%= type('org.springframework.test.web.servlet.assertj.MockMvcTester') %> mockMvc;
+
+    @Autowired
+    RecordingChatModel chatModel;
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void answersOnTheChatEndpoint() {
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(post("""
+                {"message": "Hello"}
+                """))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.reply")
+                .isEqualTo("Hello from the agent");
+    }
+
+    @Test
+    void sendsTheSystemPromptAndRemembersTheConversation() {
+        post("""
+                {"conversationId": "c1", "message": "My name is Ada"}
+                """);
+        post("""
+                {"conversationId": "c1", "message": "What is my name?"}
+                """);
+
+        assertThat(chatModel.lastPrompt().getContents()).contains("You are", "My name is Ada", "What is my name?");
+    }
+<%_ if (prompt.aiDisclosure) { _%>
+
+    @Test
+    void tellsClientsTheReplyComesFromAnAi() {
+        assertThat(post("""
+                {"message": "Hello"}
+                """))
+                .bodyJson()
+                .extractingPath("$.aiGenerated")
+                .isEqualTo(true);
+    }
+<%_ } _%>
+
+    private <%= type('org.springframework.test.web.servlet.assertj.MvcTestResult') %> post(String body) {
+        return mockMvc.post()
+                .uri("/api/chat")
+                .contentType(<%= type('org.springframework.http.MediaType') %>.APPLICATION_JSON)
+                .content(body)
+                .exchange();
+    }
+
+    @<%= type('org.springframework.boot.test.context.TestConfiguration') %>(proxyBeanMethods = false)
+    static class FakeModelConfiguration {
+
+        @<%= type('org.springframework.context.annotation.Bean') %>
+        @<%= type('org.springframework.context.annotation.Primary') %>
+        RecordingChatModel chatModel() {
+            return new RecordingChatModel();
+        }
+    }
+
+    /** Answers every prompt with the same text and keeps the last prompt for assertions. */
+    static class RecordingChatModel implements <%= type('org.springframework.ai.chat.model.ChatModel') %> {
+
+        private volatile <%= type('org.springframework.ai.chat.prompt.Prompt') %> lastPrompt;
+
+        @Override
+        public <%= type('org.springframework.ai.chat.model.ChatResponse') %> call(Prompt prompt) {
+            this.lastPrompt = prompt;
+            return new ChatResponse(<%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.chat.model.Generation') %>(new <%= type('org.springframework.ai.chat.messages.AssistantMessage') %>("Hello from the agent"))));
+        }
+
+        Prompt lastPrompt() {
+            return lastPrompt;
+        }
+    }
+}

@@ -1,0 +1,36 @@
+// Managed by gen-agent: changes here are overwritten. Edit agent.yaml and regenerate.
+package <%= project.generatedPackage %>;
+
+<%- imports %>
+
+/** Wires the chat client: system prompt, conversation memory and the tools the model may call. */
+@<%= type('org.springframework.context.annotation.Configuration') %>(proxyBeanMethods = false)
+<%_ if (features.httpTools) { _%>
+@<%= type('org.springframework.boot.context.properties.EnableConfigurationProperties') %>({AgentProperties.class<%_ for (const tool of tools) { if (tool.kind === 'http') { _%>, <%= type(`${project.generatedPackage}.tool.${tool.className}Properties`) %>.class<%_ } } _%>})
+<%_ } else { _%>
+@<%= type('org.springframework.boot.context.properties.EnableConfigurationProperties') %>(AgentProperties.class)
+<%_ } _%>
+class AgentConfiguration {
+
+    @<%= type('org.springframework.context.annotation.Bean') %>
+    <%= type('org.springframework.ai.chat.memory.ChatMemory') %> chatMemory(AgentProperties properties) {
+        return <%= type('org.springframework.ai.chat.memory.MessageWindowChatMemory') %>.builder()
+                .chatMemoryRepository(new <%= type('org.springframework.ai.chat.memory.InMemoryChatMemoryRepository') %>())
+                .maxMessages(properties.memory().window())
+                .build();
+    }
+
+    @Bean
+    <%= type('org.springframework.ai.chat.client.ChatClient') %> chatClient(
+            ChatClient.Builder builder,
+            ChatMemory chatMemory,
+            AgentProperties properties<%_ for (const tool of tools) { _%>,
+            <%= type(`${project.generatedPackage}.tool.${tool.className}`) %> <%= tool.methodName %>Tool<%_ } _%>) {
+        return builder.defaultSystem(properties.systemPrompt())
+                .defaultAdvisors(<%= type('org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor') %>.builder(chatMemory).build())
+<%_ if (tools.length > 0) { _%>
+                .defaultTools(<%= tools.map((tool) => `${tool.methodName}Tool`).join(', ') %>)
+<%_ } _%>
+                .build();
+    }
+}

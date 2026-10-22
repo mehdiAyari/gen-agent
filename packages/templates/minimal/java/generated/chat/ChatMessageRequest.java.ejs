@@ -1,0 +1,14 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.chat;
+
+<%- imports %>
+
+/**
+ * A message sent to the agent.
+ *
+ * @param conversationId conversation to continue; a new one is started when absent
+ * @param message what the user says
+ */
+record ChatMessageRequest(
+        @<%= type('jakarta.validation.constraints.Size') %>(max = 100) String conversationId,
+        @<%= type('jakarta.validation.constraints.NotBlank') %> @Size(max = 4000) String message) {}

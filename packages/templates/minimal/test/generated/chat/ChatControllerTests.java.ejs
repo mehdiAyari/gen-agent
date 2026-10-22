@@ -1,0 +1,42 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.chat;
+
+<%- imports %>
+
+@<%= type('org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest') %>(ChatController.class)
+class ChatControllerTests {
+
+    @<%= type('org.springframework.beans.factory.annotation.Autowired') %>
+    <%= type('org.springframework.test.web.servlet.assertj.MockMvcTester') %> mockMvc;
+
+    @<%= type('org.springframework.test.context.bean.override.mockito.MockitoBean') %>
+    ChatService chatService;
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void returnsTheReplyOfTheAgent() {
+        <%= staticImport('org.mockito.BDDMockito.given') %>(chatService.reply(<%= staticImport('org.mockito.ArgumentMatchers.any') %>())).willReturn(new ChatMessageResponse("c1", "Hi!"));
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(mockMvc.post()
+                        .uri("/api/chat")
+                        .contentType(<%= type('org.springframework.http.MediaType') %>.APPLICATION_JSON)
+                        .content("""
+                                {"message": "Hello"}
+                                """))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.reply")
+                .isEqualTo("Hi!");
+    }
+
+    @Test
+    void rejectsABlankMessageWithAProblemDetail() {
+        assertThat(mockMvc.post()
+                        .uri("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"message": " "}
+                                """))
+                .hasStatus(<%= type('org.springframework.http.HttpStatus') %>.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+    }
+}

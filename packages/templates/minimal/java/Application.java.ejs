@@ -1,0 +1,11 @@
+package <%= project.basePackage %>;
+
+<%- imports %>
+
+@<%= type('org.springframework.boot.autoconfigure.SpringBootApplication') %>
+public class <%= project.applicationClass %> {
+
+    public static void main(String[] args) {
+        <%= type('org.springframework.boot.SpringApplication') %>.run(<%= project.applicationClass %>.class, args);
+    }
+}

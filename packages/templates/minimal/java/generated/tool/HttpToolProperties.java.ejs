@@ -1,0 +1,12 @@
+// Managed by gen-agent: changes here are overwritten. Set the URL in application.yml.
+package <%= project.generatedPackage %>.tool;
+
+<%- imports %>
+
+/**
+ * Settings of the {@code <%= item.name %>} tool.
+ *
+ * @param url endpoint called by the tool
+ */
+@<%= type('org.springframework.boot.context.properties.ConfigurationProperties') %>("agent.tools.<%= item.name %>")
+public record <%= item.className %>Properties(<%= type('java.net.URI') %> url) {}

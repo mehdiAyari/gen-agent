@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: ticket-bot
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY}
+      chat:
+        model: claude-sonnet-5
+        max-tokens: 1024
+  mvc:
+    problemdetails:
+      enabled: true
+
+agent:
+  system-prompt: classpath:prompts/system.md
+  memory:
+    window: 10
+  tools:
+    create-ticket:
+      url: https://tickets.example.org/api/tickets
+    service-status:
+      url: https://status.example.org/api/status

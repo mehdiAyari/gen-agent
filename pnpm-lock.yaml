@@ -203,6 +203,15 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@22.20.5)(vite@8.3.5(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))
 
+  e2e:
+    dependencies:
+      '@gen-agent/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@gen-agent/templates':
+        specifier: workspace:*
+        version: link:../packages/templates
+
   packages/core:
     dependencies:
       ejs:
@@ -224,6 +233,12 @@ importers:
       '@types/ejs':
         specifier: ^3.1.5
         version: 3.1.5
+
+  packages/templates:
+    dependencies:
+      '@gen-agent/core':
+        specifier: workspace:*
+        version: link:../core
 
 packages:
 

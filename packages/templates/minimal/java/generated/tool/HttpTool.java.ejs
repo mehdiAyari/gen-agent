@@ -1,0 +1,48 @@
+// Managed by gen-agent: changes here are overwritten. Edit the tool in agent.yaml and regenerate.
+package <%= project.generatedPackage %>.tool;
+
+<%- imports %>
+
+/** Calls {@code <%= item.method %> <%= item.url %>} for the model. */
+@<%= type('org.springframework.stereotype.Component') %>
+public class <%= item.className %> {
+
+    private final <%= type('org.springframework.web.client.RestClient') %> restClient;
+
+    <%= item.className %>(RestClient.Builder restClientBuilder, <%= item.className %>Properties properties) {
+        this.restClient = restClientBuilder.baseUrl(properties.url()).build();
+    }
+<%_ if (item.sendsBody && item.params.length > 0) { _%>
+
+    record Request(<%- item.params.map((param) => `${param.javaType} ${param.name}`).join(', ') %>) {}
+<%_ } _%>
+
+<%- include('tool-method-signature', { tool: item }) %> {
+<%_ if (item.sendsBody) { _%>
+        return restClient
+                .<%= item.clientMethod %>()
+<%_   if (item.params.length > 0) { _%>
+                .contentType(<%= type('org.springframework.http.MediaType') %>.APPLICATION_JSON)
+                .body(new Request(<%= item.params.map((param) => param.name).join(', ') %>))
+<%_   } _%>
+                .retrieve()
+                .body(String.class);
+<%_ } else if (item.params.length > 0) { _%>
+        return restClient
+                .<%= item.clientMethod %>()
+                .uri(uri -> uri
+<%_   for (const param of item.params) { _%>
+<%_     if (param.required) { _%>
+                        .queryParam("<%= param.name %>", <%= param.name %>)
+<%_     } else { _%>
+                        .queryParamIfPresent("<%= param.name %>", <%= type('java.util.Optional') %>.ofNullable(<%= param.name %>))
+<%_     } _%>
+<%_   } _%>
+                        .build())
+                .retrieve()
+                .body(String.class);
+<%_ } else { _%>
+        return restClient.<%= item.clientMethod %>().retrieve().body(String.class);
+<%_ } _%>
+    }
+}

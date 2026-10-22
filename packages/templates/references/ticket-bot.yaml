@@ -1,0 +1,23 @@
+# Anthropic, a POST tool sending a JSON body, a GET tool without parameters.
+agent:
+  name: ticket-bot
+  description: Opens support tickets
+  model:
+    provider: anthropic
+    name: claude-sonnet-5
+    maxTokens: 1024
+  memory:
+    window: 10
+  tools:
+    - name: create-ticket
+      type: http
+      method: POST
+      description: Creates a support ticket
+      url: https://tickets.example.org/api/tickets
+      params:
+        - { name: title, type: string, required: true }
+        - { name: priority, type: integer }
+    - name: service-status
+      type: http
+      description: Current status of the service
+      url: https://status.example.org/api/status

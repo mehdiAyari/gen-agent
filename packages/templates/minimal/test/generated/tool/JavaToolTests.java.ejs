@@ -1,0 +1,14 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.tool;
+
+<%- imports %>
+
+class <%= item.className %>Tests {
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void delegatesToTheHandler() {
+        <%= item.className %> tool = new <%= item.className %>((<%= item.params.map((param) => param.name).join(', ') %>) -> "handled");
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(tool.<%= item.methodName %>(<%= item.params.map((param) => param.sample).join(', ') %>)).isEqualTo("handled");
+    }
+}

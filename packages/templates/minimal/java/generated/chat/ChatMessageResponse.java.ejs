@@ -1,0 +1,22 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.chat;
+
+/**
+ * The agent's reply.
+ *
+ * @param conversationId conversation to send with the next message to keep the context
+ * @param reply what the agent answers
+<%_ if (prompt.aiDisclosure) { _%>
+ * @param aiGenerated always {@code true}: tells clients the reply comes from an AI, as the EU AI Act requires
+<%_ } _%>
+ */
+<%_ if (prompt.aiDisclosure) { _%>
+record ChatMessageResponse(String conversationId, String reply, boolean aiGenerated) {
+
+    ChatMessageResponse(String conversationId, String reply) {
+        this(conversationId, reply, true);
+    }
+}
+<%_ } else { _%>
+record ChatMessageResponse(String conversationId, String reply) {}
+<%_ } _%>

@@ -1,0 +1,20 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.chat;
+
+<%- imports %>
+
+@<%= type('org.springframework.web.bind.annotation.RestController') %>
+@<%= type('org.springframework.web.bind.annotation.RequestMapping') %>("/api/chat")
+class ChatController {
+
+    private final ChatService chatService;
+
+    ChatController(ChatService chatService) {
+        this.chatService = chatService;
+    }
+
+    @<%= type('org.springframework.web.bind.annotation.PostMapping') %>
+    ChatMessageResponse chat(@<%= type('jakarta.validation.Valid') %> @<%= type('org.springframework.web.bind.annotation.RequestBody') %> ChatMessageRequest request) {
+        return chatService.reply(request);
+    }
+}

@@ -1,0 +1,19 @@
+<%# Shared by Java and HTTP tools. Whitespace does not matter: prettier-plugin-java reformats the output. _%>
+<%_ if (tool.description) { _%>
+    @<%= type('org.springframework.ai.tool.annotation.Tool') %>(description = <%- javaString(tool.description) %>)
+<%_ } else { _%>
+    @<%= type('org.springframework.ai.tool.annotation.Tool') %>
+<%_ } _%>
+    public String <%= tool.methodName %>(
+<%_ tool.params.forEach((param, index) => { _%>
+        <%= index > 0 ? ',' : '' %>
+<%_   if (!param.required && param.description) { _%>
+        @<%= type('org.springframework.ai.tool.annotation.ToolParam') %>(required = false, description = <%- javaString(param.description) %>)
+<%_   } else if (!param.required) { _%>
+        @<%= type('org.springframework.ai.tool.annotation.ToolParam') %>(required = false)
+<%_   } else if (param.description) { _%>
+        @<%= type('org.springframework.ai.tool.annotation.ToolParam') %>(description = <%- javaString(param.description) %>)
+<%_   } _%>
+        <%= param.javaType %> <%= param.name %>
+<%_ }) _%>
+    )

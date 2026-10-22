@@ -1,0 +1,6 @@
+# OpenAI, no tool, no description: the smallest project.
+agent:
+  name: openai-chat
+  model:
+    provider: openai
+    name: gpt-5-mini

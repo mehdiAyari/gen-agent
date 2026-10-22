@@ -1,0 +1,14 @@
+# Ollama (no API key), a custom package, no AI disclosure, a Java tool without parameters.
+agent:
+  name: local-agent
+  package: io.acme.agents.local
+  model:
+    provider: ollama
+    name: llama3.1
+  prompt:
+    system: prompts/local-agent.md
+    aiDisclosure: false
+  tools:
+    - name: current-time
+      type: java
+      description: Current date and time of the server

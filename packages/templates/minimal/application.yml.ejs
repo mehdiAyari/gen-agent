@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: <%= project.artifactId %>
+  ai:
+    <%= provider.configKey %>:
+<%_ if (provider.apiKeyEnv) { _%>
+      api-key: ${<%= provider.apiKeyEnv %>}
+<%_ } _%>
+      chat:
+        model: <%= yamlString(provider.model) %>
+<%_ if (provider.temperature !== undefined) { _%>
+        temperature: <%= provider.temperature %>
+<%_ } _%>
+<%_ if (provider.maxTokens !== undefined) { _%>
+        <%= provider.maxTokensProperty %>: <%= provider.maxTokens %>
+<%_ } _%>
+  mvc:
+    problemdetails:
+      enabled: true
+
+agent:
+  system-prompt: classpath:<%= prompt.resource %>
+  memory:
+    window: <%= memory.window %>
+<%_ if (features.httpTools) { _%>
+  tools:
+<%_   for (const tool of tools) { _%>
+<%_     if (tool.kind === 'http') { _%>
+    <%= tool.name %>:
+      url: <%= yamlString(tool.url) %>
+<%_     } _%>
+<%_   } _%>
+<%_ } _%>

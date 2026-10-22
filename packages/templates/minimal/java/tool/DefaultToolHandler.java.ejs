@@ -1,0 +1,13 @@
+package <%= project.basePackage %>.tool;
+
+<%- imports %>
+
+@<%= type('org.springframework.stereotype.Component') %>
+class <%= item.handlerClass %> implements <%= type(`${project.generatedPackage}.tool.${item.handlerInterface}`) %> {
+
+    @Override
+    public String <%= item.methodName %>(<%= item.params.map((param) => `${param.javaType} ${param.name}`).join(', ') %>) {
+        // Implement <%= item.name %> here: the text you return is what the model reads.
+        throw new UnsupportedOperationException("<%= item.name %> is not implemented yet");
+    }
+}

@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: openai-chat
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        model: gpt-5-mini
+  mvc:
+    problemdetails:
+      enabled: true
+
+agent:
+  system-prompt: classpath:prompts/system.md
+  memory:
+    window: 20

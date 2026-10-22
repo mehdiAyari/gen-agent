@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: hr-assistant
+  ai:
+    mistralai:
+      api-key: ${MISTRAL_API_KEY}
+      chat:
+        model: mistral-large-latest
+        temperature: 0.3
+        max-tokens: 2000
+  mvc:
+    problemdetails:
+      enabled: true
+
+agent:
+  system-prompt: classpath:prompts/system.md
+  memory:
+    window: 20
+  tools:
+    weather-forecast:
+      url: https://api.open-meteo.com/v1/forecast

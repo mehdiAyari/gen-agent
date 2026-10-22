@@ -1,0 +1,8 @@
+// Managed by gen-agent: changes here are overwritten. Implement it in <%= item.handlerClass %>.
+package <%= project.generatedPackage %>.tool;
+
+/** Business logic of the {@code <%= item.name %>} tool; the returned text is sent back to the model. */
+public interface <%= item.handlerInterface %> {
+
+    String <%= item.methodName %>(<%= item.params.map((param) => `${param.javaType} ${param.name}`).join(', ') %>);
+}

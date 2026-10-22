@@ -1,0 +1,26 @@
+# Mistral, an HTTP tool with required and optional parameters, a Java tool.
+agent:
+  name: hr-assistant
+  description: Internal HR assistant
+  model:
+    provider: mistral
+    name: mistral-large-latest
+    temperature: 0.3
+    maxTokens: 2000
+  tools:
+    - name: weather-forecast
+      type: http
+      description: Weather forecast for a location
+      url: https://api.open-meteo.com/v1/forecast
+      params:
+        - { name: latitude, type: number, required: true, description: Latitude in degrees }
+        - { name: longitude, type: number, required: true, description: Longitude in degrees }
+        - { name: forecastDays, type: integer, description: Number of days to forecast }
+    - name: book-leave
+      type: java
+      description: Books a day off for the current employee
+      params:
+        - { name: date, type: string, required: true, description: 'Day off, ISO-8601' }
+        - { name: halfDay, type: boolean }
+  gdpr:
+    euOnly: true

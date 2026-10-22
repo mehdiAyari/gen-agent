@@ -1,0 +1,25 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.tool;
+
+<%- imports %>
+
+@<%= type('org.springframework.boot.restclient.test.autoconfigure.RestClientTest') %>(<%= item.className %>.class)
+@<%= type('org.springframework.boot.context.properties.EnableConfigurationProperties') %>(<%= item.className %>Properties.class)
+class <%= item.className %>Tests {
+
+    @<%= type('org.springframework.beans.factory.annotation.Autowired') %>
+    <%= item.className %> tool;
+
+    @Autowired
+    <%= type('org.springframework.test.web.client.MockRestServiceServer') %> server;
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void callsTheConfiguredEndpointAndReturnsItsBody() {
+        server.expect(<%= staticImport('org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo') %>(<%= staticImport('org.hamcrest.Matchers.startsWith') %>(<%- javaString(item.url) %>)))
+                .andExpect(<%= staticImport('org.springframework.test.web.client.match.MockRestRequestMatchers.method') %>(<%= type('org.springframework.http.HttpMethod') %>.<%= item.method %>))
+                .andRespond(<%= staticImport('org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess') %>("{\"ok\":true}", <%= type('org.springframework.http.MediaType') %>.APPLICATION_JSON));
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(tool.<%= item.methodName %>(<%= item.params.map((param) => param.sample).join(', ') %>)).isEqualTo("{\"ok\":true}");
+        server.verify();
+    }
+}

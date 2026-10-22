@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: local-agent
+  ai:
+    ollama:
+      chat:
+        model: llama3.1
+  mvc:
+    problemdetails:
+      enabled: true
+
+agent:
+  system-prompt: classpath:prompts/local-agent.md
+  memory:
+    window: 20

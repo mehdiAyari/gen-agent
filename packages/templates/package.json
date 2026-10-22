@@ -1,0 +1,26 @@
+{
+  "name": "@gen-agent/templates",
+  "version": "0.0.0",
+  "description": "gen-agent templates of the generated Spring AI project",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "minimal",
+    "references"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@gen-agent/core": "workspace:*"
+  }
+}

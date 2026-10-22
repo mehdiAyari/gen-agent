@@ -1,0 +1,19 @@
+// Managed by gen-agent: changes here are overwritten. Implement the tool in <%= item.handlerClass %>.
+package <%= project.generatedPackage %>.tool;
+
+<%- imports %>
+
+/** Exposes {@code <%= item.name %>} to the model and delegates the work to {@link <%= item.handlerInterface %>}. */
+@<%= type('org.springframework.stereotype.Component') %>
+public class <%= item.className %> {
+
+    private final <%= item.handlerInterface %> handler;
+
+    <%= item.className %>(<%= item.handlerInterface %> handler) {
+        this.handler = handler;
+    }
+
+<%- include('tool-method-signature', { tool: item }) %> {
+        return handler.<%= item.methodName %>(<%= item.params.map((param) => param.name).join(', ') %>);
+    }
+}
