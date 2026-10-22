@@ -5,7 +5,7 @@ import { PROVIDERS, type Provider } from '@gen-agent/core';
 import type { NewAnswers, NewTool } from './commands.js';
 
 /** Suggested model per provider; any model name the provider accepts can be typed instead. */
-export const DEFAULT_MODELS: Record<Provider, string> = {
+const DEFAULT_MODELS: Record<Provider, string> = {
   openai: 'gpt-5-mini',
   anthropic: 'claude-sonnet-5',
   mistral: 'mistral-small-latest',

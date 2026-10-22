@@ -5,3 +5,4 @@ docs/dossier.md
 **/.turbo/
 **/__snapshots__/
 e2e/output/
+packages/cli/minimal/

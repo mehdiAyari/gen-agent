@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@gen-agent/core": "workspace:*",
-    "@gen-agent/templates": "workspace:*"
+    "@gen-agent/templates": "workspace:*",
+    "gen-agent": "workspace:*"
   }
 }
