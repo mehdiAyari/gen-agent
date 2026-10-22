@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "title": "gen-agent — Spring AI agent generator",
+    "description": "Describe your agent, get a production-ready Spring AI project. Generated in your browser."
+  },
+  "nav": {
+    "generator": "Generator",
+    "gallery": "Gallery",
+    "docs": "Docs",
+    "language": "Language",
+    "skipToContent": "Skip to content",
+    "main": "Main"
+  },
+  "home": {
+    "headline": "Describe your agent, get a production-ready Spring AI project.",
+    "openGenerator": "Open the generator"
+  },
+  "footer": {
+    "note": "Open source under the Apache 2.0 license. Projects are generated in your browser: nothing is sent to a server."
+  }
+}

@@ -1,0 +1,105 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+/* Dark mode follows the operating system. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-atkinson);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-heading: var(--font-atkinson);
+  --color-generated: var(--generated);
+  --color-owned: var(--owned);
+  --color-warning: var(--warning);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* gen-agent palette: Paper, Ink, Leaf (yours), Steel (managed by gen-agent), Signal (warnings). All text pairs pass WCAG AA. */
+  --background: #f6f7f4;
+  --foreground: #17201b;
+  --card: #fbfcfa;
+  --card-foreground: #17201b;
+  --popover: #ffffff;
+  --popover-foreground: #17201b;
+  --primary: #357a28;
+  --primary-foreground: #ffffff;
+  --secondary: #e9ede6;
+  --secondary-foreground: #17201b;
+  --muted: #eceee9;
+  --muted-foreground: #55625a;
+  --accent: #e3ebdf;
+  --accent-foreground: #17201b;
+  --destructive: #b4312a;
+  --border: #d9ded6;
+  --input: #cfd6cb;
+  --ring: #357a28;
+  --radius: 0.5rem;
+  /* Who owns a generated file (docs/adr/0001): the same two colors everywhere in the UI. */
+  --owned: #357a28;
+  --generated: #4a5b7a;
+  --warning: #7f6310;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #14211a;
+    --foreground: #e8ede6;
+    --card: #1a2a21;
+    --card-foreground: #e8ede6;
+    --popover: #1a2a21;
+    --popover-foreground: #e8ede6;
+    --primary: #6fbf5a;
+    --primary-foreground: #0f1a13;
+    --secondary: #22332a;
+    --secondary-foreground: #e8ede6;
+    --muted: #22332a;
+    --muted-foreground: #a3b2a8;
+    --accent: #263a2e;
+    --accent-foreground: #e8ede6;
+    --destructive: #e5675e;
+    --border: #2c3e33;
+    --input: #36493d;
+    --ring: #6fbf5a;
+    --owned: #6fbf5a;
+    --generated: #93a6cb;
+    --warning: #e0b94a;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

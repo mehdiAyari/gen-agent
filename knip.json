@@ -11,5 +11,8 @@
       "entry": ["scripts/*.js"]
     }
   },
-  "ignore": [".claude/**"]
+  "ignore": [".claude/**"],
+  "ignoreIssues": {
+    "packages/web/components/ui/**": ["exports", "types"]
+  }
 }

@@ -6,3 +6,5 @@ docs/dossier.md
 **/__snapshots__/
 e2e/output/
 packages/templates/src/minimal-sources.ts
+packages/web/.next/
+packages/web/out/
