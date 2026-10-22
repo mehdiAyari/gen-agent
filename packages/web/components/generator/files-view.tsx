@@ -51,7 +51,7 @@ export function FilesView({ files, pending }: FilesViewProps) {
           </li>
         ))}
       </ul>
-      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,12rem)_minmax(0,1fr)] border-t md:grid-cols-[15rem_minmax(0,1fr)] md:grid-rows-1">
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,12rem)_minmax(0,1fr)] border-t md:grid-cols-[17rem_minmax(0,1fr)] md:grid-rows-1">
         <nav aria-label={t('fileList')} className="min-h-0 overflow-y-auto border-b py-2 md:border-r md:border-b-0">
           <ul>
             {directoriesOf(files).map(([directory, entries]) => (

@@ -29,9 +29,6 @@ export function SiteHeader() {
           <Link href="/gallery" className="hover:text-primary">
             {t('gallery')}
           </Link>
-          <Link href="/docs" className="hover:text-primary">
-            {t('docs')}
-          </Link>
         </nav>
         <LocaleSwitcher label={t('language')} />
       </div>

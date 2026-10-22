@@ -3,11 +3,12 @@
 import { CopyIcon, DownloadIcon, FileDownIcon, TriangleAlertIcon, UploadIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
-import { useMemo, useReducer, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState, type ChangeEvent } from 'react';
 import { toast } from 'sonner';
 
 import { formFromYaml, formToYaml, validateForm } from '@/lib/agent-form';
 import { saveFile } from '@/lib/download';
+import { exampleById } from '@/lib/examples';
 import { cliCommand, generatorReducer, initialGeneratorState } from '@/lib/generator-state';
 import { useProjectFiles } from '@/lib/use-project-files';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -38,6 +39,12 @@ export function Generator() {
   const [tab, setTab] = useState<Tab>('files');
   const [downloading, setDownloading] = useState(false);
   const importInput = useRef<HTMLInputElement>(null);
+
+  // Opened from the gallery: /generator/?example=weather-agent. Read once, after the static page is hydrated.
+  useEffect(() => {
+    const example = exampleById(new URLSearchParams(window.location.search).get('example'));
+    if (example !== undefined) dispatch({ type: 'yaml', text: example.yaml });
+  }, []);
 
   const { form } = state;
   const validation = useMemo(() => validateForm(form), [form]);

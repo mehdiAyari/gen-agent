@@ -1,22 +1,40 @@
 {
   "metadata": {
     "title": "gen-agent — générateur d'agents Spring AI",
-    "description": "Décris ton agent, obtiens un projet Spring AI prêt pour la production. Généré dans ton navigateur."
+    "description": "Décrivez votre agent, obtenez un projet Spring AI prêt pour la production. Généré dans votre navigateur."
   },
   "nav": {
     "generator": "Générateur",
-    "gallery": "Galerie",
-    "docs": "Docs",
+    "gallery": "Exemples",
     "language": "Langue",
     "skipToContent": "Aller au contenu",
     "main": "Principale"
   },
   "home": {
-    "headline": "Décris ton agent, obtiens un projet Spring AI prêt pour la production.",
-    "openGenerator": "Ouvrir le générateur"
+    "headline": "Décrivez votre agent, obtenez un projet Spring AI prêt pour la production.",
+    "lead": "gen-agent transforme un court agent.yaml en projet Spring Boot qui compile, passe ses tests et tourne. Dans votre navigateur ou en ligne de commande, avec les mêmes templates.",
+    "openGenerator": "Ouvrir le générateur",
+    "seeExamples": "Voir les exemples",
+    "stepsTitle": "Comment ça marche",
+    "steps": {
+      "describe": {
+        "title": "Décrire",
+        "text": "Nom, modèle, outils. Avec le formulaire ou directement dans agent.yaml : les deux restent synchronisés."
+      },
+      "generate": {
+        "title": "Générer",
+        "text": "Un projet Maven Java 21, généré dans votre navigateur. Rien n'est envoyé à un serveur."
+      },
+      "run": {
+        "title": "Lancer",
+        "text": "Seul Java est nécessaire : le Maven Wrapper télécharge le reste. Les tests utilisent un faux modèle et ne coûtent rien."
+      }
+    },
+    "ownershipTitle": "Votre code et le code généré ne se mélangent jamais",
+    "ownershipText": "Tout ce qui est sous generated/ appartient à gen-agent ; l'implémentation des outils et le prompt système vous appartiennent. .gen-agent.json note à qui appartient chaque fichier, pour régénérer le projet sans risque."
   },
   "footer": {
-    "note": "Open source sous licence Apache 2.0. Les projets sont générés dans ton navigateur : rien n’est envoyé à un serveur."
+    "note": "Open source sous licence Apache 2.0. Les projets sont générés dans votre navigateur : rien n’est envoyé à un serveur."
   },
   "generator": {
     "metaTitle": "Générateur — gen-agent",
@@ -98,7 +116,7 @@
       "ownerHint": {
         "user": "À vous : modifiez librement, jamais écrasé",
         "merged": "Partagé : gen-agent met à jour ses parties, garde les vôtres",
-        "generated": "gen-agent : regénéré, ne pas modifier"
+        "generated": "gen-agent : régénéré, ne pas modifier"
       }
     },
     "actions": {
@@ -115,6 +133,33 @@
       "errors": "{count, plural, =0 {Prêt} one {# erreur à corriger} other {# erreurs à corriger}}",
       "warnings": "{count, plural, one {# avertissement} other {# avertissements}}",
       "downloadFailed": "Le projet ne peut pas être généré"
+    }
+  },
+  "gallery": {
+    "metaTitle": "Exemples — gen-agent",
+    "title": "Exemples",
+    "lead": "Des agents prêts à l'emploi. Ouvrez-en un dans le générateur, adaptez ce qu'il faut, téléchargez le projet.",
+    "open": "Ouvrir dans le générateur",
+    "tools": "{count, plural, =0 {Aucun outil} one {# outil} other {# outils}}",
+    "euOnly": "UE uniquement",
+    "toolsLabel": "Outils de {name}",
+    "items": {
+      "support-bot": {
+        "title": "Support client",
+        "summary": "Répond aux clients sur leurs commandes et passe la main à un humain avec un ticket."
+      },
+      "hr-assistant": {
+        "title": "Assistant RH",
+        "summary": "Indique aux salariés leurs jours de congé restants et les pose, avec des outils Java que vous implémentez."
+      },
+      "devops-agent": {
+        "title": "Agent DevOps",
+        "summary": "Vérifie l'état de GitHub et liste les derniers déploiements d'un service."
+      },
+      "weather-agent": {
+        "title": "Agent météo",
+        "summary": "Donne la météo actuelle partout, avec une API gratuite et un modèle local : aucune clé d'API."
+      }
     }
   }
 }

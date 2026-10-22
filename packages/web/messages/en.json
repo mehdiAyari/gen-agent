@@ -5,15 +5,33 @@
   },
   "nav": {
     "generator": "Generator",
-    "gallery": "Gallery",
-    "docs": "Docs",
+    "gallery": "Examples",
     "language": "Language",
     "skipToContent": "Skip to content",
     "main": "Main"
   },
   "home": {
     "headline": "Describe your agent, get a production-ready Spring AI project.",
-    "openGenerator": "Open the generator"
+    "lead": "gen-agent turns a short agent.yaml into a Spring Boot project that compiles, passes its tests and runs. In your browser or from the command line, with the same templates.",
+    "openGenerator": "Open the generator",
+    "seeExamples": "See examples",
+    "stepsTitle": "How it works",
+    "steps": {
+      "describe": {
+        "title": "Describe",
+        "text": "Name, model, tools. With the form or straight in agent.yaml: both stay in sync."
+      },
+      "generate": {
+        "title": "Generate",
+        "text": "A Java 21 Maven project, generated in your browser. Nothing is sent to a server."
+      },
+      "run": {
+        "title": "Run",
+        "text": "Only Java is needed: the Maven Wrapper downloads the rest. Tests use a fake model and cost nothing."
+      }
+    },
+    "ownershipTitle": "Your code and generated code never mix",
+    "ownershipText": "Everything under generated/ belongs to gen-agent; tool implementations and the system prompt belong to you. .gen-agent.json records who owns each file, so the project can be regenerated safely."
   },
   "footer": {
     "note": "Open source under the Apache 2.0 license. Projects are generated in your browser: nothing is sent to a server."
@@ -115,6 +133,33 @@
       "errors": "{count, plural, =0 {Ready} one {# error to fix} other {# errors to fix}}",
       "warnings": "{count, plural, one {# warning} other {# warnings}}",
       "downloadFailed": "The project cannot be generated"
+    }
+  },
+  "gallery": {
+    "metaTitle": "Examples — gen-agent",
+    "title": "Examples",
+    "lead": "Ready-made agents to start from. Open one in the generator, change what you need, download the project.",
+    "open": "Open in the generator",
+    "tools": "{count, plural, =0 {No tool} one {# tool} other {# tools}}",
+    "euOnly": "EU only",
+    "toolsLabel": "Tools of {name}",
+    "items": {
+      "support-bot": {
+        "title": "Customer support",
+        "summary": "Answers customers about their orders and hands over to a human with a support ticket."
+      },
+      "hr-assistant": {
+        "title": "HR assistant",
+        "summary": "Tells employees how many days off they have left and books them, with Java tools you implement."
+      },
+      "devops-agent": {
+        "title": "DevOps agent",
+        "summary": "Checks GitHub's status and lists the last deployments of a service."
+      },
+      "weather-agent": {
+        "title": "Weather agent",
+        "summary": "Tells the current weather anywhere, with a free API and a local model: no API key at all."
+      }
     }
   }
 }
