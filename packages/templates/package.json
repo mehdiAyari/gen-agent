@@ -12,11 +12,10 @@
   },
   "files": [
     "dist",
-    "minimal",
     "references"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node scripts/embed-templates.js && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

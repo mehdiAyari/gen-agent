@@ -2,11 +2,14 @@
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "workspaces": {
     "packages/cli": {
-      "entry": ["scripts/*.js"],
       "ignoreDependencies": ["ejs", "prettier", "prettier-plugin-java", "zod"]
     },
     "e2e": {
       "ignoreDependencies": ["gen-agent"]
+    },
+    "packages/templates": {
+      "entry": ["scripts/*.js"]
     }
-  }
+  },
+  "ignore": [".claude/**"]
 }

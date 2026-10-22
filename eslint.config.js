@@ -4,7 +4,9 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/.turbo/**', 'e2e/output/**', '**/__snapshots__/**'] },
+  {
+    ignores: ['.claude/**', '**/dist/**', '**/node_modules/**', '**/.turbo/**', 'e2e/output/**', '**/__snapshots__/**'],
+  },
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,

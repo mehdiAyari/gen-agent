@@ -8,8 +8,7 @@
     "gen-agent": "./dist/bin.js"
   },
   "files": [
-    "dist",
-    "minimal"
+    "dist"
   ],
   "engines": {
     "node": ">=22"
@@ -23,7 +22,7 @@
     "java"
   ],
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --noEmit -p tsconfig.build.json && esbuild src/bin.ts --bundle --platform=node --format=esm --target=node22 --external:@clack/prompts --external:commander --external:ejs --external:prettier --external:prettier-plugin-java --external:yaml --external:zod --outfile=dist/bin.js && node scripts/copy-templates.js",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --noEmit -p tsconfig.build.json && esbuild src/bin.ts --bundle --platform=node --format=esm --target=node22 --external:@clack/prompts --external:commander --external:ejs --external:prettier --external:prettier-plugin-java --external:yaml --external:zod --outfile=dist/bin.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

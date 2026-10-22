@@ -5,4 +5,3 @@ coverage/
 e2e/output/
 *.log
 .DS_Store
-packages/cli/minimal/
