@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 /** Spring AI version the templates are pinned to (latest stable on Maven Central, checked 2026-10-22). */
 export const SUPPORTED_SPRING_AI = '2.0.1';
+/** Spring Boot version Spring AI 2.0.1 is built against. */
+export const SUPPORTED_SPRING_BOOT = '4.1.1';
 
 export const PROVIDERS = ['openai', 'anthropic', 'mistral', 'ollama'] as const;
 /** Providers acceptable when `gdpr.euOnly` is set: hosted in the EU, or self-hosted. */

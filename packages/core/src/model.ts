@@ -1,5 +1,6 @@
 import {
   SUPPORTED_SPRING_AI,
+  SUPPORTED_SPRING_BOOT,
   type AgentDefinition,
   type AgentFile,
   type Provider,
@@ -16,9 +17,9 @@ export interface GenerationModel {
     basePackagePath: string;
     generatedPackage: string;
     applicationClass: string;
-    displayName: string;
   };
-  springAi: string;
+  versions: { springBoot: string; springAi: string };
+  features: { httpTools: boolean; javaTools: boolean };
   provider: ProviderSettings;
   prompt: { resource: string; aiDisclosure: boolean };
   memory: { window: number };
@@ -29,6 +30,8 @@ export interface ProviderSettings {
   id: Provider;
   starter: string;
   propertyPrefix: string;
+  /** Last segment of the prefix: the provider key under `spring.ai` in application.yml. */
+  configKey: string;
   /** Environment variable holding the API key; undefined for self-hosted providers. */
   apiKeyEnv: string | undefined;
   maxTokensProperty: string;
@@ -42,6 +45,8 @@ export interface ToolParameter {
   javaType: string;
   required: boolean;
   description: string | undefined;
+  /** A Java literal of this type, used by the generated tests. */
+  sample: string;
 }
 
 interface ModelToolBase {
@@ -53,7 +58,15 @@ interface ModelToolBase {
 }
 
 export type ModelTool =
-  | (ModelToolBase & { kind: 'http'; method: string; url: string })
+  | (ModelToolBase & {
+      kind: 'http';
+      method: string;
+      /** RestClient method: get, post… */
+      clientMethod: string;
+      /** POST, PUT and PATCH send the parameters as a JSON body; GET and DELETE as query parameters. */
+      sendsBody: boolean;
+      url: string;
+    })
   | (ModelToolBase & {
       kind: 'java';
       /** Generated interface the tool delegates to. */
@@ -67,41 +80,46 @@ const PROVIDERS: Record<Provider, Omit<ProviderSettings, 'id' | 'model' | 'tempe
   openai: {
     starter: 'spring-ai-starter-model-openai',
     propertyPrefix: 'spring.ai.openai',
+    configKey: 'openai',
     apiKeyEnv: 'OPENAI_API_KEY',
     maxTokensProperty: 'max-tokens',
   },
   anthropic: {
     starter: 'spring-ai-starter-model-anthropic',
     propertyPrefix: 'spring.ai.anthropic',
+    configKey: 'anthropic',
     apiKeyEnv: 'ANTHROPIC_API_KEY',
     maxTokensProperty: 'max-tokens',
   },
   mistral: {
     starter: 'spring-ai-starter-model-mistral-ai',
     propertyPrefix: 'spring.ai.mistralai',
+    configKey: 'mistralai',
     apiKeyEnv: 'MISTRAL_API_KEY',
     maxTokensProperty: 'max-tokens',
   },
   ollama: {
     starter: 'spring-ai-starter-model-ollama',
     propertyPrefix: 'spring.ai.ollama',
+    configKey: 'ollama',
     apiKeyEnv: undefined,
     maxTokensProperty: 'num-predict',
   },
 };
 
 /** Required parameters use primitives; optional ones are boxed so the model can omit them (null). */
-const JAVA_TYPES: Record<ToolParamType, { required: string; optional: string }> = {
-  string: { required: 'String', optional: 'String' },
-  number: { required: 'double', optional: 'Double' },
-  integer: { required: 'long', optional: 'Long' },
-  boolean: { required: 'boolean', optional: 'Boolean' },
+const JAVA_TYPES: Record<ToolParamType, { required: string; optional: string; sample: string }> = {
+  string: { required: 'String', optional: 'String', sample: '"test"' },
+  number: { required: 'double', optional: 'Double', sample: '1.0' },
+  integer: { required: 'long', optional: 'Long', sample: '1L' },
+  boolean: { required: 'boolean', optional: 'Boolean', sample: 'true' },
 };
 
-const capitalizedWords = (kebab: string): string[] =>
-  kebab.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1));
-
-const pascalCase = (kebab: string): string => capitalizedWords(kebab).join('');
+const pascalCase = (kebab: string): string =>
+  kebab
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
 
 const camelCase = (kebab: string): string => {
   const pascal = pascalCase(kebab);
@@ -122,9 +140,12 @@ export function buildModel(file: AgentFile): GenerationModel {
       basePackagePath: basePackage.replaceAll('.', '/'),
       generatedPackage: `${basePackage}.generated`,
       applicationClass: `${pascalCase(agent.name)}Application`,
-      displayName: capitalizedWords(agent.name).join(' '),
     },
-    springAi: agent.springAi,
+    versions: { springBoot: SUPPORTED_SPRING_BOOT, springAi: agent.springAi },
+    features: {
+      httpTools: agent.tools.some((tool) => tool.type === 'http'),
+      javaTools: agent.tools.some((tool) => tool.type === 'java'),
+    },
     provider: {
       id: agent.model.provider,
       ...PROVIDERS[agent.model.provider],
@@ -147,11 +168,19 @@ export function buildModel(file: AgentFile): GenerationModel {
             javaType: param.required ? types.required : types.optional,
             required: param.required,
             description: param.description,
+            sample: param.required ? types.sample : 'null',
           };
         }),
       };
       return tool.type === 'http'
-        ? { ...base, kind: 'http', method: tool.method, url: tool.url }
+        ? {
+            ...base,
+            kind: 'http',
+            method: tool.method,
+            clientMethod: tool.method.toLowerCase(),
+            sendsBody: tool.method === 'POST' || tool.method === 'PUT' || tool.method === 'PATCH',
+            url: tool.url,
+          }
         : {
             ...base,
             kind: 'java',

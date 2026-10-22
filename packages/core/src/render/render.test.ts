@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildModel } from '../model.js';
 import { validateAgentYaml } from '../validate.js';
-import { renderProject, type TemplateSet } from './render.js';
+import { javaString, renderProject, xmlText, yamlString, type TemplateSet } from './render.js';
 
 function modelOf(yaml: string) {
   const result = validateAgentYaml(yaml);
@@ -37,7 +37,7 @@ function templates(overrides: Partial<Record<string, string>> = {}): TemplateSet
   return {
     sources: {
       'Hello.java.ejs': javaSource,
-      'README.md.ejs': '# <%= project.displayName %>\n\n\n',
+      'README.md.ejs': '# <%= project.artifactId %>\n\n\n',
       'Tool.java.ejs':
         'package <%= project.generatedPackage %>.tool;\n\n<%- imports %>\n\nclass <%= item.className %> {}\n',
       ...overrides,
@@ -92,7 +92,7 @@ public class Hello {
       'src/main/java/com/example/demo/generated/tool/BookLeaveTool.java',
       'src/main/java/com/example/demo/generated/tool/WeatherForecastTool.java',
     ]);
-    expect(files.find((f) => f.path === 'README.md')?.content).toBe('# Demo\n');
+    expect(files.find((f) => f.path === 'README.md')?.content).toBe('# demo\n');
   });
 
   it('writes .gen-agent.json with the configuration and the owner and fingerprint of every file', async () => {
@@ -108,7 +108,7 @@ public class Hello {
     expect(Object.keys(manifest.files)).toEqual(files.slice(1).map((f) => f.path));
     expect(manifest.files['README.md']).toEqual({
       owner: 'merged',
-      sha256: createHash('sha256').update('# Demo\n').digest('hex'),
+      sha256: createHash('sha256').update('# demo\n').digest('hex'),
     });
   });
 
@@ -117,6 +117,31 @@ public class Hello {
     const second = await renderProject(model, templates(), VERSION);
 
     expect(first.files[0]?.content).toBe(second.files[0]?.content);
+  });
+
+  it('includes partials next to the template, from the template set (no file system)', async () => {
+    const set: TemplateSet = {
+      sources: {
+        'docs/page.md.ejs': "Hello <%- include('signature') %>",
+        'docs/signature.ejs': '<%= project.artifactId %>',
+      },
+      entries: [{ template: 'docs/page.md.ejs', owner: 'merged', output: () => 'PAGE.md' }],
+    };
+
+    const { files } = await renderProject(model, set, VERSION);
+
+    expect(files.find((f) => f.path === 'PAGE.md')?.content).toBe('Hello demo\n');
+  });
+
+  it('exposes the escaping helpers to templates', async () => {
+    const set: TemplateSet = {
+      sources: { 'x.ejs': "<%= javaString('a') %> <%= xmlText('<b>') %> <%= yamlString('on') %>" },
+      entries: [{ template: 'x.ejs', owner: 'merged', output: () => 'X.txt' }],
+    };
+
+    const { files } = await renderProject(model, set, VERSION);
+
+    expect(files.find((f) => f.path === 'X.txt')?.content).toBe('"a" &lt;b&gt; "on"\n');
   });
 
   it('names the template when rendering fails', async () => {
@@ -129,5 +154,15 @@ public class Hello {
     await expect(renderProject(model, templates({ 'README.md.ejs': '<%%= leftover %>' }), VERSION)).rejects.toThrow(
       /README\.md.*template syntax/,
     );
+  });
+});
+
+describe('escaping helpers', () => {
+  it('escapes Java strings, XML text and YAML scalars', () => {
+    expect(javaString('Say "hi"\n')).toBe('"Say \\"hi\\"\\n"');
+    expect(xmlText('R&D <team>')).toBe('R&amp;D &lt;team&gt;');
+    expect(yamlString('https://example.org/forecast')).toBe('https://example.org/forecast');
+    expect(yamlString('yes')).toBe('"yes"');
+    expect(yamlString('a: b')).toBe('"a: b"');
   });
 });

@@ -20,17 +20,20 @@ interface SingleEntry {
   locals?: (model: GenerationModel) => Locals;
 }
 
-/** A template rendered once per tool, available to the template as `item`. */
-interface EachToolEntry {
+type HttpTool = Extract<ModelTool, { kind: 'http' }>;
+type JavaTool = Extract<ModelTool, { kind: 'java' }>;
+
+/** A template rendered once per tool of the selected kind, available to the template as `item`. */
+interface EachEntry<Each extends string, Item> {
   template: string;
   owner: FileOwner;
-  each: 'tool';
-  when?: (model: GenerationModel, tool: ModelTool) => boolean;
-  output: (model: GenerationModel, tool: ModelTool) => string;
-  locals?: (model: GenerationModel, tool: ModelTool) => Locals;
+  each: Each;
+  output: (model: GenerationModel, item: Item) => string;
+  locals?: (model: GenerationModel, item: Item) => Locals;
 }
 
-export type TemplateEntry = SingleEntry | EachToolEntry;
+export type TemplateEntry =
+  SingleEntry | EachEntry<'tool', ModelTool> | EachEntry<'httpTool', HttpTool> | EachEntry<'javaTool', JavaTool>;
 
 /** Template sources by name, and how they map to project files. Provided by @gen-agent/templates. */
 export interface TemplateSet {
@@ -56,28 +59,36 @@ export async function renderProject(
 ): Promise<{ files: GeneratedFile[] }> {
   const rendered: GeneratedFile[] = [];
 
+  const render = async (entry: TemplateEntry, path: string, locals: Locals): Promise<void> => {
+    rendered.push({
+      path,
+      owner: entry.owner,
+      content: await renderFile(templates, entry.template, path, model, locals),
+    });
+  };
+
   for (const entry of templates.entries) {
-    if (entry.each === 'tool') {
-      for (const tool of model.tools) {
-        if (entry.when && !entry.when(model, tool)) continue;
-        const path = entry.output(model, tool);
-        rendered.push({
-          path,
-          owner: entry.owner,
-          content: await renderFile(templates, entry.template, path, model, {
-            item: tool,
-            ...entry.locals?.(model, tool),
-          }),
-        });
-      }
-    } else {
-      if (entry.when && !entry.when(model)) continue;
-      const path = entry.output(model);
-      rendered.push({
-        path,
-        owner: entry.owner,
-        content: await renderFile(templates, entry.template, path, model, entry.locals?.(model) ?? {}),
-      });
+    switch (entry.each) {
+      case undefined:
+        if (entry.when === undefined || entry.when(model))
+          await render(entry, entry.output(model), entry.locals?.(model) ?? {});
+        break;
+      case 'tool':
+        for (const tool of model.tools)
+          await render(entry, entry.output(model, tool), { item: tool, ...entry.locals?.(model, tool) });
+        break;
+      case 'httpTool':
+        for (const tool of model.tools) {
+          if (tool.kind === 'http')
+            await render(entry, entry.output(model, tool), { item: tool, ...entry.locals?.(model, tool) });
+        }
+        break;
+      case 'javaTool':
+        for (const tool of model.tools) {
+          if (tool.kind === 'java')
+            await render(entry, entry.output(model, tool), { item: tool, ...entry.locals?.(model, tool) });
+        }
+        break;
     }
   }
 
@@ -112,9 +123,20 @@ async function renderFile(
         type: (qualifiedName: string) => imports.type(qualifiedName),
         staticImport: (qualifiedMember: string) => imports.staticImport(qualifiedMember),
         javaString,
+        xmlText,
         yamlString,
       },
-      { filename: name, escape: String },
+      {
+        filename: name,
+        escape: String,
+        // Partials are resolved next to the rendered template, from the in-memory set: no file system needed.
+        includer: (partial: string) => {
+          const key = `${name.slice(0, name.lastIndexOf('/') + 1)}${partial}.ejs`;
+          const template = templates.sources[key];
+          if (template === undefined) throw new Error(`Partial not found: ${key}`);
+          return { template };
+        },
+      },
     );
   } catch (error) {
     throw new Error(`${name}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
@@ -157,9 +179,14 @@ export function javaString(value: string): string {
   return JSON.stringify(value);
 }
 
+/** Text content of an XML element. */
+export function xmlText(value: string): string {
+  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
+
 /** A YAML scalar, quoted only when needed. */
 export function yamlString(value: string): string {
-  return /^[\w./:-][\w ./:-]*$/.test(value) &&
+  return /^[\w./-][\w./:-]*$/.test(value) &&
     !/^(true|false|null|yes|no|on|off|~)$/i.test(value) &&
     !/^[\d.]+$/.test(value)
     ? value

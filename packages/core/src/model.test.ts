@@ -46,7 +46,6 @@ describe('buildModel', () => {
       basePackagePath: 'com/example/hrassistant',
       generatedPackage: 'com.example.hrassistant.generated',
       applicationClass: 'HrAssistantApplication',
-      displayName: 'Hr Assistant',
     });
   });
 
@@ -67,6 +66,7 @@ describe('buildModel', () => {
       id: 'mistral',
       starter: 'spring-ai-starter-model-mistral-ai',
       propertyPrefix: 'spring.ai.mistralai',
+      configKey: 'mistralai',
       apiKeyEnv: 'MISTRAL_API_KEY',
       maxTokensProperty: 'max-tokens',
       model: 'mistral-large-latest',
@@ -88,10 +88,12 @@ describe('buildModel', () => {
       className: 'WeatherForecastTool',
       methodName: 'weatherForecast',
       method: 'GET',
+      clientMethod: 'get',
+      sendsBody: false,
       url: 'https://api.open-meteo.com/v1/forecast',
       params: [
-        { name: 'latitude', javaType: 'double', required: true },
-        { name: 'days', javaType: 'Long', required: false },
+        { name: 'latitude', javaType: 'double', required: true, sample: '1.0' },
+        { name: 'days', javaType: 'Long', required: false, sample: 'null' },
       ],
     });
     expect(java).toMatchObject({
@@ -101,10 +103,17 @@ describe('buildModel', () => {
       handlerClass: 'DefaultBookLeaveHandler',
       methodName: 'bookLeave',
       params: [
-        { name: 'date', javaType: 'String', required: true },
-        { name: 'halfDay', javaType: 'Boolean', required: false },
+        { name: 'date', javaType: 'String', required: true, sample: '"test"' },
+        { name: 'halfDay', javaType: 'Boolean', required: false, sample: 'null' },
       ],
     });
+  });
+
+  it('pins the Spring Boot version Spring AI depends on, and flags which kinds of tools exist', () => {
+    const model = buildModel(assistant);
+
+    expect(model.versions).toEqual({ springBoot: '4.1.1', springAi: '2.0.1' });
+    expect(model.features).toEqual({ httpTools: true, javaTools: true });
   });
 
   it('keeps the system prompt as a classpath resource and the memory window', () => {
