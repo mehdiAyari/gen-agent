@@ -15,11 +15,14 @@ export function SiteHeader() {
       >
         {t('skipToContent')}
       </a>
-      <div className="mx-auto flex w-full max-w-6xl items-center gap-8 px-6 py-4">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-3 px-6 py-4">
         <Link href="/" className="font-mono text-lg font-semibold">
           gen-agent
         </Link>
-        <nav aria-label={t('main')} className="flex flex-1 items-center gap-6 text-sm">
+        <nav
+          aria-label={t('main')}
+          className="order-last flex w-full items-center gap-6 text-sm sm:order-none sm:w-auto sm:flex-1"
+        >
           <Link href="/generator" className="hover:text-primary">
             {t('generator')}
           </Link>

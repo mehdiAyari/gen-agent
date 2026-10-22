@@ -17,5 +17,104 @@
   },
   "footer": {
     "note": "Open source under the Apache 2.0 license. Projects are generated in your browser: nothing is sent to a server."
+  },
+  "generator": {
+    "metaTitle": "Generator — gen-agent",
+    "title": "Generator",
+    "lead": "Describe your agent: the project is generated in your browser, file by file, as you type.",
+    "agent": {
+      "legend": "Agent",
+      "name": "Name",
+      "nameHint": "kebab-case, also the project folder",
+      "description": "Description",
+      "package": "Java package",
+      "packageHint": "Empty: com.example.{name}"
+    },
+    "model": {
+      "legend": "Model",
+      "provider": "Provider",
+      "name": "Model",
+      "nameHint": "Suggested for {provider}: {model}",
+      "temperature": "Temperature",
+      "temperatureHint": "0 to 2. Empty: the provider default",
+      "maxTokens": "Max tokens",
+      "maxTokensHint": "Empty: the provider default",
+      "euHosted": "EU",
+      "local": "local"
+    },
+    "behaviour": {
+      "legend": "Behaviour",
+      "systemPrompt": "System prompt file",
+      "systemPromptHint": "Yours to write, under src/main/resources",
+      "memoryWindow": "Memory window",
+      "memoryWindowHint": "Messages kept per conversation",
+      "aiDisclosure": "Flag replies as AI-generated",
+      "aiDisclosureHint": "Adds \"aiGenerated\": true to every reply (EU AI Act)"
+    },
+    "gdpr": {
+      "legend": "Data protection",
+      "euOnly": "EU-hosted providers only",
+      "euOnlyHint": "Refuses OpenAI and Anthropic",
+      "allowNonEu": "Allow a provider outside the EU anyway",
+      "allowNonEuHint": "For a provider you host in the EU yourself"
+    },
+    "tools": {
+      "legend": "Tools",
+      "hint": "Functions the model can call. HTTP tools call an API; Java tools call code you write.",
+      "empty": "No tool yet: the agent only talks.",
+      "add": "Add a tool",
+      "remove": "Remove {name}",
+      "untitled": "Tool {index}",
+      "name": "Name",
+      "type": "Type",
+      "http": "HTTP API",
+      "java": "Java code",
+      "description": "Description",
+      "descriptionHint": "The model reads it to decide when to call the tool",
+      "method": "Method",
+      "url": "URL",
+      "params": "Parameters",
+      "addParam": "Add a parameter",
+      "removeParam": "Remove parameter {name}",
+      "paramName": "Name",
+      "paramType": "Type",
+      "required": "Required",
+      "paramDescription": "Description"
+    },
+    "preview": {
+      "label": "Preview",
+      "yaml": "agent.yaml",
+      "files": "Files",
+      "editorLabel": "agent.yaml editor",
+      "yamlInvalid": "This YAML cannot be loaded; the form keeps its last valid version.",
+      "generating": "Generating…",
+      "fixErrors": "Fix the errors in the form to see the files.",
+      "fileList": "Generated files",
+      "owner": {
+        "user": "Yours",
+        "merged": "Shared",
+        "generated": "gen-agent"
+      },
+      "ownerHint": {
+        "user": "Yours: edit freely, never overwritten",
+        "merged": "Shared: gen-agent updates its parts, keeps yours",
+        "generated": "gen-agent: regenerated, do not edit"
+      }
+    },
+    "actions": {
+      "label": "Project actions",
+      "download": "Download the project",
+      "downloading": "Preparing…",
+      "copyCli": "Copy CLI command",
+      "copied": "Copied: paste it in a terminal with Node 22",
+      "import": "Import",
+      "importLabel": "Import an agent.yaml file",
+      "export": "Save agent.yaml",
+      "imported": "{file} loaded",
+      "importFailed": "{file} cannot be loaded",
+      "errors": "{count, plural, =0 {Ready} one {# error to fix} other {# errors to fix}}",
+      "warnings": "{count, plural, one {# warning} other {# warnings}}",
+      "downloadFailed": "The project cannot be generated"
+    }
   }
 }

@@ -1,0 +1,208 @@
+'use client';
+
+import { PlusIcon, Trash2Icon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
+import type { AgentForm } from '@/lib/agent-form';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet, FieldTitle } from '@/components/ui/field';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+
+import { controlId, SelectField, TextField } from './form-controls';
+
+type ToolForm = AgentForm['tools'][number];
+type ParamForm = ToolForm['params'][number];
+
+const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
+const PARAM_TYPES = ['string', 'number', 'integer', 'boolean'] as const;
+
+interface ToolFieldsProps {
+  tool: ToolForm;
+  index: number;
+  errorOf: (path: string) => string | undefined;
+  onChange: (tool: ToolForm) => void;
+  onRemove: () => void;
+}
+
+export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFieldsProps) {
+  const t = useTranslations('generator.tools');
+  const path = `tools.${String(index)}`;
+  const title = tool.name.trim() === '' ? t('untitled', { index: index + 1 }) : tool.name;
+
+  const update = (patch: Partial<ToolForm>): void => {
+    onChange({ ...tool, ...patch });
+  };
+  const updateParam = (paramIndex: number, patch: Partial<ParamForm>): void => {
+    update({ params: tool.params.map((param, i) => (i === paramIndex ? { ...param, ...patch } : param)) });
+  };
+  const addParam = (): void => {
+    update({ params: [...tool.params, { name: '', type: 'string', required: true, description: '' }] });
+    requestAnimationFrame(() =>
+      document.getElementById(controlId(`${path}.params.${String(tool.params.length)}.name`))?.focus(),
+    );
+  };
+
+  return (
+    <FieldSet className="rounded-lg border bg-card p-4">
+      <div className="flex items-center justify-between gap-4">
+        <FieldLegend className="mb-0 truncate font-mono">{title}</FieldLegend>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onRemove}
+          aria-label={t('remove', { name: title })}
+        >
+          <Trash2Icon aria-hidden="true" />
+        </Button>
+      </div>
+      <FieldGroup>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField
+            path={`${path}.name`}
+            label={t('name')}
+            value={tool.name}
+            error={errorOf(`${path}.name`)}
+            onValueChange={(name) => {
+              update({ name });
+            }}
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="current-weather…"
+          />
+          <Field>
+            <FieldTitle id={`${controlId(path)}-type`}>{t('type')}</FieldTitle>
+            <ToggleGroup
+              aria-labelledby={`${controlId(path)}-type`}
+              variant="outline"
+              value={[tool.type]}
+              onValueChange={(value: string[]) => {
+                const type = value[0];
+                if (type === 'http' || type === 'java') update({ type });
+              }}
+            >
+              <ToggleGroupItem value="http">{t('http')}</ToggleGroupItem>
+              <ToggleGroupItem value="java">{t('java')}</ToggleGroupItem>
+            </ToggleGroup>
+          </Field>
+        </div>
+        <TextField
+          path={`${path}.description`}
+          label={t('description')}
+          hint={t('descriptionHint')}
+          value={tool.description}
+          error={errorOf(`${path}.description`)}
+          onValueChange={(description) => {
+            update({ description });
+          }}
+          autoComplete="off"
+        />
+        {tool.type === 'http' ? (
+          <div className="grid gap-4 sm:grid-cols-[8rem_minmax(0,1fr)]">
+            <SelectField
+              path={`${path}.method`}
+              label={t('method')}
+              value={tool.method}
+              options={METHODS}
+              onValueChange={(method) => {
+                update({ method });
+              }}
+            />
+            <TextField
+              path={`${path}.url`}
+              label={t('url')}
+              value={tool.url}
+              error={errorOf(`${path}.url`)}
+              onValueChange={(url) => {
+                update({ url });
+              }}
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="https://api.example.com/…"
+            />
+          </div>
+        ) : null}
+        <FieldSet>
+          <FieldLegend variant="label">{t('params')}</FieldLegend>
+          <FieldError>{errorOf(`${path}.params`)}</FieldError>
+          {tool.params.map((param, paramIndex) => {
+            const paramPath = `${path}.params.${String(paramIndex)}`;
+            const paramTitle = param.name.trim() === '' ? String(paramIndex + 1) : param.name;
+            return (
+              <div
+                // Parameters have no identity of their own: their position is it.
+                key={paramIndex}
+                className="grid items-start gap-3 border-t pt-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto_auto]"
+              >
+                <TextField
+                  path={`${paramPath}.name`}
+                  label={t('paramName')}
+                  value={param.name}
+                  error={errorOf(`${paramPath}.name`)}
+                  onValueChange={(name) => {
+                    updateParam(paramIndex, { name });
+                  }}
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="latitude…"
+                />
+                <SelectField
+                  path={`${paramPath}.type`}
+                  label={t('paramType')}
+                  value={param.type}
+                  options={PARAM_TYPES}
+                  onValueChange={(type) => {
+                    updateParam(paramIndex, { type });
+                  }}
+                />
+                <Field orientation="horizontal" className="sm:mt-8">
+                  <Checkbox
+                    id={controlId(`${paramPath}.required`)}
+                    checked={param.required}
+                    onCheckedChange={(required) => {
+                      updateParam(paramIndex, { required });
+                    }}
+                  />
+                  <FieldLabel htmlFor={controlId(`${paramPath}.required`)} className="font-normal">
+                    {t('required')}
+                  </FieldLabel>
+                </Field>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="sm:mt-7"
+                  onClick={() => {
+                    update({ params: tool.params.filter((_, i) => i !== paramIndex) });
+                  }}
+                  aria-label={t('removeParam', { name: paramTitle })}
+                >
+                  <Trash2Icon aria-hidden="true" />
+                </Button>
+                <div className="sm:col-span-4">
+                  <TextField
+                    path={`${paramPath}.description`}
+                    label={t('paramDescription')}
+                    value={param.description}
+                    error={errorOf(`${paramPath}.description`)}
+                    onValueChange={(description) => {
+                      updateParam(paramIndex, { description });
+                    }}
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+            );
+          })}
+          <Button type="button" variant="outline" size="sm" className="self-start" onClick={addParam}>
+            <PlusIcon data-icon="inline-start" aria-hidden="true" />
+            {t('addParam')}
+          </Button>
+        </FieldSet>
+      </FieldGroup>
+    </FieldSet>
+  );
+}

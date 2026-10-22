@@ -17,5 +17,104 @@
   },
   "footer": {
     "note": "Open source sous licence Apache 2.0. Les projets sont générés dans ton navigateur : rien n’est envoyé à un serveur."
+  },
+  "generator": {
+    "metaTitle": "Générateur — gen-agent",
+    "title": "Générateur",
+    "lead": "Décrivez votre agent : le projet est généré dans votre navigateur, fichier par fichier, pendant que vous tapez.",
+    "agent": {
+      "legend": "Agent",
+      "name": "Nom",
+      "nameHint": "en kebab-case, c'est aussi le dossier du projet",
+      "description": "Description",
+      "package": "Package Java",
+      "packageHint": "Vide : com.example.{name}"
+    },
+    "model": {
+      "legend": "Modèle",
+      "provider": "Fournisseur",
+      "name": "Modèle",
+      "nameHint": "Suggéré pour {provider} : {model}",
+      "temperature": "Température",
+      "temperatureHint": "De 0 à 2. Vide : valeur par défaut du fournisseur",
+      "maxTokens": "Tokens max",
+      "maxTokensHint": "Vide : valeur par défaut du fournisseur",
+      "euHosted": "UE",
+      "local": "local"
+    },
+    "behaviour": {
+      "legend": "Comportement",
+      "systemPrompt": "Fichier du prompt système",
+      "systemPromptHint": "À vous de l'écrire, sous src/main/resources",
+      "memoryWindow": "Fenêtre de mémoire",
+      "memoryWindowHint": "Messages gardés par conversation",
+      "aiDisclosure": "Signaler les réponses générées par IA",
+      "aiDisclosureHint": "Ajoute \"aiGenerated\": true à chaque réponse (AI Act)"
+    },
+    "gdpr": {
+      "legend": "Protection des données",
+      "euOnly": "Fournisseurs hébergés dans l'UE uniquement",
+      "euOnlyHint": "Refuse OpenAI et Anthropic",
+      "allowNonEu": "Autoriser quand même un fournisseur hors UE",
+      "allowNonEuHint": "Pour un fournisseur que vous hébergez vous-même dans l'UE"
+    },
+    "tools": {
+      "legend": "Outils",
+      "hint": "Fonctions que le modèle peut appeler. Un outil HTTP appelle une API ; un outil Java appelle du code que vous écrivez.",
+      "empty": "Aucun outil : l'agent se contente de discuter.",
+      "add": "Ajouter un outil",
+      "remove": "Supprimer {name}",
+      "untitled": "Outil {index}",
+      "name": "Nom",
+      "type": "Type",
+      "http": "API HTTP",
+      "java": "Code Java",
+      "description": "Description",
+      "descriptionHint": "Le modèle la lit pour décider quand appeler l'outil",
+      "method": "Méthode",
+      "url": "URL",
+      "params": "Paramètres",
+      "addParam": "Ajouter un paramètre",
+      "removeParam": "Supprimer le paramètre {name}",
+      "paramName": "Nom",
+      "paramType": "Type",
+      "required": "Obligatoire",
+      "paramDescription": "Description"
+    },
+    "preview": {
+      "label": "Aperçu",
+      "yaml": "agent.yaml",
+      "files": "Fichiers",
+      "editorLabel": "Éditeur de agent.yaml",
+      "yamlInvalid": "Ce YAML ne peut pas être chargé ; le formulaire garde sa dernière version valide.",
+      "generating": "Génération…",
+      "fixErrors": "Corrigez les erreurs du formulaire pour voir les fichiers.",
+      "fileList": "Fichiers générés",
+      "owner": {
+        "user": "À vous",
+        "merged": "Partagé",
+        "generated": "gen-agent"
+      },
+      "ownerHint": {
+        "user": "À vous : modifiez librement, jamais écrasé",
+        "merged": "Partagé : gen-agent met à jour ses parties, garde les vôtres",
+        "generated": "gen-agent : regénéré, ne pas modifier"
+      }
+    },
+    "actions": {
+      "label": "Actions sur le projet",
+      "download": "Télécharger le projet",
+      "downloading": "Préparation…",
+      "copyCli": "Copier la commande CLI",
+      "copied": "Copiée : collez-la dans un terminal avec Node 22",
+      "import": "Importer",
+      "importLabel": "Importer un fichier agent.yaml",
+      "export": "Enregistrer agent.yaml",
+      "imported": "{file} chargé",
+      "importFailed": "{file} ne peut pas être chargé",
+      "errors": "{count, plural, =0 {Prêt} one {# erreur à corriger} other {# erreurs à corriger}}",
+      "warnings": "{count, plural, one {# avertissement} other {# avertissements}}",
+      "downloadFailed": "Le projet ne peut pas être généré"
+    }
   }
 }
