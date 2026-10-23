@@ -300,7 +300,8 @@ export function Generator() {
           {downloading ? t('actions.downloading') : t('actions.download')}
         </Button>
       </div>
-      <Toaster />
+      {/* Above the sticky action bar, so that a notification never hides its buttons. */}
+      <Toaster offset={{ bottom: '6rem' }} mobileOffset={{ bottom: '8.5rem' }} />
     </>
   );
 }
