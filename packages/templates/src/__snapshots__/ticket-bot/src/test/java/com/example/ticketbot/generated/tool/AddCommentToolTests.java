@@ -34,10 +34,10 @@ class AddCommentToolTests {
             .expect(requestTo(startsWith("https://tickets.example.org/api/projects/test/tickets/1/comments")))
             .andExpect(method(HttpMethod.POST))
             .andExpect(header("X-API-Key", "test-token"))
-            .andExpect(content().json("{\"text\":\"test\"}"))
+            .andExpect(content().json("{\"text\":\"test\",\"author_email\":\"test\"}"))
             .andRespond(withSuccess("{\"ok\":true}", MediaType.APPLICATION_JSON));
 
-        assertThat(tool.addComment(1L, "test", "test")).isEqualTo("{\"ok\":true}");
+        assertThat(tool.addComment(1L, "test", "test", "test")).isEqualTo("{\"ok\":true}");
         server.verify();
     }
 
@@ -47,14 +47,14 @@ class AddCommentToolTests {
             .expect(requestTo(startsWith("https://tickets.example.org/api/projects/..%2Fadmin/tickets/1/comments")))
             .andRespond(withSuccess("{\"ok\":true}", MediaType.APPLICATION_JSON));
 
-        tool.addComment(1L, "../admin", "test");
+        tool.addComment(1L, "../admin", "test", "test");
         server.verify();
     }
 
     @Test
     void tellsTheModelWhichRequiredArgumentIsMissing() {
         assertThatNullPointerException()
-            .isThrownBy(() -> tool.addComment(null, "test", "test"))
+            .isThrownBy(() -> tool.addComment(null, "test", "test", "test"))
             .withMessage("ticketId is required");
     }
 }

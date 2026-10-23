@@ -283,6 +283,17 @@ tools:
       expect(errorsOf(result)).toEqual([`agent.tools.0.params.0.in: ${method} sends no body: use query`]);
     });
 
+    it('refuses an API name on a Java tool or a path parameter, where it would be meaningless', () => {
+      const result = tool(`  - { name: lookup, type: java, params: [{ name: id, apiName: the_id, type: string }] }
+  - { name: order, type: http, url: "https://shop.example.org/orders/{orderId}", params: [{ name: orderId, apiName: order_id, type: string, required: true }] }
+`);
+
+      expect(errorsOf(result)).toEqual([
+        'agent.tools.0.params.0.apiName: only HTTP tools send parameters under another name',
+        'agent.tools.1.params.0.apiName: a path parameter has no name in the request: remove apiName',
+      ]);
+    });
+
     it('keeps the placement of parameters to HTTP tools', () => {
       const result = tool('  - { name: lookup, type: java, params: [{ name: id, type: string, in: query }] }\n');
 

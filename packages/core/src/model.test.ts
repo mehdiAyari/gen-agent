@@ -164,6 +164,30 @@ agent:
     ]);
   });
 
+  it('keeps the name the API uses when it differs from the Java name', () => {
+    const [search] = buildModel(
+      parse(`
+agent:
+  name: hr-assistant
+  model: { provider: ollama, name: llama3.1 }
+  tools:
+    - name: create-leave
+      type: http
+      method: POST
+      url: https://hr.example.org/api/leaves
+      params:
+        - { name: employeeId, apiName: employee_id, type: string, required: true, in: query }
+        - { name: startDate, apiName: start_date, type: string, required: true }
+`),
+    ).tools;
+
+    expect(search).toMatchObject({
+      queryParams: [{ name: 'employeeId', apiName: 'employee_id' }],
+      bodyParams: [{ name: 'startDate', apiName: 'start_date' }],
+      sampleBodyJson: '{"start_date":"test"}',
+    });
+  });
+
   it('pins the Spring Boot version Spring AI depends on, and flags which kinds of tools exist', () => {
     const model = buildModel(assistant);
 

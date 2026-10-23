@@ -119,7 +119,8 @@
         "path": "chemin",
         "query": "requête",
         "body": "corps"
-      }
+      },
+      "apiName": "Nom dans l’API"
     },
     "preview": {
       "label": "Aperçu",

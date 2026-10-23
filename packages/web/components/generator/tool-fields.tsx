@@ -264,7 +264,7 @@ export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFie
                 <div
                   className={cn(
                     'grid gap-3 sm:col-span-4',
-                    tool.type === 'http' && 'sm:grid-cols-[minmax(0,1fr)_8rem]',
+                    tool.type === 'http' && 'sm:grid-cols-2 [&>:first-child]:sm:col-span-2',
                   )}
                 >
                   <TextField
@@ -300,6 +300,21 @@ export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFie
                       onValueChange={(placement) => {
                         updateParam(paramIndex, { in: placement });
                       }}
+                    />
+                  ) : null}
+                  {tool.type === 'http' ? (
+                    <TextField
+                      path={`${paramPath}.apiName`}
+                      label={t('apiName')}
+                      value={param.apiName}
+                      error={errorOf(`${paramPath}.apiName`)}
+                      onValueChange={(apiName) => {
+                        updateParam(paramIndex, { apiName });
+                      }}
+                      autoComplete="off"
+                      spellCheck={false}
+                      className="font-mono"
+                      placeholder={param.name === '' ? 'employee_id…' : `${param.name}…`}
                     />
                   ) : null}
                 </div>

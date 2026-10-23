@@ -9,7 +9,7 @@ const currentWeather: AgentForm['tools'][number] = {
   description: 'Current temperature at a location',
   method: 'GET',
   url: 'https://api.open-meteo.com/v1/forecast',
-  params: [{ name: 'latitude', type: 'number', required: true, description: 'Latitude', in: 'auto' }],
+  params: [{ name: 'latitude', type: 'number', required: true, description: 'Latitude', in: 'auto', apiName: '' }],
   auth: { type: 'none', env: '', header: '' },
   maxResponseChars: '',
 };
@@ -63,7 +63,7 @@ describe('formFromYaml', () => {
       maxResponseChars: 5000
       params:
         - { name: orderId, type: string, required: true, in: path }
-        - { name: text, type: string, required: true }
+        - { name: text, type: string, required: true, apiName: note_text }
 `;
     const result = formFromYaml(yaml);
     if (!result.ok) throw new Error(result.errors.join('\n'));

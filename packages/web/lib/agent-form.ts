@@ -15,6 +15,8 @@ interface ParamForm {
   description: string;
   /** HTTP tools only. `auto`: in the path when the URL names it, else query for GET and DELETE, body otherwise. */
   in: 'auto' | 'path' | 'query' | 'body';
+  /** HTTP tools only: the name in the query or the JSON body when it is not a Java name; empty otherwise. */
+  apiName: string;
 }
 
 interface ToolForm {
@@ -46,7 +48,7 @@ export function emptyTool(): ToolForm {
 }
 
 export function emptyParam(): ParamForm {
-  return { name: '', type: 'string', required: true, description: '', in: 'auto' };
+  return { name: '', type: 'string', required: true, description: '', in: 'auto', apiName: '' };
 }
 
 export interface AgentForm {
@@ -131,6 +133,7 @@ export function formToYaml(form: AgentForm): string {
           ...(param.required ? { required: true } : {}),
           ...(present(param.description) ? { description: param.description } : {}),
           ...(http && param.in !== 'auto' ? { in: param.in } : {}),
+          ...(http && present(param.apiName) ? { apiName: param.apiName } : {}),
         }));
       }
       return written;
@@ -206,6 +209,7 @@ function fromConfig({ agent }: AgentFile): AgentForm {
         required: param.required,
         description: param.description ?? '',
         in: param.in ?? 'auto',
+        apiName: param.apiName ?? '',
       })),
     })),
   };

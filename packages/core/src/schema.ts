@@ -81,6 +81,11 @@ const toolParam = z.strictObject({
   description: z.string().min(1).optional(),
   /** HTTP tools only: where the value goes. Defaults in {@link placementOf}. */
   in: z.enum(['path', 'query', 'body']).optional(),
+  /** HTTP tools only: the name in the query or the JSON body, when it is not a Java name (employee_id). */
+  apiName: z
+    .string()
+    .regex(/^[A-Za-z0-9_.$-]+$/, 'must be a query or JSON property name')
+    .optional(),
 });
 
 const approval = z.strictObject({

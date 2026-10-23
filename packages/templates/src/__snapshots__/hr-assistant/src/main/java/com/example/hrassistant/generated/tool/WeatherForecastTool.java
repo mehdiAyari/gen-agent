@@ -35,7 +35,7 @@ public class WeatherForecastTool {
                 uri
                     .queryParam("latitude", latitude)
                     .queryParam("longitude", longitude)
-                    .queryParamIfPresent("forecastDays", Optional.ofNullable(forecastDays))
+                    .queryParamIfPresent("forecast_days", Optional.ofNullable(forecastDays))
                     .build()
             )
             .retrieve()

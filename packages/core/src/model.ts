@@ -56,6 +56,8 @@ export interface ToolParameter {
   sample: string;
   /** The sample as it appears in a URL or a JSON body: test, 1.0, 1, true. */
   sampleText: string;
+  /** HTTP tools: the name in the query or the JSON body, when it differs from the Java name. */
+  apiName: string | undefined;
 }
 
 interface ModelToolBase {
@@ -225,6 +227,7 @@ function toolModel(tool: Tool): ModelTool {
         description: param.description,
         sample: param.required ? types.sample : 'null',
         sampleText: types.sampleText,
+        apiName: tool.type === 'http' ? param.apiName : undefined,
       };
     }),
     firstRequiredParam: firstRequired?.name,
@@ -264,7 +267,7 @@ function toolModel(tool: Tool): ModelTool {
           bodyParams
             .filter((param) => param.required)
             .map((param) => [
-              param.name,
+              param.apiName ?? param.name,
               param.javaType === 'String' ? param.sampleText : (JSON.parse(param.sampleText) as unknown),
             ]),
         ),

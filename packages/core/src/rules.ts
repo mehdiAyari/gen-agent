@@ -73,6 +73,12 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
             message: 'only HTTP tools place their parameters',
           });
         }
+        if (param.apiName !== undefined) {
+          errors.push({
+            path: ['agent', 'tools', index, 'params', paramIndex, 'apiName'],
+            message: 'only HTTP tools send parameters under another name',
+          });
+        }
       });
     } else {
       const placeholders = urlPlaceholders(tool.url);
@@ -88,6 +94,12 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
           errors.push({ path: [...path, 'required'], message: 'a path parameter must be required' });
         } else if (placement === 'body' && BODYLESS_METHODS.has(tool.method)) {
           errors.push({ path: [...path, 'in'], message: `${tool.method} sends no body: use query` });
+        }
+        if (placement === 'path' && param.apiName !== undefined) {
+          errors.push({
+            path: [...path, 'apiName'],
+            message: 'a path parameter has no name in the request: remove apiName',
+          });
         }
       });
       for (const name of placeholders) {

@@ -38,6 +38,7 @@ agent:
         - { name: ticketId, type: integer, required: true }
         - { name: project, type: string, required: true }
         - { name: text, type: string, required: true }
+        - { name: authorEmail, apiName: author_email, type: string, required: true }
     - name: service-status
       type: http
       description: Current status of the service

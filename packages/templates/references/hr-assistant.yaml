@@ -1,4 +1,4 @@
-# Mistral, an HTTP tool with required and optional parameters, a Java tool.
+# Mistral, an HTTP tool with required and optional parameters (one named differently in the API), a Java tool.
 agent:
   name: hr-assistant
   description: Internal HR assistant
@@ -15,7 +15,7 @@ agent:
       params:
         - { name: latitude, type: number, required: true, description: Latitude in degrees }
         - { name: longitude, type: number, required: true, description: Longitude in degrees }
-        - { name: forecastDays, type: integer, description: Number of days to forecast }
+        - { name: forecastDays, apiName: forecast_days, type: integer, description: Number of days to forecast }
     - name: book-leave
       type: java
       description: Books a day off for the current employee

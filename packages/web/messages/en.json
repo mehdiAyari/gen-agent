@@ -119,7 +119,8 @@
         "path": "path",
         "query": "query",
         "body": "body"
-      }
+      },
+      "apiName": "Name in the API"
     },
     "preview": {
       "label": "Preview",

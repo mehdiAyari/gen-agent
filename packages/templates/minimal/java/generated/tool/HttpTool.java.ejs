@@ -28,7 +28,7 @@ public class <%= item.className %> {
     }
 <%_ if (item.sendsBody) { _%>
 
-    record Request(<%- item.bodyParams.map((param) => `${param.javaType} ${param.name}`).join(', ') %>) {}
+    record Request(<%- item.bodyParams.map((param) => `${param.apiName ? `@${type('com.fasterxml.jackson.annotation.JsonProperty')}(${javaString(param.apiName)}) ` : ''}${param.javaType} ${param.name}`).join(', ') %>) {}
 <%_ } _%>
 
 <%- include('tool-method-signature', { tool: item }) %> {
@@ -40,9 +40,9 @@ public class <%= item.className %> {
                 .uri(uri -> uri
 <%_   for (const param of item.queryParams) { _%>
 <%_     if (param.required) { _%>
-                        .queryParam("<%= param.name %>", <%= param.name %>)
+                        .queryParam(<%- javaString(param.apiName ?? param.name) %>, <%= param.name %>)
 <%_     } else { _%>
-                        .queryParamIfPresent("<%= param.name %>", <%= type('java.util.Optional') %>.ofNullable(<%= param.name %>))
+                        .queryParamIfPresent(<%- javaString(param.apiName ?? param.name) %>, <%= type('java.util.Optional') %>.ofNullable(<%= param.name %>))
 <%_     } _%>
 <%_   } _%>
                         .build(<%= item.pathParams.map((param) => param.name).join(', ') %>))
