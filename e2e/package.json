@@ -9,9 +9,10 @@
   },
   "dependencies": {
     "@gen-agent/core": "workspace:*",
+    "@gen-agent/openapi": "workspace:*",
     "@gen-agent/templates": "workspace:*",
-    "gen-agent": "workspace:*",
-    "@gen-agent/web": "workspace:*"
+    "@gen-agent/web": "workspace:*",
+    "gen-agent": "workspace:*"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

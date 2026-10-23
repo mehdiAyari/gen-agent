@@ -5,23 +5,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { validateAgentYaml } from '@gen-agent/core';
 
-import { agentYamlFromAnswers, generateCommand, newCommand, type Output } from './commands.js';
-
-class RecordingOutput implements Output {
-  readonly lines: string[] = [];
-  info(message: string): void {
-    this.lines.push(`info: ${message}`);
-  }
-  warn(message: string): void {
-    this.lines.push(`warn: ${message}`);
-  }
-  error(message: string): void {
-    this.lines.push(`error: ${message}`);
-  }
-  text(): string {
-    return this.lines.join('\n');
-  }
-}
+import { agentYamlFromAnswers, generateCommand, newCommand } from './commands.js';
+import { RecordingOutput } from './recording-output.js';
 
 let cwd: string;
 let out: RecordingOutput;
@@ -69,6 +54,35 @@ describe('gen-agent generate --from', () => {
     expect(statSync(join(cwd, 'weather-bot/mvnw')).mode & 0o111).not.toBe(0);
     expect(out.text()).toMatch(/MISTRAL_API_KEY/);
     expect(out.text()).toMatch(/warn: agent.yaml:7 agent.tools.0: POST has side effects/);
+  });
+
+  it('adds the operations of the specs agent.yaml refers to, and warns about the ones it skips', async () => {
+    mkdirSync(join(cwd, 'specs'));
+    writeFileSync(
+      join(cwd, 'specs/shop.json'),
+      JSON.stringify({
+        openapi: '3.0.3',
+        info: { title: 'Shop', version: '1' },
+        servers: [{ url: 'https://shop.example.org/api' }],
+        paths: {
+          '/orders/{orderId}': {
+            get: {
+              operationId: 'getOrder',
+              summary: 'An order',
+              parameters: [{ name: 'orderId', in: 'path', required: true }],
+            },
+          },
+          '/files': { post: { operationId: 'upload', requestBody: { content: { 'text/csv': {} } } } },
+        },
+      }),
+    );
+    writeFileSync(join(cwd, 'agent.yaml'), `${agentYaml}  openapi:\n    - spec: specs/shop.json\n`);
+
+    expect(await generateCommand({ from: 'agent.yaml', cwd }, out)).toBe(0);
+    expect(
+      existsSync(join(cwd, 'weather-bot/src/main/java/com/example/weatherbot/generated/tool/GetOrderTool.java')),
+    ).toBe(true);
+    expect(out.text()).toMatch(/warn: agent.yaml agent.openapi.0: upload skipped: the body is text\/csv/);
   });
 
   it('writes to --output when given', async () => {

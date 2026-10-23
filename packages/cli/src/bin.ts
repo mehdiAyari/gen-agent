@@ -3,6 +3,7 @@ import { intro, log, outro } from '@clack/prompts';
 import { Command, Option } from 'commander';
 
 import { generateCommand, newCommand, type Output } from './commands.js';
+import { importOpenApiCommand, type ImportOpenApiOptions } from './import-openapi.js';
 import { askNewAnswers } from './prompts.js';
 import { VERSION } from './version.js';
 
@@ -55,6 +56,24 @@ program
   .option('-o, --output <dir>', 'project directory (default: the agent name)')
   .action(async (options: { from: string; output?: string }) => {
     process.exitCode = await generateCommand({ ...options, cwd: process.cwd() }, terminal);
+  });
+
+program
+  .command('import')
+  .description('add tools to an agent from the description of an API')
+  .command('openapi')
+  .description('add the operations of an OpenAPI 3 spec as HTTP tools')
+  .argument('<source>', 'spec file, or https URL')
+  .option('--include <operations>', 'comma-separated operation ids to import (default: every supported operation)')
+  .option('--to <file>', 'agent.yaml to update', 'agent.yaml')
+  .option('--expand', 'copy the tools into agent.yaml instead of referring to the spec')
+  .option('--base-url <url>', 'base URL of the API, when the spec gives a relative one')
+  .action(async (source: string, options: { include?: string; to: string; expand?: boolean; baseUrl?: string }) => {
+    const command: ImportOpenApiOptions = { source, cwd: process.cwd(), to: options.to };
+    if (options.include !== undefined) command.include = options.include.split(',').map((id) => id.trim());
+    if (options.expand === true) command.expand = true;
+    if (options.baseUrl !== undefined) command.baseUrl = options.baseUrl;
+    process.exitCode = await importOpenApiCommand(command, terminal);
   });
 
 await program.parseAsync();

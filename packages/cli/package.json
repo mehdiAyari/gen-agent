@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@gen-agent/core": "workspace:*",
+    "@gen-agent/openapi": "workspace:*",
     "@gen-agent/templates": "workspace:*",
     "esbuild": "^0.28.2"
   }

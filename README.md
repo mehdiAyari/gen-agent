@@ -53,6 +53,21 @@ export MISTRAL_API_KEY=...              # or OPENAI_API_KEY, ANTHROPIC_API_KEY; 
 curl -s localhost:8080/api/chat -H 'Content-Type: application/json' -d '{"message": "Hello"}'
 ```
 
+## From an existing API
+
+Point gen-agent at an OpenAPI 3 spec: each operation becomes a tool the agent can call.
+
+```bash
+gen-agent import openapi https://petstore3.swagger.io/api/v3/openapi.json \
+  --include findPetsByStatus,getPetById
+gen-agent generate --from agent.yaml
+```
+
+The spec is saved under `specs/` and `agent.yaml` refers to it, so the tools follow the API when you regenerate;
+`--expand` copies them into `agent.yaml` instead, to edit their descriptions. Path, query and JSON body parameters,
+bearer tokens and API key headers (read from environment variables) are supported. What a tool cannot send (file
+uploads, nested bodies, required business headers) is skipped and the reason is printed.
+
 ## Describe your agent
 
 ```yaml

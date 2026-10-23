@@ -2,6 +2,7 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
 import { buildModel, unsupportedFeatures, validateAgentYaml, type Diagnostic, type Provider } from '@gen-agent/core';
+import { resolveOpenApi } from '@gen-agent/openapi';
 import { generateProject } from '@gen-agent/templates';
 import { stringify } from 'yaml';
 
@@ -31,7 +32,8 @@ export async function generateCommand(options: GenerateOptions, out: Output): Pr
     out.error(`cannot read ${options.from}`);
     return 1;
   }
-  return generateFromSource(source, options.from, { cwd: options.cwd, output: options.output }, out);
+  const specDirectory = dirname(resolve(options.cwd, options.from));
+  return generateFromSource(source, options.from, { cwd: options.cwd, output: options.output, specDirectory }, out);
 }
 
 export interface NewAnswers {
@@ -69,7 +71,7 @@ export async function newCommand(
   out: Output,
 ): Promise<number> {
   const yaml = agentYamlFromAnswers(answers);
-  return generateFromSource(yaml, 'agent.yaml', options, out, (directory) => {
+  return generateFromSource(yaml, 'agent.yaml', { ...options, specDirectory: options.cwd }, out, (directory) => {
     writeFileSync(join(directory, 'agent.yaml'), yaml);
   });
 }
@@ -77,7 +79,8 @@ export async function newCommand(
 async function generateFromSource(
   source: string,
   fileName: string,
-  options: { cwd: string; output?: string | undefined },
+  /** `specDirectory`: where the spec paths of `agent.openapi` are relative to. */
+  options: { cwd: string; output?: string | undefined; specDirectory: string },
   out: Output,
   beforeWrite?: (directory: string) => void,
 ): Promise<number> {
@@ -90,21 +93,32 @@ async function generateFromSource(
     return 1;
   }
 
-  const unsupported = unsupportedFeatures(result.config);
+  let config = result.config;
+  if (config.agent.openapi !== undefined) {
+    const resolved = resolveOpenApi(config, (spec) => readFileSync(resolve(options.specDirectory, spec), 'utf8'));
+    if (!resolved.ok) {
+      for (const error of resolved.errors) out.error(`${fileName} ${error}`);
+      return 1;
+    }
+    for (const warning of resolved.warnings) out.warn(`${fileName} ${warning}`);
+    config = resolved.file;
+  }
+
+  const unsupported = unsupportedFeatures(config);
   if (unsupported.length > 0) {
     out.error(`gen-agent ${VERSION} cannot generate everything this file asks for yet:`);
     for (const issue of unsupported) out.error(`  ${issue}`);
     return 1;
   }
 
-  const directory = resolve(options.cwd, options.output ?? result.config.agent.name);
+  const directory = resolve(options.cwd, options.output ?? config.agent.name);
   const shown = relative(options.cwd, directory) || '.';
   if (!isEmptyOrMissing(directory)) {
     out.error(`${shown} is not empty: choose another directory with --output (gen-agent never overwrites files)`);
     return 1;
   }
 
-  const files = await generateProject(result.config, VERSION);
+  const files = await generateProject(config, VERSION);
   mkdirSync(directory, { recursive: true });
   beforeWrite?.(directory);
   for (const file of files) {
@@ -112,10 +126,10 @@ async function generateFromSource(
     writeFileSync(join(directory, file.path), file.content, file.executable === true ? { mode: 0o755 } : {});
   }
 
-  const { provider, secrets } = buildModel(result.config);
+  const { provider, secrets } = buildModel(config);
   out.info(
     [
-      `Created ${result.config.agent.name} in ${shown} (${String(files.length)} files). Next steps:`,
+      `Created ${config.agent.name} in ${shown} (${String(files.length)} files). Next steps:`,
       `  cd ${shown}`,
       ...(provider.apiKeyEnv === undefined ? [`  ollama pull ${provider.model}`] : []),
       ...secrets.map((secret) => `  export ${secret}=...`),
