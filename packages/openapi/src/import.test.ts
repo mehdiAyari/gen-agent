@@ -350,10 +350,12 @@ describe('importOpenApi', () => {
       paths: { '/pets': { get: { operationId: 'listPets' } } },
     });
 
-    it('resolves a relative server URL against the address of the spec', () => {
-      expect(imported(relative, { specUrl: 'https://petstore.example.org/api/v3/openapi.json' }).tools[0]?.url).toBe(
-        'https://petstore.example.org/api/v3/pets',
-      );
+    it('resolves a relative server URL against the address of the spec, and says it must be kept', () => {
+      const result = imported(relative, { specUrl: 'https://petstore.example.org/api/v3/openapi.json' });
+
+      expect(result.tools[0]?.url).toBe('https://petstore.example.org/api/v3/pets');
+      expect(result).toMatchObject({ baseUrl: 'https://petstore.example.org/api/v3', baseUrlFromOptions: true });
+      expect(imported(spec({})).baseUrlFromOptions).toBe(false);
     });
 
     it('asks for the base URL when the spec does not give an absolute one', () => {

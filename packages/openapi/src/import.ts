@@ -26,6 +26,12 @@ type ParamType = 'string' | 'number' | 'integer' | 'boolean';
 export interface OpenApiImport {
   /** `info.title` of the spec. */
   title: string;
+  /** Short name of the API, from its title: petstore for "Swagger Petstore - OpenAPI 3.0". */
+  shortName: string;
+  /** Base URL of the API the tools call. */
+  baseUrl: string;
+  /** The spec gives no absolute server URL: the base URL came from the options and must be kept with the spec. */
+  baseUrlFromOptions: boolean;
   tools: ImportedTool[];
   /** Operations left out, by operation id (or method and path), and why. */
   skipped: { operation: string; reason: string }[];
@@ -80,7 +86,8 @@ export function importOpenApi(source: string, options: ImportOptions = {}): Impo
   const spec = document;
   const info = isObject(spec.info) ? spec.info : {};
   const title = typeof info.title === 'string' ? info.title : 'API';
-  const envPrefix = options.envPrefix ?? envPrefixOf(title);
+  const shortName = shortNameOf(title);
+  const envPrefix = options.envPrefix ?? shortName.toUpperCase().replaceAll('-', '_');
   const base = baseUrlOf(spec, options);
   if (!base.ok) return { ok: false, errors: [base.error] };
 
@@ -122,7 +129,10 @@ export function importOpenApi(source: string, options: ImportOptions = {}): Impo
       `${String(tools.length)} tools: models choose less reliably beyond ${String(MAX_TOOLS)}, keep the ones the agent needs with include`,
     );
   }
-  return { ok: true, value: { title, tools, skipped, warnings } };
+  return {
+    ok: true,
+    value: { title, shortName, baseUrl: base.url, baseUrlFromOptions: base.fromOptions, tools, skipped, warnings },
+  };
 }
 
 interface Operation {
@@ -339,9 +349,12 @@ function authOf(spec: Json, operation: Operation, envPrefix: string, notes: stri
   );
 }
 
-function baseUrlOf(spec: Json, options: ImportOptions): { ok: true; url: string } | { ok: false; error: string } {
+function baseUrlOf(
+  spec: Json,
+  options: ImportOptions,
+): { ok: true; url: string; fromOptions: boolean } | { ok: false; error: string } {
   const trim = (url: string): string => url.replace(/\/+$/, '');
-  if (options.baseUrl !== undefined) return { ok: true, url: trim(options.baseUrl) };
+  if (options.baseUrl !== undefined) return { ok: true, url: trim(options.baseUrl), fromOptions: true };
 
   const servers = Array.isArray(spec.servers) ? spec.servers : [];
   const server = isObject(servers[0]) ? servers[0] : { url: '/' };
@@ -351,8 +364,10 @@ function baseUrlOf(spec: Json, options: ImportOptions): { ok: true; url: string 
     return isObject(variable) && typeof variable.default === 'string' ? variable.default : match;
   });
 
-  if (/^https?:\/\//.test(url)) return { ok: true, url: trim(url) };
-  if (options.specUrl !== undefined) return { ok: true, url: trim(new URL(url, options.specUrl).href) };
+  if (/^https?:\/\//.test(url)) return { ok: true, url: trim(url), fromOptions: false };
+  if (options.specUrl !== undefined) {
+    return { ok: true, url: trim(new URL(url, options.specUrl).href), fromOptions: true };
+  }
   return { ok: false, error: `servers: the API URL "${url}" is relative: give the base URL of the API (baseUrl)` };
 }
 
@@ -454,12 +469,12 @@ function javaNameOf(apiName: string): string {
   return JAVA_RESERVED.has(safe) ? `${safe}Value` : safe;
 }
 
-/** SHOP for "Shop API", PETSTORE for "Swagger Petstore - OpenAPI 3.0". */
-function envPrefixOf(title: string): string {
+/** shop for "Shop API", petstore for "Swagger Petstore - OpenAPI 3.0": names files and environment variables. */
+function shortNameOf(title: string): string {
   const ignored = new Set(['api', 'apis', 'openapi', 'swagger', 'the', 'rest', 'v1', 'v2', 'v3']);
   const kept = title
     .split(/[^A-Za-z0-9]+/)
     .filter((token) => token !== '' && !ignored.has(token.toLowerCase()) && !/^\d+$/.test(token))
     .flatMap(words);
-  return (kept.slice(0, 2).join('_') || 'api').toUpperCase();
+  return kept.slice(0, 2).join('-') || 'api';
 }

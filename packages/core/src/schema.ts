@@ -172,7 +172,15 @@ const agent = z.strictObject({
     .default({ type: 'in-memory', window: 20 }),
   tools: z.array(tool).default([]),
   openapi: z
-    .array(z.strictObject({ spec: z.string().min(1), include: z.array(z.string().min(1)).optional() }))
+    .array(
+      z.strictObject({
+        /** Path of the spec file, relative to agent.yaml. */
+        spec: z.string().min(1),
+        include: z.array(z.string().min(1)).optional(),
+        /** Base URL of the API, when the spec gives a relative server URL. */
+        baseUrl: z.url({ protocol: /^https?$/ }).optional(),
+      }),
+    )
     .optional(),
   mcp: z
     .array(

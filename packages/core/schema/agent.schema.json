@@ -358,6 +358,10 @@
                   "type": "string",
                   "minLength": 1
                 }
+              },
+              "baseUrl": {
+                "type": "string",
+                "format": "uri"
               }
             },
             "required": ["spec"],

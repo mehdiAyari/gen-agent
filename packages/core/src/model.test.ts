@@ -218,7 +218,7 @@ describe('unsupportedFeatures', () => {
         'agent.memory.type: "jdbc" arrives in V4',
         'agent.tools.1.approval: human approval arrives in a later version',
         'agent.mcp: MCP clients arrive in V4',
-        'agent.openapi: OpenAPI import arrives in V3',
+        'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
         'agent.rag: RAG arrives in V5',
       ]),
     );

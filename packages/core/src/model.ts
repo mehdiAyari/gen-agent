@@ -313,7 +313,10 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     add(tool.approval, `agent.tools.${String(index)}.approval: human approval arrives in a later version`);
     if (tool.type === 'http') add(tool.cacheTtl, `agent.tools.${String(index)}.cacheTtl: tool caching arrives in V4`);
   });
-  add(agent.openapi, 'agent.openapi: OpenAPI import arrives in V3');
+  add(
+    agent.openapi,
+    'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
+  );
   add(agent.mcp, 'agent.mcp: MCP clients arrive in V4');
   add(agent.rag, 'agent.rag: RAG arrives in V5');
   add(agent.security, 'agent.security: authentication, rate limiting and guardrails arrive in V4 and V5');
