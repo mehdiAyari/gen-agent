@@ -138,6 +138,12 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
     if (agent.model.fallback) outsideEu(agent.model.fallback.provider, ['agent', 'model', 'fallback', 'provider']);
   }
 
+  for (const limit of ['rateLimit', 'tokenBudget'] as const) {
+    if (agent.security?.[limit] !== undefined && agent.security.auth !== 'oidc') {
+      errors.push({ path: ['agent', 'security', limit], message: 'limits are counted per user: set auth: oidc' });
+    }
+  }
+
   // Every agent keeps conversation memory (in-memory by default), so a global cache could serve one user's data to another.
   if (agent.cache?.semantic?.scope === 'global') {
     errors.push({

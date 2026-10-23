@@ -191,15 +191,53 @@ agent:
   it('pins the Spring Boot version Spring AI depends on, and flags which kinds of tools exist', () => {
     const model = buildModel(assistant);
 
-    expect(model.versions).toEqual({ springBoot: '4.1.1', springAi: '2.0.1' });
-    expect(model.features).toEqual({ httpTools: true, javaTools: true });
+    expect(model.versions).toEqual({ springBoot: '4.1.1', springAi: '2.0.1', bucket4j: '8.21.0' });
+    expect(model.features).toEqual({
+      httpTools: true,
+      javaTools: true,
+      jdbcMemory: false,
+      oidc: false,
+      limits: false,
+      dockerCompose: false,
+    });
   });
 
   it('keeps the system prompt as a classpath resource and the memory window', () => {
     const model = buildModel(assistant);
 
     expect(model.prompt).toEqual({ resource: 'prompts/system.md', aiDisclosure: true });
-    expect(model.memory).toEqual({ window: 20 });
+    expect(model.memory).toEqual({ window: 20, jdbc: false });
+  });
+});
+
+describe('buildModel with the standard profile', () => {
+  const standard = parse(`
+agent:
+  name: support-desk
+  profile: standard
+  model: { provider: mistral, name: mistral-small-latest }
+`);
+
+  it('turns on the JDBC memory, OIDC, the limits and Docker Compose', () => {
+    expect(buildModel(standard).features).toMatchObject({
+      jdbcMemory: true,
+      oidc: true,
+      limits: true,
+      dockerCompose: true,
+    });
+  });
+
+  it('turns the limits into Bucket4j capacities and Spring durations', () => {
+    expect(buildModel(standard).limits).toEqual({
+      requests: { capacity: 30, period: '1m', unit: 'minute' },
+      tokens: { capacity: 100000, period: '1d', unit: 'day' },
+    });
+  });
+
+  it('gives the tests an issuer they never call: requests carry their own token', () => {
+    expect(buildModel(standard).testProperties).toContain(
+      'spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org',
+    );
   });
 });
 
@@ -208,14 +246,19 @@ describe('unsupportedFeatures', () => {
     expect(unsupportedFeatures(assistant)).toEqual([]);
   });
 
+  it('accepts the standard profile', () => {
+    expect(
+      unsupportedFeatures(parse('agent:\n  name: desk\n  profile: standard\n  model: { provider: ollama, name: m }\n')),
+    ).toEqual([]);
+  });
+
   it('lists what V1 cannot generate yet, with the version that brings it', () => {
     const dossier = parse(readFileSync(new URL('./__fixtures__/spec-example.yaml', import.meta.url), 'utf8'));
 
     expect(unsupportedFeatures(dossier)).toEqual(
       expect.arrayContaining([
-        'agent.profile: "production" arrives in V5 (V1 generates the minimal profile)',
+        'agent.profile: "production" arrives in V5 (minimal and standard are generated)',
         'agent.springAi: 1.0.0 is not supported, this version of gen-agent generates Spring AI 2.0.1',
-        'agent.memory.type: "jdbc" arrives in V4',
         'agent.tools.1.approval: human approval arrives in a later version',
         'agent.mcp: MCP clients arrive in V4',
         'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',

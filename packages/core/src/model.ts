@@ -21,11 +21,25 @@ export interface GenerationModel {
     generatedPackage: string;
     applicationClass: string;
   };
-  versions: { springBoot: string; springAi: string };
-  features: { httpTools: boolean; javaTools: boolean };
+  versions: { springBoot: string; springAi: string; bucket4j: string };
+  /** Docker images of the services, pinned: the same in the tests and in Docker Compose. */
+  images: typeof IMAGES;
+  features: {
+    httpTools: boolean;
+    javaTools: boolean;
+    /** Conversations kept in Postgres through Spring AI's JDBC repository. */
+    jdbcMemory: boolean;
+    /** Requests carry a JWT from an OIDC provider; conversations belong to their user. */
+    oidc: boolean;
+    /** Request rate and token budget per user, counted in Redis. */
+    limits: boolean;
+    dockerCompose: boolean;
+  };
+  /** Per user; absent when not limited. */
+  limits: { requests?: Limit; tokens?: Limit };
   provider: ProviderSettings;
   prompt: { resource: string; aiDisclosure: boolean };
-  memory: { window: number };
+  memory: { window: number; jdbc: boolean };
   tools: ModelTool[];
   /** Properties the generated tests set instead of environment variables (API keys, tool tokens). */
   testProperties: string[];
@@ -100,11 +114,45 @@ export type ModelTool =
       handlerClass: string;
     });
 
+/** A Bucket4j bandwidth: `capacity` per `period`, a Spring duration (1m, 1d). */
+interface Limit {
+  capacity: number;
+  period: string;
+  /** The period in words, for the README: second, minute, hour, day. */
+  unit: string;
+}
+
+const PERIODS: Record<string, { period: string; unit: string }> = {
+  sec: { period: '1s', unit: 'second' },
+  min: { period: '1m', unit: 'minute' },
+  hour: { period: '1h', unit: 'hour' },
+  day: { period: '1d', unit: 'day' },
+};
+
+/** 30/min → 30 per 1m. */
+function limitOf(rate: string | undefined): Limit | undefined {
+  const match = rate === undefined ? null : /^(\d+)\/(sec|min|hour|day)$/.exec(rate);
+  const period = match === null ? undefined : PERIODS[match[2] ?? ''];
+  return match === null || period === undefined ? undefined : { capacity: Number(match[1]), ...period };
+}
+
 interface HttpAuth {
   kind: 'bearer' | 'header';
   header: string;
   env: string;
 }
+
+/** Not managed by Spring Boot: checked on Maven Central (2026-10-24). */
+const BUCKET4J_VERSION = '8.21.0';
+
+/** Checked on Docker Hub and Quay (2026-10-24). */
+const IMAGES = {
+  postgres: 'postgres:18.6-alpine',
+  redis: 'redis:8.10.2-alpine',
+  keycloak: 'quay.io/keycloak/keycloak:26.8.1',
+  jdk: 'eclipse-temurin:21.0.12.1_1-jdk-alpine',
+  jre: 'eclipse-temurin:21.0.12.1_1-jre-alpine',
+} as const;
 
 /** Large enough for a typical JSON answer, small enough to leave room in the model's context. */
 export const DEFAULT_MAX_RESPONSE_CHARS = 20_000;
@@ -170,6 +218,9 @@ export function buildModel(file: AgentFile): GenerationModel {
 
   const tools = agent.tools.map((tool) => toolModel(tool));
   const providerSettings = PROVIDERS[agent.model.provider];
+  const oidc = agent.security?.auth === 'oidc';
+  const requests = limitOf(agent.security?.rateLimit);
+  const tokens = limitOf(agent.security?.tokenBudget);
 
   return {
     agent,
@@ -181,11 +232,17 @@ export function buildModel(file: AgentFile): GenerationModel {
       generatedPackage: `${basePackage}.generated`,
       applicationClass: `${pascalCase(agent.name)}Application`,
     },
-    versions: { springBoot: SUPPORTED_SPRING_BOOT, springAi: agent.springAi },
+    versions: { springBoot: SUPPORTED_SPRING_BOOT, springAi: agent.springAi, bucket4j: BUCKET4J_VERSION },
+    images: IMAGES,
     features: {
       httpTools: agent.tools.some((tool) => tool.type === 'http'),
       javaTools: agent.tools.some((tool) => tool.type === 'java'),
+      jdbcMemory: agent.memory.type === 'jdbc',
+      oidc,
+      limits: requests !== undefined || tokens !== undefined,
+      dockerCompose: agent.deploy?.includes('docker-compose') ?? false,
     },
+    limits: { ...(requests === undefined ? {} : { requests }), ...(tokens === undefined ? {} : { tokens }) },
     provider: {
       id: agent.model.provider,
       ...providerSettings,
@@ -194,7 +251,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       maxTokens: agent.model.maxTokens,
     },
     prompt: { resource: agent.prompt.system, aiDisclosure: agent.prompt.aiDisclosure },
-    memory: { window: agent.memory.window },
+    memory: { window: agent.memory.window, jdbc: agent.memory.type === 'jdbc' },
     tools,
     secrets: [
       ...new Set([
@@ -204,6 +261,7 @@ export function buildModel(file: AgentFile): GenerationModel {
     ],
     testProperties: [
       ...(providerSettings.apiKeyEnv === undefined ? [] : [`${providerSettings.propertyPrefix}.api-key=test-key`]),
+      ...(oidc ? ['spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org'] : []),
       ...tools.flatMap((tool) =>
         tool.kind === 'http' && tool.auth !== undefined ? [`agent.tools.${tool.name}.token=test-token`] : [],
       ),
@@ -293,10 +351,7 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     if (condition !== undefined && condition !== false) issues.push(message);
   };
 
-  if (agent.profile !== 'minimal') {
-    const version = agent.profile === 'standard' ? 'V4' : 'V5';
-    issues.push(`agent.profile: "${agent.profile}" arrives in ${version} (V1 generates the minimal profile)`);
-  }
+  add(agent.profile === 'production', 'agent.profile: "production" arrives in V5 (minimal and standard are generated)');
   add(agent.build === 'gradle', 'agent.build: Gradle arrives in a later version (V1 generates Maven)');
   add(
     agent.springAi !== SUPPORTED_SPRING_AI,
@@ -304,9 +359,7 @@ export function unsupportedFeatures(file: AgentFile): string[] {
   );
   add(agent.model.routing, 'agent.model.routing: model routing arrives in a later version');
   add(agent.model.fallback, 'agent.model.fallback: provider fallback arrives in a later version');
-  if (agent.memory.type !== 'in-memory') {
-    issues.push(`agent.memory.type: "${agent.memory.type}" arrives in ${agent.memory.type === 'jdbc' ? 'V4' : 'V5'}`);
-  }
+  add(agent.memory.type === 'redis', 'agent.memory.type: "redis" arrives in V5 (in-memory and jdbc are generated)');
   add(agent.memory.summarize, 'agent.memory.summarize: conversation summaries arrive in V5');
   add(agent.memory.retention, 'agent.memory.retention: retention and purge arrive in V4');
   agent.tools.forEach((tool, index) => {
@@ -319,7 +372,11 @@ export function unsupportedFeatures(file: AgentFile): string[] {
   );
   add(agent.mcp, 'agent.mcp: MCP clients arrive in V4');
   add(agent.rag, 'agent.rag: RAG arrives in V5');
-  add(agent.security, 'agent.security: authentication, rate limiting and guardrails arrive in V4 and V5');
+  add(agent.security?.piiMasking, 'agent.security.piiMasking: PII masking arrives in V5');
+  add(
+    agent.security?.injectionDetection,
+    'agent.security.injectionDetection: prompt injection detection arrives in V5',
+  );
   add(agent.cache, 'agent.cache: caching arrives in V4 (exact) and V5 (semantic)');
   add(agent.limits, 'agent.limits: iteration and timeout limits arrive in a later version');
   add(agent.observability, 'agent.observability: OpenTelemetry and metrics arrive in V4');
@@ -332,6 +389,9 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     agent.interface.includes('chat-ui'),
     'agent.interface: the chat UI arrives in V4 (V1 generates the REST endpoint)',
   );
-  add(agent.deploy, 'agent.deploy: Docker Compose arrives in V4, Helm later');
+  add(
+    agent.deploy?.includes('helm'),
+    'agent.deploy: the Helm chart arrives in a later version (docker-compose is generated)',
+  );
   return issues;
 }

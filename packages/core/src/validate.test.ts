@@ -50,6 +50,44 @@ describe('validateAgentYaml', () => {
       });
     });
 
+    it('equips the standard profile: JDBC memory, OIDC, request and token limits, Docker Compose', () => {
+      const result = validateAgentYaml(withAgent('profile: standard\n'));
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.config.agent).toMatchObject({
+        memory: { type: 'jdbc', window: 20 },
+        security: { auth: 'oidc', rateLimit: '30/min', tokenBudget: '100000/day' },
+        deploy: ['docker-compose'],
+      });
+    });
+
+    it('keeps what the file sets over the profile defaults', () => {
+      const result = validateAgentYaml(
+        withAgent('profile: standard\nmemory:\n  type: in-memory\nsecurity:\n  auth: none\ndeploy: []\n'),
+      );
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      // Without users there is nobody to count requests or tokens for: no limits by default.
+      expect(result.config.agent).toMatchObject({
+        memory: { type: 'in-memory' },
+        security: { auth: 'none' },
+        deploy: [],
+      });
+      expect(result.config.agent.security).not.toHaveProperty('rateLimit');
+    });
+
+    it('leaves the minimal profile without security, database or Docker', () => {
+      const result = validateAgentYaml(minimal);
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.config.agent.memory.type).toBe('in-memory');
+      expect(result.config.agent.security).toBeUndefined();
+      expect(result.config.agent.deploy).toBeUndefined();
+    });
+
     it('accepts tools with a description, a method and typed parameters', () => {
       const result = validateAgentYaml(
         withAgent(`
@@ -184,6 +222,16 @@ tools:
       const result = validateAgentYaml(withAgent('cache:\n  semantic:\n    threshold: 0.95\n    scope: global\n'));
 
       expect(errorsOf(result)).toEqual([expect.stringMatching(/^agent.cache.semantic.scope: /)]);
+    });
+
+    it.each(['rateLimit: 30/min', 'tokenBudget: 1000/day'])('needs signed-in users to apply %s', (limit) => {
+      const result = validateAgentYaml(withAgent(`security:\n  ${limit}\n`));
+
+      expect(errorsOf(result)).toEqual([
+        expect.stringMatching(
+          /^agent\.security\.(rateLimit|tokenBudget): limits are counted per user: set auth: oidc$/,
+        ),
+      ]);
     });
 
     it('warns when a tool with side effects has no human approval', () => {

@@ -118,13 +118,11 @@
         },
         "memory": {
           "default": {
-            "type": "in-memory",
             "window": 20
           },
           "type": "object",
           "properties": {
             "type": {
-              "default": "in-memory",
               "type": "string",
               "enum": ["in-memory", "jdbc", "redis"]
             },

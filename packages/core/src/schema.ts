@@ -164,12 +164,13 @@ const agent = z.strictObject({
     .default({ system: 'prompts/system.md', aiDisclosure: true }),
   memory: z
     .strictObject({
-      type: z.enum(['in-memory', 'jdbc', 'redis']).default('in-memory'),
+      /** Default from the profile: in-memory for minimal, jdbc otherwise. */
+      type: z.enum(['in-memory', 'jdbc', 'redis']).optional(),
       window: z.int().positive().default(20),
       summarize: z.boolean().optional(),
       retention: duration.optional(),
     })
-    .default({ type: 'in-memory', window: 20 }),
+    .default({ window: 20 }),
   tools: z.array(tool).default([]),
   openapi: z
     .array(
@@ -256,7 +257,36 @@ const agent = z.strictObject({
 });
 
 /** Schema of an `agent.yaml` file. Cross-field rules live in `rules.ts`. */
-export const agentFileSchema = z.strictObject({ agent });
+/** Limits of the standard profile when agent.yaml sets none: enough for a person, not for a script. */
+export const STANDARD_LIMITS = { rateLimit: '30/min', tokenBudget: '100000/day' } as const;
+
+/**
+ * What the profile equips the agent with, unless agent.yaml says otherwise: minimal adds nothing; standard and
+ * production add a JDBC memory, OIDC with request and token limits per user, and Docker Compose.
+ */
+const equipped = agent.transform((definition) => {
+  const full = definition.profile !== 'minimal';
+  const memory = { ...definition.memory, type: definition.memory.type ?? (full ? 'jdbc' : 'in-memory') };
+  if (!full) return { ...definition, memory };
+
+  const auth = definition.security?.auth ?? 'oidc';
+  // Limits are counted per user: without sign-in, none is added.
+  const limits =
+    auth === 'oidc'
+      ? {
+          rateLimit: definition.security?.rateLimit ?? STANDARD_LIMITS.rateLimit,
+          tokenBudget: definition.security?.tokenBudget ?? STANDARD_LIMITS.tokenBudget,
+        }
+      : {};
+  return {
+    ...definition,
+    memory,
+    security: { ...definition.security, auth, ...limits },
+    deploy: definition.deploy ?? ['docker-compose' as const],
+  };
+});
+
+export const agentFileSchema = z.strictObject({ agent: equipped });
 
 export type AgentFile = z.output<typeof agentFileSchema>;
 export type AgentDefinition = AgentFile['agent'];
