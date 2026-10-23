@@ -11,12 +11,16 @@ public class ServiceStatusTool {
 
     private final RestClient restClient;
 
+    private final int maxResponseChars;
+
     ServiceStatusTool(RestClient.Builder restClientBuilder, ServiceStatusToolProperties properties) {
         this.restClient = restClientBuilder.baseUrl(properties.url()).build();
+        this.maxResponseChars = properties.maxResponseChars();
     }
 
     @Tool(description = "Current status of the service")
     public String serviceStatus() {
-        return restClient.get().retrieve().body(String.class);
+        String body = restClient.get().retrieve().body(String.class);
+        return ToolResponses.limit(body, maxResponseChars);
     }
 }

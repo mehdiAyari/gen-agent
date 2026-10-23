@@ -23,7 +23,14 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
  * Starts the whole application with a fake model: checks the wiring (system prompt, memory, tools) and the REST
  * endpoint without calling a real provider.
  */
-@SpringBootTest(properties = "spring.ai.anthropic.api-key=test-key")
+@SpringBootTest(
+    properties = {
+        "spring.ai.anthropic.api-key=test-key",
+        "agent.tools.create-ticket.token=test-token",
+        "agent.tools.ticket-status.token=test-token",
+        "agent.tools.add-comment.token=test-token",
+    }
+)
 @AutoConfigureMockMvc
 class TicketBotApplicationTests {
 

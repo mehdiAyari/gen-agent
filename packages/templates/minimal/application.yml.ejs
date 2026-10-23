@@ -25,6 +25,10 @@ agent:
 <%_     if (tool.kind === 'http') { _%>
     <%= tool.name %>:
       url: <%= yamlString(tool.url) %>
+<%_       if (tool.auth) { _%>
+      token: ${<%= tool.auth.env %>}
+<%_       } _%>
+      max-response-chars: <%= tool.maxResponseChars %>
 <%_     } _%>
 <%_   } _%>
 <%_ } _%>

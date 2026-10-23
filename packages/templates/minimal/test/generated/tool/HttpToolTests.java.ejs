@@ -2,8 +2,20 @@
 package <%= project.generatedPackage %>.tool;
 
 <%- imports %>
+<%_
+  const call = (args) => `tool.${item.methodName}(${args.join(', ')})`;
+  const samples = item.params.map((param) => param.sample);
+  const encodedParam = item.pathParams.find((param) => param.javaType === 'String');
+  const requestTo = staticImport('org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo');
+  const startsWith = staticImport('org.hamcrest.Matchers.startsWith');
+  const withSuccess = staticImport('org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess');
+_%>
 
+<%_ if (item.auth) { _%>
+@<%= type('org.springframework.boot.restclient.test.autoconfigure.RestClientTest') %>(components = <%= item.className %>.class, properties = "agent.tools.<%= item.name %>.token=test-token")
+<%_ } else { _%>
 @<%= type('org.springframework.boot.restclient.test.autoconfigure.RestClientTest') %>(<%= item.className %>.class)
+<%_ } _%>
 @<%= type('org.springframework.boot.context.properties.EnableConfigurationProperties') %>(<%= item.className %>Properties.class)
 class <%= item.className %>Tests {
 
@@ -15,19 +27,38 @@ class <%= item.className %>Tests {
 
     @<%= type('org.junit.jupiter.api.Test') %>
     void callsTheConfiguredEndpointAndReturnsItsBody() {
-        server.expect(<%= staticImport('org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo') %>(<%= staticImport('org.hamcrest.Matchers.startsWith') %>(<%- javaString(item.url) %>)))
+        server.expect(<%= requestTo %>(<%= startsWith %>(<%- javaString(item.sampleUrl) %>)))
                 .andExpect(<%= staticImport('org.springframework.test.web.client.match.MockRestRequestMatchers.method') %>(<%= type('org.springframework.http.HttpMethod') %>.<%= item.method %>))
-                .andRespond(<%= staticImport('org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess') %>("{\"ok\":true}", <%= type('org.springframework.http.MediaType') %>.APPLICATION_JSON));
+<%_ if (item.auth && item.auth.kind === 'bearer') { _%>
+                .andExpect(<%= staticImport('org.springframework.test.web.client.match.MockRestRequestMatchers.header') %>(<%= type('org.springframework.http.HttpHeaders') %>.AUTHORIZATION, "Bearer test-token"))
+<%_ } else if (item.auth) { _%>
+                .andExpect(<%= staticImport('org.springframework.test.web.client.match.MockRestRequestMatchers.header') %>(<%- javaString(item.auth.header) %>, "test-token"))
+<%_ } _%>
+<%_ if (item.sendsBody) { _%>
+                .andExpect(<%= staticImport('org.springframework.test.web.client.match.MockRestRequestMatchers.content') %>().json(<%- javaString(item.sampleBodyJson) %>))
+<%_ } _%>
+                .andRespond(<%= withSuccess %>("{\"ok\":true}", <%= type('org.springframework.http.MediaType') %>.APPLICATION_JSON));
 
-        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(tool.<%= item.methodName %>(<%= item.params.map((param) => param.sample).join(', ') %>)).isEqualTo("{\"ok\":true}");
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(<%- call(samples) %>).isEqualTo("{\"ok\":true}");
         server.verify();
     }
+<%_ if (encodedParam) { _%>
+
+    @Test
+    void encodesPathValuesSoTheModelCannotChangeThePath() {
+        server.expect(<%= requestTo %>(<%= startsWith %>(<%- javaString(item.sampleUrl.replace(`/${encodedParam.sampleText}`, '/..%2Fadmin')) %>)))
+                .andRespond(<%= withSuccess %>("{\"ok\":true}", MediaType.APPLICATION_JSON));
+
+        <%- call(item.params.map((param) => (param === encodedParam ? '"../admin"' : param.sample))) %>;
+        server.verify();
+    }
+<%_ } _%>
 <%_ if (item.firstRequiredParam) { _%>
 
     @Test
     void tellsTheModelWhichRequiredArgumentIsMissing() {
         <%= staticImport('org.assertj.core.api.Assertions.assertThatNullPointerException') %>()
-                .isThrownBy(() -> tool.<%= item.methodName %>(<%_ item.params.forEach((param, index) => { _%><%= index > 0 ? ', ' : '' %><%= param.name === item.firstRequiredParam ? 'null' : param.sample %><%_ }) _%>))
+                .isThrownBy(() -> <%- call(item.params.map((param) => (param.name === item.firstRequiredParam ? 'null' : param.sample))) %>)
                 .withMessage("<%= item.firstRequiredParam %> is required");
     }
 <%_ } _%>

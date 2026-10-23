@@ -14,8 +14,11 @@ public class WeatherForecastTool {
 
     private final RestClient restClient;
 
+    private final int maxResponseChars;
+
     WeatherForecastTool(RestClient.Builder restClientBuilder, WeatherForecastToolProperties properties) {
         this.restClient = restClientBuilder.baseUrl(properties.url()).build();
+        this.maxResponseChars = properties.maxResponseChars();
     }
 
     @Tool(description = "Weather forecast for a location")
@@ -26,7 +29,7 @@ public class WeatherForecastTool {
     ) {
         Objects.requireNonNull(latitude, "latitude is required");
         Objects.requireNonNull(longitude, "longitude is required");
-        return restClient
+        String body = restClient
             .get()
             .uri(uri ->
                 uri
@@ -37,5 +40,6 @@ public class WeatherForecastTool {
             )
             .retrieve()
             .body(String.class);
+        return ToolResponses.limit(body, maxResponseChars);
     }
 }

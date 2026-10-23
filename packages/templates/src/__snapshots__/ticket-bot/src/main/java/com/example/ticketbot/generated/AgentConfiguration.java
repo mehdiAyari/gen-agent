@@ -1,10 +1,14 @@
 // Managed by gen-agent: changes here are overwritten. Edit agent.yaml and regenerate.
 package com.example.ticketbot.generated;
 
+import com.example.ticketbot.generated.tool.AddCommentTool;
+import com.example.ticketbot.generated.tool.AddCommentToolProperties;
 import com.example.ticketbot.generated.tool.CreateTicketTool;
 import com.example.ticketbot.generated.tool.CreateTicketToolProperties;
 import com.example.ticketbot.generated.tool.ServiceStatusTool;
 import com.example.ticketbot.generated.tool.ServiceStatusToolProperties;
+import com.example.ticketbot.generated.tool.TicketStatusTool;
+import com.example.ticketbot.generated.tool.TicketStatusToolProperties;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -19,6 +23,8 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties({
     AgentProperties.class,
     CreateTicketToolProperties.class,
+    TicketStatusToolProperties.class,
+    AddCommentToolProperties.class,
     ServiceStatusToolProperties.class,
 })
 class AgentConfiguration {
@@ -37,12 +43,14 @@ class AgentConfiguration {
         ChatMemory chatMemory,
         AgentProperties properties,
         CreateTicketTool createTicketTool,
+        TicketStatusTool ticketStatusTool,
+        AddCommentTool addCommentTool,
         ServiceStatusTool serviceStatusTool
     ) {
         return builder
             .defaultSystem(properties.systemPrompt())
             .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
-            .defaultTools(createTicketTool, serviceStatusTool)
+            .defaultTools(createTicketTool, ticketStatusTool, addCommentTool, serviceStatusTool)
             .build();
     }
 }

@@ -74,6 +74,12 @@ export const minimalEntries: TemplateEntry[] = [
     output: (m, tool) => main(m, `generated/tool/${tool.className}Properties.java`),
   },
   {
+    template: 'java/generated/tool/ToolResponses.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.httpTools,
+    output: (m) => main(m, 'generated/tool/ToolResponses.java'),
+  },
+  {
     template: 'java/generated/tool/JavaTool.java.ejs',
     owner: 'generated',
     each: 'javaTool',
@@ -107,6 +113,12 @@ export const minimalEntries: TemplateEntry[] = [
     owner: 'generated',
     each: 'httpTool',
     output: (m, tool) => test(m, `generated/tool/${tool.className}Tests.java`),
+  },
+  {
+    template: 'test/generated/tool/ToolResponsesTests.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.httpTools,
+    output: (m) => test(m, 'generated/tool/ToolResponsesTests.java'),
   },
   {
     template: 'test/generated/tool/JavaToolTests.java.ejs',

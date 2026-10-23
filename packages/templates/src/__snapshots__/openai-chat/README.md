@@ -8,7 +8,7 @@ Spring Boot 4.1.1, Spring AI 2.0.1, Java 21.
 Java 21 is the only requirement: `./mvnw` downloads Maven (checked against its SHA-256) on first use.
 
 ```bash
-export OPENAI_API_KEY=...   # never commit the key
+export OPENAI_API_KEY=...   # never commit it
 ./mvnw spring-boot:run
 ```
 

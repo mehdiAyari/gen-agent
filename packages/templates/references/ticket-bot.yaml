@@ -1,4 +1,5 @@
-# Anthropic, a POST tool sending a JSON body, a GET tool without parameters.
+# Anthropic; HTTP tools with a JSON body, path parameters, query parameters, bearer and header authentication, a
+# response limit, and a GET tool without parameters.
 agent:
   name: ticket-bot
   description: Opens support tickets
@@ -14,9 +15,29 @@ agent:
       method: POST
       description: Creates a support ticket
       url: https://tickets.example.org/api/tickets
+      auth: { type: bearer, env: TICKETS_API_TOKEN }
       params:
         - { name: title, type: string, required: true }
         - { name: priority, type: integer }
+    - name: ticket-status
+      type: http
+      description: Status of a ticket, with its history when asked
+      url: https://tickets.example.org/api/tickets/{ticketId}
+      auth: { type: bearer, env: TICKETS_API_TOKEN }
+      maxResponseChars: 4000
+      params:
+        - { name: ticketId, type: string, required: true }
+        - { name: withHistory, type: boolean }
+    - name: add-comment
+      type: http
+      method: POST
+      description: Adds a comment to a ticket
+      url: https://tickets.example.org/api/projects/{project}/tickets/{ticketId}/comments
+      auth: { type: header, name: X-API-Key, env: TICKETS_API_KEY }
+      params:
+        - { name: ticketId, type: integer, required: true }
+        - { name: project, type: string, required: true }
+        - { name: text, type: string, required: true }
     - name: service-status
       type: http
       description: Current status of the service

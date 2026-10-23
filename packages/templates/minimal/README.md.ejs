@@ -11,18 +11,16 @@ Spring Boot <%= versions.springBoot %>, Spring AI <%= versions.springAi %>, Java
 
 Java <%= agent.java %> is the only requirement: `./mvnw` downloads Maven (checked against its SHA-256) on first use.
 
-<%_ if (provider.apiKeyEnv) { _%>
-```bash
-export <%= provider.apiKeyEnv %>=...   # never commit the key
-./mvnw spring-boot:run
-```
-<%_ } else { _%>
+<%_ if (!provider.apiKeyEnv) { _%>
 Start [Ollama](https://ollama.com) and pull the model (`ollama pull <%= provider.model %>`), then:
 
+<%_ } _%>
 ```bash
+<%_ for (const secret of secrets) { _%>
+export <%= secret %>=...   # never commit it
+<%_ } _%>
 ./mvnw spring-boot:run
 ```
-<%_ } _%>
 
 Talk to the agent:
 

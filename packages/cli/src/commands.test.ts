@@ -45,6 +45,19 @@ const agentYaml = `agent:
 `;
 
 describe('gen-agent generate --from', () => {
+  it('lists every environment variable the agent needs, the tokens of its tools included', async () => {
+    writeFileSync(
+      join(cwd, 'agent.yaml'),
+      agentYaml.replace(
+        '      url: https://tickets.example.org/api\n',
+        '      url: https://tickets.example.org/api\n      auth: { type: bearer, env: TICKETS_API_TOKEN }\n',
+      ),
+    );
+
+    expect(await generateCommand({ from: 'agent.yaml', cwd }, out)).toBe(0);
+    expect(out.text()).toMatch(/export MISTRAL_API_KEY=\.\.\.\n {2}export TICKETS_API_TOKEN=\.\.\./);
+  });
+
   it('generates the project in a directory named after the agent and prints the next steps', async () => {
     writeFileSync(join(cwd, 'agent.yaml'), agentYaml);
 

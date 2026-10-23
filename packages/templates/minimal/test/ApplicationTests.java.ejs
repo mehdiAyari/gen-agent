@@ -6,8 +6,10 @@ package <%= project.basePackage %>;
  * Starts the whole application with a fake model: checks the wiring (system prompt, memory, tools) and the REST
  * endpoint without calling a real provider.
  */
-<%_ if (provider.apiKeyEnv) { _%>
-@<%= type('org.springframework.boot.test.context.SpringBootTest') %>(properties = "<%= provider.propertyPrefix %>.api-key=test-key")
+<%_ if (testProperties.length === 1) { _%>
+@<%= type('org.springframework.boot.test.context.SpringBootTest') %>(properties = <%- javaString(testProperties[0]) %>)
+<%_ } else if (testProperties.length > 1) { _%>
+@<%= type('org.springframework.boot.test.context.SpringBootTest') %>(properties = {<%- testProperties.map((property) => javaString(property)).join(', ') %>})
 <%_ } else { _%>
 @<%= type('org.springframework.boot.test.context.SpringBootTest') %>
 <%_ } _%>

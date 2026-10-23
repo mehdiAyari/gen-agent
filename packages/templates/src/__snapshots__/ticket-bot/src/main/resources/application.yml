@@ -15,5 +15,16 @@ agent:
   tools:
     create-ticket:
       url: https://tickets.example.org/api/tickets
+      token: ${TICKETS_API_TOKEN}
+      max-response-chars: 20000
+    ticket-status:
+      url: "https://tickets.example.org/api/tickets/{ticketId}"
+      token: ${TICKETS_API_TOKEN}
+      max-response-chars: 4000
+    add-comment:
+      url: "https://tickets.example.org/api/projects/{project}/tickets/{ticketId}/comments"
+      token: ${TICKETS_API_KEY}
+      max-response-chars: 20000
     service-status:
       url: https://status.example.org/api/status
+      max-response-chars: 20000

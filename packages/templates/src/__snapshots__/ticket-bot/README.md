@@ -10,7 +10,9 @@ Spring Boot 4.1.1, Spring AI 2.0.1, Java 21.
 Java 21 is the only requirement: `./mvnw` downloads Maven (checked against its SHA-256) on first use.
 
 ```bash
-export ANTHROPIC_API_KEY=...   # never commit the key
+export ANTHROPIC_API_KEY=...   # never commit it
+export TICKETS_API_TOKEN=...   # never commit it
+export TICKETS_API_KEY=...   # never commit it
 ./mvnw spring-boot:run
 ```
 
@@ -45,4 +47,6 @@ The tests use a fake model: they never call anthropic and cost nothing.
 | Tool | Kind | Implementation |
 | --- | --- | --- |
 | `create-ticket` | HTTP `POST` | `agent.tools.create-ticket.url` in `application.yml` |
+| `ticket-status` | HTTP `GET` | `agent.tools.ticket-status.url` in `application.yml` |
+| `add-comment` | HTTP `POST` | `agent.tools.add-comment.url` in `application.yml` |
 | `service-status` | HTTP `GET` | `agent.tools.service-status.url` in `application.yml` |

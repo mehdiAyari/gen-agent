@@ -16,3 +16,4 @@ agent:
   tools:
     weather-forecast:
       url: https://api.open-meteo.com/v1/forecast
+      max-response-chars: 20000
