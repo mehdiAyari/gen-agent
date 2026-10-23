@@ -7,7 +7,7 @@ JHipster. Point it at an OpenAPI spec, or describe your agent in an `agent.yaml`
 project that compiles, passes its tests and runs. From the command line, from a web generator that runs entirely in
 your browser, or from your coding assistant over MCP.
 
-**Status:** `minimal` profile. See [what is not done yet](#limits).
+**Status:** `minimal` and `standard` profiles. See [what is not done yet](#limits).
 
 ![An existing API becomes an agent: the Petstore spec imported, the project generated, a local model calling the API](docs/demo/openapi-demo.gif)
 
@@ -89,6 +89,25 @@ export MISTRAL_API_KEY=...              # or OPENAI_API_KEY, ANTHROPIC_API_KEY; 
 curl -s localhost:8080/api/chat -H 'Content-Type: application/json' -d '{"message": "Hello"}'
 ```
 
+## Profiles
+
+| Profile    | What the agent comes with                                                                                                                                                                          |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `minimal`  | the agent alone: chat endpoint, memory, tools; nothing else to run                                                                                                                                 |
+| `standard` | conversations in Postgres, OIDC sign-in (each user sees only their conversations), request and token limits per user in Redis, a Dockerfile and a `compose.yaml` with Postgres, Redis and Keycloak |
+
+```yaml
+agent:
+  name: support-desk
+  profile: standard # every piece can still be changed: memory, security, deploy
+  security:
+    rateLimit: 30/min
+    tokenBudget: 100000/day
+```
+
+`docker compose up --build` starts a `standard` agent with its services and a test user; its tests run against real
+Postgres and Redis containers (Testcontainers).
+
 ## Describe your agent
 
 ```yaml
@@ -145,8 +164,9 @@ versions can regenerate safely ([ADR 0001](docs/adr/0001-separate-generated-and-
 
 ## Limits
 
-- Only the `minimal` profile. A valid `agent.yaml` may describe the whole specification (`profile: production`, RAG,
-  MCP, security, cache…); gen-agent then refuses to generate and says which version brings each feature.
+- `minimal` and `standard` profiles. A valid `agent.yaml` may describe the whole specification (`profile: production`,
+  RAG, MCP clients, cache, observability…); gen-agent then refuses to generate and says which version brings each
+  feature.
 - Maven only; Spring AI version pinned to 2.0.1.
 - `generate` writes into a new or empty directory; `add` and `upgrade` come later.
 - OpenAPI import: JSON bodies must be flat objects, and OAuth 2 flows are not run (an access token is read from an

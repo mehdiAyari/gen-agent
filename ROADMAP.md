@@ -29,10 +29,11 @@ A version is released only when all its end-to-end tests pass. Each version adds
 
 ## V4 — `standard` profile
 
-- [ ] OIDC authentication, rate limiting, token budget
-- [ ] Exact cache (Redis), OpenTelemetry and metrics
-- [ ] MCP clients, chat UI, Docker Compose
-- [ ] `gen-agent add tool` and `gen-agent add mcp`
+- [x] V4a: JDBC memory (Postgres), OIDC authentication with conversations bound to their user, request and token
+      limits per user (Bucket4j + Redis), Dockerfile and Docker Compose (Postgres, Redis, Keycloak), profile in the web
+      generator
+- [ ] V4b: exact cache (Redis), OpenTelemetry and metrics, MCP clients
+- [ ] V4c: chat UI, `gen-agent add tool` and `gen-agent add mcp`
 
 ## V5 — `production` profile
 

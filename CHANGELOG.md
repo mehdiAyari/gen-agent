@@ -26,6 +26,11 @@ All notable changes to this project are documented here. The format follows
   web generator. Operations a tool cannot send are skipped with the reason.
 - `gen-agent mcp`: validate, preview, import and generate from a coding assistant (`packages/mcp-server`).
 
+- `standard` profile: conversations in Postgres (Spring AI JDBC memory), OIDC resource server, conversations bound to
+  the user of the token, request rate and token budget per user (Bucket4j + Redis, 429 with `Retry-After`),
+  Dockerfile and `compose.yaml` with Postgres, Redis and a Keycloak test realm. Its tests run against real containers
+  (Testcontainers). Every piece can be set on its own in agent.yaml and in the web generator.
+
 ### Security
 
 - Tool arguments from the model are treated as untrusted: boxed types and explicit checks of required arguments, whose
@@ -35,3 +40,5 @@ All notable changes to this project are documented here. The format follows
   every generated project.
 - Tool credentials never appear in agent.yaml or in the generated code: only environment variable names.
 - `gen-agent mcp` reads and writes only inside the assistant's workspace, never overwriting a file.
+- `standard` agents: no request without a valid token, a user cannot read or continue another user's conversation
+  (404), and limits per user keep anyone from exhausting the agent or its bill.
