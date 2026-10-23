@@ -199,6 +199,12 @@ agent:
       oidc: false,
       limits: false,
       dockerCompose: false,
+      cache: false,
+      redis: false,
+      otel: false,
+      prometheus: false,
+      mcp: false,
+      trackToolCalls: false,
     });
   });
 
@@ -234,6 +240,55 @@ agent:
     });
   });
 
+  it('caches first answers and exports traces and metrics', () => {
+    expect(buildModel(standard).features).toMatchObject({ cache: true, redis: true, otel: true, prometheus: true });
+  });
+
+  it('runs MCP servers with npx or uvx, or inside Docker when sandboxed, with only the variables they name', () => {
+    const { mcpServers, secrets, testProperties } = buildModel(
+      parse(`
+agent:
+  name: tools-agent
+  model: { provider: ollama, name: llama3.1 }
+  mcp:
+    - { name: github, package: "@modelcontextprotocol/server-github", version: 2025.4.8, runtime: node, env: [GITHUB_TOKEN] }
+    - { name: files, package: "@modelcontextprotocol/server-filesystem", version: 2025.8.21, runtime: node, sandbox: none, args: [/srv/docs] }
+    - { name: fetch, package: mcp-server-fetch, version: 2025.4.7, runtime: python, sandbox: none }
+`),
+    );
+
+    expect(mcpServers).toEqual([
+      {
+        name: 'github',
+        command: 'docker',
+        args: [
+          'run',
+          '--interactive',
+          '--rm',
+          '--env',
+          'GITHUB_TOKEN',
+          'node:22.23.4-alpine',
+          'npx',
+          '--yes',
+          '@modelcontextprotocol/server-github@2025.4.8',
+        ],
+        env: ['GITHUB_TOKEN'],
+        sandboxed: true,
+      },
+      {
+        name: 'files',
+        command: 'npx',
+        args: ['--yes', '@modelcontextprotocol/server-filesystem@2025.8.21', '/srv/docs'],
+        env: [],
+        sandboxed: false,
+      },
+      { name: 'fetch', command: 'uvx', args: ['mcp-server-fetch==2025.4.7'], env: [], sandboxed: false },
+    ]);
+    expect(secrets).toContain('GITHUB_TOKEN');
+    // The tests start no MCP server: they would download packages and need the network.
+    expect(testProperties).toContain('spring.ai.mcp.client.enabled=false');
+  });
+
   it('gives the tests an issuer they never call: requests carry their own token', () => {
     expect(buildModel(standard).testProperties).toContain(
       'spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org',
@@ -260,7 +315,6 @@ describe('unsupportedFeatures', () => {
         'agent.profile: "production" arrives in V5 (minimal and standard are generated)',
         'agent.springAi: 1.0.0 is not supported, this version of gen-agent generates Spring AI 2.0.1',
         'agent.tools.1.approval: human approval arrives in a later version',
-        'agent.mcp: MCP clients arrive in V4',
         'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
         'agent.rag: RAG arrives in V5',
       ]),

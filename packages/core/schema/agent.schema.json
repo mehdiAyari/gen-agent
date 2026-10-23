@@ -391,6 +391,20 @@
                 "default": "docker",
                 "type": "string",
                 "enum": ["docker", "none"]
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "env": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9_]*$"
+                }
               }
             },
             "required": ["name", "package", "version", "runtime"],

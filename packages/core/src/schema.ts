@@ -191,6 +191,10 @@ const agent = z.strictObject({
         version: exactVersion,
         runtime: z.enum(['node', 'python']),
         sandbox: z.enum(['docker', 'none']).default('docker'),
+        /** Arguments of the server, after its package: a directory to serve, an option… */
+        args: z.array(z.string().min(1)).optional(),
+        /** Environment variables the server needs, by name only: their values never appear in agent.yaml. */
+        env: z.array(environmentVariable).optional(),
       }),
     )
     .optional(),
@@ -282,6 +286,9 @@ const equipped = agent.transform((definition) => {
     ...definition,
     memory,
     security: { ...definition.security, auth, ...limits },
+    // Answers are cached per user: only when users sign in.
+    ...(definition.cache === undefined && auth === 'oidc' ? { cache: { exact: 'redis' as const } } : {}),
+    observability: definition.observability ?? { otel: true, metrics: 'prometheus' as const },
     deploy: definition.deploy ?? ['docker-compose' as const],
   };
 });

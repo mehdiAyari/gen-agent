@@ -34,7 +34,20 @@ export interface GenerationModel {
     /** Request rate and token budget per user, counted in Redis. */
     limits: boolean;
     dockerCompose: boolean;
+    /** First answers of a conversation kept in Redis per user, unless a tool was called. */
+    cache: boolean;
+    /** Redis is needed: for the limits or the cache. */
+    redis: boolean;
+    /** Traces and metrics exported over OTLP. */
+    otel: boolean;
+    /** Metrics scraped at /actuator/prometheus. */
+    prometheus: boolean;
+    mcp: boolean;
+    /** Tools report their calls, so that answers built from live data are not cached. */
+    trackToolCalls: boolean;
   };
+  /** MCP servers the agent starts and whose tools it gives the model. */
+  mcpServers: McpServer[];
   /** Per user; absent when not limited. */
   limits: { requests?: Limit; tokens?: Limit };
   provider: ProviderSettings;
@@ -142,6 +155,16 @@ interface HttpAuth {
   env: string;
 }
 
+interface McpServer {
+  name: string;
+  command: string;
+  args: string[];
+  /** Names of the environment variables passed to the server. */
+  env: string[];
+  /** Runs in a throwaway container: it sees only the variables it names, not the files of the agent. */
+  sandboxed: boolean;
+}
+
 /** Not managed by Spring Boot: checked on Maven Central (2026-10-24). */
 const BUCKET4J_VERSION = '8.21.0';
 
@@ -152,7 +175,36 @@ const IMAGES = {
   keycloak: 'quay.io/keycloak/keycloak:26.8.1',
   jdk: 'eclipse-temurin:21.0.12.1_1-jdk-alpine',
   jre: 'eclipse-temurin:21.0.12.1_1-jre-alpine',
+  node: 'node:22.23.4-alpine',
+  uv: 'astral/uv:0.13.5-python3.13-alpine',
+  lgtm: 'grafana/otel-lgtm:0.38.0',
 } as const;
+
+function mcpServerOf(server: NonNullable<AgentDefinition['mcp']>[number]): McpServer {
+  const env = server.env ?? [];
+  const run =
+    server.runtime === 'node'
+      ? ['npx', '--yes', `${server.package}@${server.version}`, ...(server.args ?? [])]
+      : ['uvx', `${server.package}==${server.version}`, ...(server.args ?? [])];
+  if (server.sandbox === 'none') {
+    const [command = 'npx', ...args] = run;
+    return { name: server.name, command, args, env, sandboxed: false };
+  }
+  return {
+    name: server.name,
+    command: 'docker',
+    args: [
+      'run',
+      '--interactive',
+      '--rm',
+      ...env.flatMap((name) => ['--env', name]),
+      server.runtime === 'node' ? IMAGES.node : IMAGES.uv,
+      ...run,
+    ],
+    env,
+    sandboxed: true,
+  };
+}
 
 /** Large enough for a typical JSON answer, small enough to leave room in the model's context. */
 export const DEFAULT_MAX_RESPONSE_CHARS = 20_000;
@@ -221,6 +273,8 @@ export function buildModel(file: AgentFile): GenerationModel {
   const oidc = agent.security?.auth === 'oidc';
   const requests = limitOf(agent.security?.rateLimit);
   const tokens = limitOf(agent.security?.tokenBudget);
+  const cache = agent.cache?.exact === 'redis';
+  const mcpServers = (agent.mcp ?? []).map(mcpServerOf);
 
   return {
     agent,
@@ -241,7 +295,14 @@ export function buildModel(file: AgentFile): GenerationModel {
       oidc,
       limits: requests !== undefined || tokens !== undefined,
       dockerCompose: agent.deploy?.includes('docker-compose') ?? false,
+      cache,
+      redis: requests !== undefined || tokens !== undefined || cache,
+      otel: agent.observability?.otel === true,
+      prometheus: agent.observability?.metrics === 'prometheus',
+      mcp: mcpServers.length > 0,
+      trackToolCalls: cache && (agent.tools.length > 0 || mcpServers.length > 0),
     },
+    mcpServers,
     limits: { ...(requests === undefined ? {} : { requests }), ...(tokens === undefined ? {} : { tokens }) },
     provider: {
       id: agent.model.provider,
@@ -257,11 +318,13 @@ export function buildModel(file: AgentFile): GenerationModel {
       ...new Set([
         ...(providerSettings.apiKeyEnv === undefined ? [] : [providerSettings.apiKeyEnv]),
         ...tools.flatMap((tool) => (tool.kind === 'http' && tool.auth !== undefined ? [tool.auth.env] : [])),
+        ...mcpServers.flatMap((server) => server.env),
       ]),
     ],
     testProperties: [
       ...(providerSettings.apiKeyEnv === undefined ? [] : [`${providerSettings.propertyPrefix}.api-key=test-key`]),
       ...(oidc ? ['spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org'] : []),
+      ...(mcpServers.length > 0 ? ['spring.ai.mcp.client.enabled=false'] : []),
       ...tools.flatMap((tool) =>
         tool.kind === 'http' && tool.auth !== undefined ? [`agent.tools.${tool.name}.token=test-token`] : [],
       ),
@@ -364,22 +427,27 @@ export function unsupportedFeatures(file: AgentFile): string[] {
   add(agent.memory.retention, 'agent.memory.retention: retention and purge arrive in V4');
   agent.tools.forEach((tool, index) => {
     add(tool.approval, `agent.tools.${String(index)}.approval: human approval arrives in a later version`);
-    if (tool.type === 'http') add(tool.cacheTtl, `agent.tools.${String(index)}.cacheTtl: tool caching arrives in V4`);
+    if (tool.type === 'http') {
+      add(tool.cacheTtl, `agent.tools.${String(index)}.cacheTtl: caching tool results arrives in a later version`);
+    }
   });
   add(
     agent.openapi,
     'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
   );
-  add(agent.mcp, 'agent.mcp: MCP clients arrive in V4');
   add(agent.rag, 'agent.rag: RAG arrives in V5');
   add(agent.security?.piiMasking, 'agent.security.piiMasking: PII masking arrives in V5');
   add(
     agent.security?.injectionDetection,
     'agent.security.injectionDetection: prompt injection detection arrives in V5',
   );
-  add(agent.cache, 'agent.cache: caching arrives in V4 (exact) and V5 (semantic)');
+  add(agent.cache?.semantic, 'agent.cache.semantic: the semantic cache arrives in V5');
   add(agent.limits, 'agent.limits: iteration and timeout limits arrive in a later version');
-  add(agent.observability, 'agent.observability: OpenTelemetry and metrics arrive in V4');
+  add(
+    agent.observability?.grafanaDashboard,
+    'agent.observability.grafanaDashboard: the Grafana dashboard arrives in V5',
+  );
+  add(agent.observability?.feedback, 'agent.observability.feedback: feedback buttons arrive with the chat UI (V4)');
   add(
     agent.gdpr?.erasureEndpoint ?? agent.gdpr?.logsWithoutPii,
     'agent.gdpr: the erasure endpoint and PII-free logs arrive in V5',

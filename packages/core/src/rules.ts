@@ -138,6 +138,9 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
     if (agent.model.fallback) outsideEu(agent.model.fallback.provider, ['agent', 'model', 'fallback', 'provider']);
   }
 
+  if (agent.cache?.exact === 'redis' && agent.security?.auth !== 'oidc') {
+    errors.push({ path: ['agent', 'cache', 'exact'], message: 'answers are cached per user: set security.auth: oidc' });
+  }
   for (const limit of ['rateLimit', 'tokenBudget'] as const) {
     if (agent.security?.[limit] !== undefined && agent.security.auth !== 'oidc') {
       errors.push({ path: ['agent', 'security', limit], message: 'limits are counted per user: set auth: oidc' });

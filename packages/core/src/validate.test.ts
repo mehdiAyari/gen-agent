@@ -62,6 +62,37 @@ describe('validateAgentYaml', () => {
       });
     });
 
+    it('adds the exact cache and the observability of the standard profile', () => {
+      const result = validateAgentYaml(withAgent('profile: standard\n'));
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.config.agent).toMatchObject({
+        cache: { exact: 'redis' },
+        observability: { otel: true, metrics: 'prometheus' },
+      });
+    });
+
+    it('accepts MCP servers with their arguments and the names of the variables they need', () => {
+      const result = validateAgentYaml(
+        withAgent(`mcp:
+  - name: github
+    package: "@modelcontextprotocol/server-github"
+    version: 2025.4.8
+    runtime: node
+    env: [GITHUB_PERSONAL_ACCESS_TOKEN]
+  - name: files
+    package: "@modelcontextprotocol/server-filesystem"
+    version: 2025.8.21
+    runtime: node
+    sandbox: none
+    args: [/srv/documents]
+`),
+      );
+
+      expect(errorsOf(result)).toEqual([]);
+    });
+
     it('keeps what the file sets over the profile defaults', () => {
       const result = validateAgentYaml(
         withAgent('profile: standard\nmemory:\n  type: in-memory\nsecurity:\n  auth: none\ndeploy: []\n'),
@@ -222,6 +253,12 @@ tools:
       const result = validateAgentYaml(withAgent('cache:\n  semantic:\n    threshold: 0.95\n    scope: global\n'));
 
       expect(errorsOf(result)).toEqual([expect.stringMatching(/^agent.cache.semantic.scope: /)]);
+    });
+
+    it('keeps the cache per user, so it needs signed-in users', () => {
+      const result = validateAgentYaml(withAgent('cache:\n  exact: redis\n'));
+
+      expect(errorsOf(result)).toEqual(['agent.cache.exact: answers are cached per user: set security.auth: oidc']);
     });
 
     it.each(['rateLimit: 30/min', 'tokenBudget: 1000/day'])('needs signed-in users to apply %s', (limit) => {
