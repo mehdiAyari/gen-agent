@@ -71,6 +71,13 @@ agent:
       params:
         - { name: latitude, type: number, required: true }
         - { name: longitude, type: number, required: true }
+    - name: leave-balance
+      type: http
+      description: Days off left for an employee
+      url: https://hr.example.org/api/employees/{employeeId}/leave # {employeeId} is filled from the parameter
+      auth: { type: bearer, env: HR_API_TOKEN } # the token stays in an environment variable
+      params:
+        - { name: employeeId, type: string, required: true }
     - name: book-leave
       type: java
       description: Books a day off for the current employee
@@ -90,7 +97,10 @@ A Spring Boot 4.1.1 / Spring AI 2.0.1 / Java 21 Maven project, with the Maven Wr
 
 - a `ChatClient` with the system prompt in `src/main/resources/prompts/system.md` and a windowed conversation memory;
 - `POST /api/chat`, validated input, errors as `ProblemDetail`, replies flagged `"aiGenerated": true` (EU AI Act);
-- each HTTP tool as a `RestClient` call with its URL in `application.yml`; each Java tool as an interface you implement;
+- each HTTP tool as a `RestClient` call with its URL in `application.yml`: path, query or JSON body parameters, values
+  from the model encoded so they cannot change the path, an optional bearer or API key header read from an
+  environment variable, and responses cut before they fill the model's context; each Java tool as an interface you
+  implement;
 - tests that start the application with a fake model: `./mvnw verify` never calls a provider and costs nothing.
 
 Generated code and your code never mix: everything under `…generated` belongs to gen-agent, the tool implementations
