@@ -202,7 +202,33 @@
       "tokenBudget": "Budget de tokens par utilisateur",
       "tokenBudgetHint": "Par ex. 100000/day, compté d’après ce que le modèle déclare.",
       "docker": "Docker Compose",
-      "dockerHint": "Un Dockerfile et un compose.yaml avec les services dont l’agent a besoin."
+      "dockerHint": "Un Dockerfile et un compose.yaml avec les services dont l’agent a besoin.",
+      "cache": "Cache des premières réponses",
+      "cacheHint": "La même question du même utilisateur est servie par Redis, sans le modèle. Jamais d’un utilisateur à l’autre, jamais pour une réponse issue d’un outil.",
+      "observability": "Observabilité",
+      "observabilityHint": "Traces et métriques OpenTelemetry (Grafana dans Docker Compose) et un point d’accès Prometheus."
+    },
+    "mcp": {
+      "legend": "Serveurs MCP",
+      "hint": "Des serveurs existants que l’agent démarre : leurs outils sont donnés au modèle avec les vôtres.",
+      "add": "Ajouter un serveur MCP",
+      "remove": "Supprimer {name}",
+      "removed": "{name} supprimé",
+      "untitled": "Serveur {index}",
+      "name": "Nom",
+      "runtime": "Environnement",
+      "package": "Paquet",
+      "version": "Version",
+      "versionHint": "Exacte : latest est refusé",
+      "sandbox": "Exécution",
+      "sandboxDocker": "Dans un conteneur Docker",
+      "sandboxNone": "Sur la machine de l’agent",
+      "sandboxDockerHint": "Un conteneur jetable : il ne voit que les variables qu’il nomme.",
+      "sandboxNoneHint": "Avec les droits de l’agent : seulement pour un serveur de confiance.",
+      "args": "Arguments",
+      "argsHint": "Séparés par des espaces",
+      "env": "Variables d’environnement",
+      "envHint": "Les noms seulement : les valeurs restent dans l’environnement"
     }
   },
   "gallery": {

@@ -202,7 +202,33 @@
       "tokenBudget": "Token budget per user",
       "tokenBudgetHint": "e.g. 100000/day, counted from what the model reports.",
       "docker": "Docker Compose",
-      "dockerHint": "A Dockerfile and a compose.yaml with the services the agent needs."
+      "dockerHint": "A Dockerfile and a compose.yaml with the services the agent needs.",
+      "cache": "Cache of first answers",
+      "cacheHint": "The same question of the same user is answered from Redis, without the model. Never across users, never for answers built from a tool.",
+      "observability": "Observability",
+      "observabilityHint": "OpenTelemetry traces and metrics (Grafana in Docker Compose) and a Prometheus endpoint."
+    },
+    "mcp": {
+      "legend": "MCP servers",
+      "hint": "Existing servers the agent starts: their tools are given to the model with yours.",
+      "add": "Add an MCP server",
+      "remove": "Remove {name}",
+      "removed": "{name} removed",
+      "untitled": "Server {index}",
+      "name": "Name",
+      "runtime": "Runtime",
+      "package": "Package",
+      "version": "Version",
+      "versionHint": "Exact: latest is refused",
+      "sandbox": "Runs",
+      "sandboxDocker": "In a Docker container",
+      "sandboxNone": "On the machine of the agent",
+      "sandboxDockerHint": "A throwaway container: it sees only the variables it names.",
+      "sandboxNoneHint": "With the rights of the agent: only for a server you trust.",
+      "args": "Arguments",
+      "argsHint": "Separated by spaces",
+      "env": "Environment variables",
+      "envHint": "Names only: the values stay in the environment"
     }
   },
   "gallery": {

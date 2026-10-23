@@ -6,7 +6,7 @@ import {
   type AgentFile,
   type Provider,
 } from '@gen-agent/core';
-import { Document, isMap, isSeq, YAMLMap } from 'yaml';
+import { Document, isMap, isSeq, YAMLMap, YAMLSeq } from 'yaml';
 
 /** Form values: strings for numeric inputs, so a half-typed value is kept and reported instead of lost. */
 interface ParamForm {
@@ -75,16 +75,50 @@ export interface AgentForm {
   /** 100000/day; empty for none. */
   tokenBudget: string;
   dockerCompose: boolean;
+  /** First answers kept in Redis per user: needs oidc. */
+  cache: boolean;
+  /** OpenTelemetry traces and metrics, and Prometheus metrics. */
+  observability: boolean;
+  mcp: McpForm[];
 }
 
+interface McpForm {
+  name: string;
+  package: string;
+  version: string;
+  runtime: 'node' | 'python';
+  sandbox: 'docker' | 'none';
+  /** Separated by spaces. */
+  args: string;
+  /** Names of environment variables, separated by spaces or commas. */
+  env: string;
+}
+
+export function emptyMcpServer(): McpForm {
+  return { name: '', package: '', version: '', runtime: 'node', sandbox: 'docker', args: '', env: '' };
+}
+
+const words = (text: string): string[] => text.split(/[\s,]+/).filter((word) => word !== '');
+
 type Profile = 'minimal' | 'standard';
-type Equipment = Pick<AgentForm, 'memoryType' | 'auth' | 'rateLimit' | 'tokenBudget' | 'dockerCompose'>;
+type Equipment = Pick<
+  AgentForm,
+  'memoryType' | 'auth' | 'rateLimit' | 'tokenBudget' | 'dockerCompose' | 'cache' | 'observability'
+>;
 
 /** What each profile equips the agent with, as core applies it: standard adds Postgres, OIDC, limits and Docker. */
 function equipmentOf(profile: Profile): Equipment {
   return profile === 'standard'
-    ? { memoryType: 'jdbc', auth: 'oidc', ...STANDARD_LIMITS, dockerCompose: true }
-    : { memoryType: 'in-memory', auth: 'none', rateLimit: '', tokenBudget: '', dockerCompose: false };
+    ? { memoryType: 'jdbc', auth: 'oidc', ...STANDARD_LIMITS, dockerCompose: true, cache: true, observability: true }
+    : {
+        memoryType: 'in-memory',
+        auth: 'none',
+        rateLimit: '',
+        tokenBudget: '',
+        dockerCompose: false,
+        cache: false,
+        observability: false,
+      };
 }
 
 /** The limits core adds by itself: only for the standard profile with sign-in. */
@@ -116,6 +150,7 @@ export function defaultForm(): AgentForm {
     tools: [],
     profile: 'minimal',
     ...equipmentOf('minimal'),
+    mcp: [],
   };
 }
 
@@ -176,12 +211,30 @@ export function formToYaml(form: AgentForm): string {
     });
   }
 
+  if (form.mcp.length > 0) {
+    agent.mcp = form.mcp.map((server) => ({
+      name: server.name,
+      package: server.package,
+      version: server.version,
+      runtime: server.runtime,
+      ...(server.sandbox === 'none' ? { sandbox: 'none' } : {}),
+      ...(words(server.args).length > 0 ? { args: words(server.args) } : {}),
+      ...(words(server.env).length > 0 ? { env: words(server.env) } : {}),
+    }));
+  }
+
   const security: Record<string, unknown> = {};
   const limits = defaultLimits(form);
   if (form.auth !== equipment.auth) security.auth = form.auth;
   if (present(form.rateLimit) && form.rateLimit !== limits.rateLimit) security.rateLimit = form.rateLimit;
   if (present(form.tokenBudget) && form.tokenBudget !== limits.tokenBudget) security.tokenBudget = form.tokenBudget;
   if (Object.keys(security).length > 0) agent.security = security;
+  // The cache comes with sign-in: core adds it to the standard profile only then.
+  const cacheByDefault = form.profile === 'standard' && form.auth === 'oidc';
+  if (form.cache !== cacheByDefault) agent.cache = { exact: form.cache ? 'redis' : 'none' };
+  if (form.observability !== equipment.observability) {
+    agent.observability = form.observability ? { otel: true, metrics: 'prometheus' } : { otel: false, metrics: 'none' };
+  }
 
   if (form.euOnly) agent.gdpr = { euOnly: true, ...(form.allowNonEuProviders ? { allowNonEuProviders: true } : {}) };
   if (form.dockerCompose !== equipment.dockerCompose) agent.deploy = form.dockerCompose ? ['docker-compose'] : [];
@@ -196,6 +249,16 @@ export function formToYaml(form: AgentForm): string {
       if (isSeq(params)) for (const param of params.items) if (param instanceof YAMLMap) param.flow = true;
       const auth = tool.get('auth');
       if (auth instanceof YAMLMap) auth.flow = true;
+    }
+  }
+  const servers = document.getIn(['agent', 'mcp']);
+  if (isSeq(servers)) {
+    for (const server of servers.items) {
+      if (!isMap(server)) continue;
+      for (const key of ['args', 'env']) {
+        const list = server.get(key);
+        if (list instanceof YAMLSeq) list.flow = true;
+      }
     }
   }
   return document.toString({ lineWidth: 0 });
@@ -239,6 +302,17 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     rateLimit: agent.security?.rateLimit ?? '',
     tokenBudget: agent.security?.tokenBudget ?? '',
     dockerCompose: agent.deploy?.includes('docker-compose') ?? false,
+    cache: agent.cache?.exact === 'redis',
+    observability: agent.observability?.otel === true || agent.observability?.metrics === 'prometheus',
+    mcp: (agent.mcp ?? []).map((server) => ({
+      name: server.name,
+      package: server.package,
+      version: server.version,
+      runtime: server.runtime,
+      sandbox: server.sandbox,
+      args: (server.args ?? []).join(' '),
+      env: (server.env ?? []).join(' '),
+    })),
     tools: agent.tools.map((tool) => ({
       name: tool.name,
       type: tool.type,
@@ -283,7 +357,7 @@ const FIELDS: Record<string, keyof AgentForm> = {
 function fieldOf(path: string): string {
   const direct = FIELDS[path];
   if (direct !== undefined) return direct;
-  return path.startsWith('agent.tools.') ? path.slice('agent.'.length) : '';
+  return path.startsWith('agent.tools.') || path.startsWith('agent.mcp.') ? path.slice('agent.'.length) : '';
 }
 
 /**

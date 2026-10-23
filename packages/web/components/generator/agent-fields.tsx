@@ -21,6 +21,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 import { controlId, SwitchField, TextField } from './form-controls';
+import { McpFields } from './mcp-fields';
 import { OpenApiDialog } from './openapi-dialog';
 import { ProfileFields } from './profile-fields';
 import { ToolFields } from './tool-fields';
@@ -240,6 +241,8 @@ export function AgentFields({ form, errorOf, onChange, onVisit }: AgentFieldsPro
           </div>
         </FieldGroup>
       </FieldSet>
+
+      <McpFields form={form} errorOf={errorOf} onChange={onChange} />
 
       <ProfileFields form={form} errorOf={errorOf} onChange={onChange} />
 

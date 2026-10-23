@@ -55,7 +55,7 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
             labels={{ none: t('authNone'), oidc: t('authOidc') }}
             onValueChange={(auth) => {
               // Limits are counted per user: without sign-in they go.
-              update(auth === 'none' ? { auth, rateLimit: '', tokenBudget: '' } : { auth });
+              update(auth === 'none' ? { auth, rateLimit: '', tokenBudget: '', cache: false } : { auth });
             }}
           />
         </div>
@@ -91,6 +91,26 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
             />
           </div>
         ) : null}
+        {form.auth === 'oidc' ? (
+          <SwitchField
+            path="cache"
+            label={t('cache')}
+            hint={t('cacheHint')}
+            checked={form.cache}
+            onCheckedChange={(cache) => {
+              update({ cache });
+            }}
+          />
+        ) : null}
+        <SwitchField
+          path="observability"
+          label={t('observability')}
+          hint={t('observabilityHint')}
+          checked={form.observability}
+          onCheckedChange={(observability) => {
+            update({ observability });
+          }}
+        />
         <SwitchField
           path="dockerCompose"
           label={t('docker')}

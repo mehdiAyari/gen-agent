@@ -91,6 +91,60 @@ describe('the standard profile', () => {
     expect(withProfile(withProfile(defaultForm(), 'standard'), 'minimal')).toEqual(defaultForm());
   });
 
+  it('writes the cache and the observability only when they differ from the profile', () => {
+    expect(formToYaml({ ...withProfile(defaultForm(), 'standard'), cache: false, observability: false })).toContain(
+      'cache:\n    exact: none\n  observability:\n    otel: false\n    metrics: none\n',
+    );
+    expect(formToYaml({ ...defaultForm(), observability: true })).toContain(
+      'observability:\n    otel: true\n    metrics: prometheus\n',
+    );
+  });
+
+  it('keeps MCP servers, their arguments and the variables they get', () => {
+    const yaml = `agent:
+  name: desk
+  model:
+    provider: ollama
+    name: llama3.1
+  mcp:
+    - name: files
+      package: "@modelcontextprotocol/server-filesystem"
+      version: 2.0.0
+      runtime: node
+      sandbox: none
+      args: [ /srv/docs ]
+    - name: github
+      package: "@modelcontextprotocol/server-github"
+      version: 2025.4.8
+      runtime: node
+      env: [ GITHUB_TOKEN ]
+`;
+    const result = formFromYaml(yaml);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+
+    expect(result.form.mcp).toEqual([
+      {
+        name: 'files',
+        package: '@modelcontextprotocol/server-filesystem',
+        version: '2.0.0',
+        runtime: 'node',
+        sandbox: 'none',
+        args: '/srv/docs',
+        env: '',
+      },
+      {
+        name: 'github',
+        package: '@modelcontextprotocol/server-github',
+        version: '2025.4.8',
+        runtime: 'node',
+        sandbox: 'docker',
+        args: '',
+        env: 'GITHUB_TOKEN',
+      },
+    ]);
+    expect(formToYaml(result.form)).toBe(yaml);
+  });
+
   it('maps the limit errors to their fields', () => {
     const form = { ...defaultForm(), rateLimit: '30/min' };
 
