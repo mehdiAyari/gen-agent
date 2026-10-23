@@ -1,9 +1,12 @@
 import {
+  placementOf,
   SUPPORTED_SPRING_AI,
   SUPPORTED_SPRING_BOOT,
+  urlPlaceholders,
   type AgentDefinition,
   type AgentFile,
   type Provider,
+  type Tool,
   type ToolParamType,
 } from './schema.js';
 
@@ -24,6 +27,10 @@ export interface GenerationModel {
   prompt: { resource: string; aiDisclosure: boolean };
   memory: { window: number };
   tools: ModelTool[];
+  /** Properties the generated tests set instead of environment variables (API keys, tool tokens). */
+  testProperties: string[];
+  /** Environment variables the agent needs to run, without duplicates: the provider API key, then tool tokens. */
+  secrets: string[];
 }
 
 export interface ProviderSettings {
@@ -47,6 +54,8 @@ export interface ToolParameter {
   description: string | undefined;
   /** A Java literal of this type, used by the generated tests. */
   sample: string;
+  /** The sample as it appears in a URL or a JSON body: test, 1.0, 1, true. */
+  sampleText: string;
 }
 
 interface ModelToolBase {
@@ -65,9 +74,21 @@ export type ModelTool =
       method: string;
       /** RestClient method: get, post… */
       clientMethod: string;
-      /** POST, PUT and PATCH send the parameters as a JSON body; GET and DELETE as query parameters. */
+      /** True when some parameters go in a JSON body. */
       sendsBody: boolean;
       url: string;
+      /** The URL has `{name}` placeholders, filled from path parameters. */
+      urlTemplate: boolean;
+      pathParams: ToolParameter[];
+      queryParams: ToolParameter[];
+      bodyParams: ToolParameter[];
+      /** Header sent with every call, its value read from an environment variable. */
+      auth: HttpAuth | undefined;
+      maxResponseChars: number;
+      /** The URL the generated test expects, placeholders filled with the sample values. */
+      sampleUrl: string;
+      /** JSON body the generated test expects: the required body parameters with their sample values. */
+      sampleBodyJson: string;
     })
   | (ModelToolBase & {
       kind: 'java';
@@ -76,6 +97,15 @@ export type ModelTool =
       /** User-owned implementation, created once and never rewritten. */
       handlerClass: string;
     });
+
+interface HttpAuth {
+  kind: 'bearer' | 'header';
+  header: string;
+  env: string;
+}
+
+/** Large enough for a typical JSON answer, small enough to leave room in the model's context. */
+export const DEFAULT_MAX_RESPONSE_CHARS = 20_000;
 
 /** Spring AI starter and configuration keys per provider (non-deprecated keys of Spring AI 2.0.1). */
 const PROVIDERS: Record<Provider, Omit<ProviderSettings, 'id' | 'model' | 'temperature' | 'maxTokens'>> = {
@@ -113,11 +143,11 @@ const PROVIDERS: Record<Provider, Omit<ProviderSettings, 'id' | 'model' | 'tempe
  * Arguments come from the model and are untrusted: it may omit even a required one. Boxed types let the tool receive
  * null and answer with a clear error the model can act on, instead of failing the conversion before the call.
  */
-const JAVA_TYPES: Record<ToolParamType, { javaType: string; sample: string }> = {
-  string: { javaType: 'String', sample: '"test"' },
-  number: { javaType: 'Double', sample: '1.0' },
-  integer: { javaType: 'Long', sample: '1L' },
-  boolean: { javaType: 'Boolean', sample: 'true' },
+const JAVA_TYPES: Record<ToolParamType, { javaType: string; sample: string; sampleText: string }> = {
+  string: { javaType: 'String', sample: '"test"', sampleText: 'test' },
+  number: { javaType: 'Double', sample: '1.0', sampleText: '1.0' },
+  integer: { javaType: 'Long', sample: '1L', sampleText: '1' },
+  boolean: { javaType: 'Boolean', sample: 'true', sampleText: 'true' },
 };
 
 const pascalCase = (kebab: string): string =>
@@ -136,6 +166,9 @@ export function buildModel(file: AgentFile): GenerationModel {
   const basePackage = agent.package ?? `com.example.${agent.name.replaceAll('-', '')}`;
   const groupId = basePackage.includes('.') ? basePackage.slice(0, basePackage.lastIndexOf('.')) : basePackage;
 
+  const tools = agent.tools.map((tool) => toolModel(tool));
+  const providerSettings = PROVIDERS[agent.model.provider];
+
   return {
     agent,
     project: {
@@ -153,48 +186,96 @@ export function buildModel(file: AgentFile): GenerationModel {
     },
     provider: {
       id: agent.model.provider,
-      ...PROVIDERS[agent.model.provider],
+      ...providerSettings,
       model: agent.model.name,
       temperature: agent.model.temperature,
       maxTokens: agent.model.maxTokens,
     },
     prompt: { resource: agent.prompt.system, aiDisclosure: agent.prompt.aiDisclosure },
     memory: { window: agent.memory.window },
-    tools: agent.tools.map((tool): ModelTool => {
-      const firstRequired = tool.params.find((param) => param.required);
-      const base: ModelToolBase = {
-        name: tool.name,
-        className: `${pascalCase(tool.name)}Tool`,
-        methodName: camelCase(tool.name),
-        description: tool.description,
-        params: tool.params.map((param) => {
-          const types = JAVA_TYPES[param.type];
-          return {
-            name: param.name,
-            javaType: types.javaType,
-            required: param.required,
-            description: param.description,
-            sample: param.required ? types.sample : 'null',
-          };
-        }),
-        firstRequiredParam: firstRequired?.name,
+    tools,
+    secrets: [
+      ...new Set([
+        ...(providerSettings.apiKeyEnv === undefined ? [] : [providerSettings.apiKeyEnv]),
+        ...tools.flatMap((tool) => (tool.kind === 'http' && tool.auth !== undefined ? [tool.auth.env] : [])),
+      ]),
+    ],
+    testProperties: [
+      ...(providerSettings.apiKeyEnv === undefined ? [] : [`${providerSettings.propertyPrefix}.api-key=test-key`]),
+      ...tools.flatMap((tool) =>
+        tool.kind === 'http' && tool.auth !== undefined ? [`agent.tools.${tool.name}.token=test-token`] : [],
+      ),
+    ],
+  };
+}
+
+function toolModel(tool: Tool): ModelTool {
+  const firstRequired = tool.params.find((param) => param.required);
+  const base: ModelToolBase = {
+    name: tool.name,
+    className: `${pascalCase(tool.name)}Tool`,
+    methodName: camelCase(tool.name),
+    description: tool.description,
+    params: tool.params.map((param) => {
+      const types = JAVA_TYPES[param.type];
+      return {
+        name: param.name,
+        javaType: types.javaType,
+        required: param.required,
+        description: param.description,
+        sample: param.required ? types.sample : 'null',
+        sampleText: types.sampleText,
       };
-      return tool.type === 'http'
-        ? {
-            ...base,
-            kind: 'http',
-            method: tool.method,
-            clientMethod: tool.method.toLowerCase(),
-            sendsBody: tool.method === 'POST' || tool.method === 'PUT' || tool.method === 'PATCH',
-            url: tool.url,
-          }
-        : {
-            ...base,
-            kind: 'java',
-            handlerInterface: `${pascalCase(tool.name)}Handler`,
-            handlerClass: `Default${pascalCase(tool.name)}Handler`,
-          };
     }),
+    firstRequiredParam: firstRequired?.name,
+  };
+  if (tool.type === 'http') {
+    const placed = (placement: string): ToolParameter[] =>
+      base.params.filter((_, i) => {
+        const param = tool.params[i];
+        return param !== undefined && placementOf(tool, param) === placement;
+      });
+    const placeholders = urlPlaceholders(tool.url);
+    // In the order of the URL: the generated code fills the template positionally.
+    const pathParams = placed('path').sort((a, b) => placeholders.indexOf(a.name) - placeholders.indexOf(b.name));
+    const bodyParams = placed('body');
+    const sampleOf = (name: string): string => pathParams.find((param) => param.name === name)?.sampleText ?? name;
+    return {
+      ...base,
+      kind: 'http',
+      method: tool.method,
+      clientMethod: tool.method.toLowerCase(),
+      sendsBody: bodyParams.length > 0,
+      url: tool.url,
+      urlTemplate: placeholders.length > 0,
+      pathParams,
+      queryParams: placed('query'),
+      bodyParams,
+      auth:
+        tool.auth === undefined
+          ? undefined
+          : tool.auth.type === 'bearer'
+            ? { kind: 'bearer', header: 'Authorization', env: tool.auth.env }
+            : { kind: 'header', header: tool.auth.name, env: tool.auth.env },
+      maxResponseChars: tool.maxResponseChars ?? DEFAULT_MAX_RESPONSE_CHARS,
+      sampleUrl: tool.url.replaceAll(/\{([^{}]*)\}/g, (_, name: string) => sampleOf(name)),
+      sampleBodyJson: JSON.stringify(
+        Object.fromEntries(
+          bodyParams
+            .filter((param) => param.required)
+            .map((param) => [
+              param.name,
+              param.javaType === 'String' ? param.sampleText : (JSON.parse(param.sampleText) as unknown),
+            ]),
+        ),
+      ),
+    };
+  }
+  return {
+    ...base,
+    kind: 'java',
+    handlerInterface: `${pascalCase(tool.name)}Handler`,
+    handlerClass: `Default${pascalCase(tool.name)}Handler`,
   };
 }
 

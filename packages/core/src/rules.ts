@@ -1,4 +1,4 @@
-import { EU_PROVIDERS, type AgentFile } from './schema.js';
+import { BODYLESS_METHODS, EU_PROVIDERS, placementOf, urlPlaceholders, type AgentFile } from './schema.js';
 
 /** A problem found in an agent file. `path` uses dots (`agent.tools.0.url`); `line` is 1-based when known. */
 export interface Diagnostic {
@@ -64,6 +64,46 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
         path: ['agent', 'tools', index, 'description'],
         message: 'missing: without a description the model cannot tell when to call this tool',
       });
+    }
+    if (tool.type === 'java') {
+      tool.params.forEach((param, paramIndex) => {
+        if (param.in !== undefined) {
+          errors.push({
+            path: ['agent', 'tools', index, 'params', paramIndex, 'in'],
+            message: 'only HTTP tools place their parameters',
+          });
+        }
+      });
+    } else {
+      const placeholders = urlPlaceholders(tool.url);
+      tool.params.forEach((param, paramIndex) => {
+        const path = ['agent', 'tools', index, 'params', paramIndex];
+        const placement = placementOf(tool, param);
+        if (placement === 'path' && !placeholders.includes(param.name)) {
+          errors.push({
+            path: [...path, 'in'],
+            message: `the URL has no {${param.name}} placeholder for this path parameter`,
+          });
+        } else if (placement === 'path' && !param.required) {
+          errors.push({ path: [...path, 'required'], message: 'a path parameter must be required' });
+        } else if (placement === 'body' && BODYLESS_METHODS.has(tool.method)) {
+          errors.push({ path: [...path, 'in'], message: `${tool.method} sends no body: use query` });
+        }
+      });
+      for (const name of placeholders) {
+        const param = tool.params.find((candidate) => candidate.name === name);
+        if (param === undefined) {
+          errors.push({
+            path: ['agent', 'tools', index, 'url'],
+            message: `{${name}} has no parameter: add { name: ${name}, type: string, required: true }`,
+          });
+        } else if (placementOf(tool, param) !== 'path') {
+          errors.push({
+            path: ['agent', 'tools', index, 'url'],
+            message: `{${name}} needs a path parameter, but ${name} is placed in ${placementOf(tool, param)}`,
+          });
+        }
+      }
     }
     if (tool.type === 'http' && SIDE_EFFECT_METHODS.has(tool.method) && tool.approval?.required !== true) {
       warnings.push({

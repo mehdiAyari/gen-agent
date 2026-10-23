@@ -181,6 +181,10 @@
                         "description": {
                           "type": "string",
                           "minLength": 1
+                        },
+                        "in": {
+                          "type": "string",
+                          "enum": ["path", "query", "body"]
                         }
                       },
                       "required": ["name", "type"],
@@ -211,8 +215,50 @@
                     "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
                   },
                   "url": {
-                    "type": "string",
-                    "format": "uri"
+                    "type": "string"
+                  },
+                  "auth": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "bearer"
+                          },
+                          "env": {
+                            "type": "string",
+                            "pattern": "^[A-Z][A-Z0-9_]*$"
+                          }
+                        },
+                        "required": ["type", "env"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "header"
+                          },
+                          "name": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9-]+$"
+                          },
+                          "env": {
+                            "type": "string",
+                            "pattern": "^[A-Z][A-Z0-9_]*$"
+                          }
+                        },
+                        "required": ["type", "name", "env"],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "maxResponseChars": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
                   },
                   "cacheTtl": {
                     "type": "string",
@@ -254,6 +300,10 @@
                         "description": {
                           "type": "string",
                           "minLength": 1
+                        },
+                        "in": {
+                          "type": "string",
+                          "enum": ["path", "query", "body"]
                         }
                       },
                       "required": ["name", "type"],

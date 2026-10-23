@@ -110,6 +110,60 @@ describe('buildModel', () => {
     });
   });
 
+  it('splits HTTP parameters by placement, and carries authentication and the response limit', () => {
+    const model = buildModel(
+      parse(`
+agent:
+  name: shop-assistant
+  model: { provider: ollama, name: llama3.1 }
+  tools:
+    - name: order-status
+      type: http
+      url: https://shop.example.org/api/orders/{orderId}
+      auth: { type: bearer, env: SHOP_API_TOKEN }
+      params:
+        - { name: orderId, type: string, required: true }
+        - { name: verbose, type: boolean }
+    - name: create-note
+      type: http
+      method: POST
+      url: https://shop.example.org/api/orders/{orderId}/notes
+      auth: { type: header, name: X-API-Key, env: SHOP_API_KEY }
+      maxResponseChars: 5000
+      params:
+        - { name: orderId, type: string, required: true }
+        - { name: text, type: string, required: true }
+`),
+    );
+    const [lookup, note] = model.tools;
+
+    expect(lookup).toMatchObject({
+      urlTemplate: true,
+      pathParams: [{ name: 'orderId' }],
+      queryParams: [{ name: 'verbose' }],
+      bodyParams: [],
+      sendsBody: false,
+      auth: { kind: 'bearer', header: 'Authorization', env: 'SHOP_API_TOKEN' },
+      maxResponseChars: 20000,
+      sampleUrl: 'https://shop.example.org/api/orders/test',
+    });
+    expect(note).toMatchObject({
+      pathParams: [{ name: 'orderId' }],
+      queryParams: [],
+      bodyParams: [{ name: 'text' }],
+      sendsBody: true,
+      auth: { kind: 'header', header: 'X-API-Key', env: 'SHOP_API_KEY' },
+      maxResponseChars: 5000,
+      sampleBodyJson: '{"text":"test"}',
+    });
+    // Tests set the tokens themselves: the environment variables are only needed to run the agent.
+    expect(model.secrets).toEqual(['SHOP_API_TOKEN', 'SHOP_API_KEY']);
+    expect(model.testProperties).toEqual([
+      'agent.tools.order-status.token=test-token',
+      'agent.tools.create-note.token=test-token',
+    ]);
+  });
+
   it('pins the Spring Boot version Spring AI depends on, and flags which kinds of tools exist', () => {
     const model = buildModel(assistant);
 

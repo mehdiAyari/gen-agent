@@ -222,4 +222,80 @@ tools:
       expect(warningsOf(result)).toEqual([expect.stringMatching(/^agent.tools.0.description: /)]);
     });
   });
+  describe('HTTP tools', () => {
+    const tool = (yaml: string): ValidationResult => validateAgentYaml(withAgent(`tools:\n${yaml}`));
+
+    it('accepts a URL template, parameters placed explicitly, authentication and a response limit', () => {
+      const result = tool(`  - name: order-status
+    type: http
+    description: Status of an order
+    url: https://shop.example.org/api/orders/{orderId}
+    auth: { type: bearer, env: SHOP_API_TOKEN }
+    maxResponseChars: 5000
+    params:
+      - { name: orderId, type: string, required: true, in: path }
+      - { name: verbose, type: boolean, in: query }
+  - name: create-note
+    type: http
+    method: POST
+    description: Adds a note to an order
+    url: https://shop.example.org/api/orders/{orderId}/notes
+    auth: { type: header, name: X-API-Key, env: SHOP_API_KEY }
+    params:
+      - { name: orderId, type: string, required: true }
+      - { name: text, type: string, required: true }
+`);
+
+      expect(errorsOf(result)).toEqual([]);
+    });
+
+    it('needs a parameter for each placeholder of the URL', () => {
+      const result = tool('  - { name: order, type: http, url: "https://shop.example.org/orders/{orderId}" }\n');
+
+      expect(errorsOf(result)).toEqual([
+        'agent.tools.0.url: {orderId} has no parameter: add { name: orderId, type: string, required: true }',
+      ]);
+    });
+
+    it('refuses a path parameter missing from the URL', () => {
+      const result = tool(
+        '  - { name: order, type: http, url: "https://shop.example.org/orders", params: [{ name: orderId, type: string, required: true, in: path }] }\n',
+      );
+
+      expect(errorsOf(result)).toEqual([
+        'agent.tools.0.params.0.in: the URL has no {orderId} placeholder for this path parameter',
+      ]);
+    });
+
+    it('requires path parameters, since the URL cannot be built without them', () => {
+      const result = tool(
+        '  - { name: order, type: http, url: "https://shop.example.org/orders/{orderId}", params: [{ name: orderId, type: string }] }\n',
+      );
+
+      expect(errorsOf(result)).toEqual(['agent.tools.0.params.0.required: a path parameter must be required']);
+    });
+
+    it.each(['GET', 'DELETE'])('refuses a body parameter on %s, which sends no body', (method) => {
+      const result = tool(
+        `  - { name: order, type: http, method: ${method}, url: "https://shop.example.org/orders", params: [{ name: note, type: string, in: body }] }\n`,
+      );
+
+      expect(errorsOf(result)).toEqual([`agent.tools.0.params.0.in: ${method} sends no body: use query`]);
+    });
+
+    it('keeps the placement of parameters to HTTP tools', () => {
+      const result = tool('  - { name: lookup, type: java, params: [{ name: id, type: string, in: query }] }\n');
+
+      expect(errorsOf(result)).toEqual(['agent.tools.0.params.0.in: only HTTP tools place their parameters']);
+    });
+
+    it.each([
+      ['an environment variable name', '{ type: bearer, env: shop-token }', 'agent.tools.0.auth.env'],
+      ['a header name for header authentication', '{ type: header, env: SHOP_API_KEY }', 'agent.tools.0.auth.name'],
+    ])('requires %s', (_, auth, path) => {
+      const result = tool(`  - { name: order, type: http, url: "https://shop.example.org/orders", auth: ${auth} }\n`);
+
+      expect(errorsOf(result)).toEqual([expect.stringMatching(new RegExp(`^${path.replaceAll('.', '\\.')}: `))]);
+    });
+  });
 });

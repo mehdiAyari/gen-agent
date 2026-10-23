@@ -79,6 +79,8 @@ const toolParam = z.strictObject({
   type: z.enum(['string', 'number', 'integer', 'boolean']),
   required: z.boolean().default(false),
   description: z.string().min(1).optional(),
+  /** HTTP tools only: where the value goes. Defaults in {@link placementOf}. */
+  in: z.enum(['path', 'query', 'body']).optional(),
 });
 
 const approval = z.strictObject({
@@ -93,11 +95,43 @@ const toolBase = {
   approval: approval.optional(),
 };
 
+/** `{name}` placeholders of a URL template, in order. */
+export function urlPlaceholders(url: string): string[] {
+  return [...url.matchAll(/\{([^{}]*)\}/g)].map((match) => match[1] ?? '');
+}
+
+/** An http(s) URL, possibly with `{name}` placeholders for path parameters. */
+const urlTemplate = z.string().refine((url) => {
+  if (urlPlaceholders(url).some((name) => !/^[a-z][a-zA-Z0-9]*$/.test(name))) return false;
+  try {
+    return /^https?:$/.test(new URL(url.replaceAll(/\{[^{}]*\}/g, 'x')).protocol);
+  } catch {
+    return false;
+  }
+}, 'must be an http(s) URL; path parameters are written {camelCaseName}');
+
+const environmentVariable = z
+  .string()
+  .regex(/^[A-Z][A-Z0-9_]*$/, 'must be an environment variable name in upper case, e.g. SHOP_API_TOKEN');
+
+/** The secret itself never appears in agent.yaml: only the environment variable that holds it. */
+const auth = z.discriminatedUnion('type', [
+  z.strictObject({ type: z.literal('bearer'), env: environmentVariable }),
+  z.strictObject({
+    type: z.literal('header'),
+    name: z.string().regex(/^[A-Za-z0-9-]+$/, 'must be an HTTP header name, e.g. X-API-Key'),
+    env: environmentVariable,
+  }),
+]);
+
 const httpTool = z.strictObject({
   ...toolBase,
   type: z.literal('http'),
   method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']).default('GET'),
-  url: z.url({ protocol: /^https?$/ }),
+  url: urlTemplate,
+  auth: auth.optional(),
+  /** Longer responses are cut before reaching the model, which has a limited context. */
+  maxResponseChars: z.int().positive().optional(),
   cacheTtl: duration.optional(),
 });
 
@@ -215,3 +249,18 @@ export type AgentFile = z.output<typeof agentFileSchema>;
 export type AgentDefinition = AgentFile['agent'];
 export type Tool = AgentDefinition['tools'][number];
 export type ToolParamType = Tool['params'][number]['type'];
+export type HttpTool = Extract<Tool, { type: 'http' }>;
+export type ParamPlacement = 'path' | 'query' | 'body';
+
+/** Methods that send no request body. */
+export const BODYLESS_METHODS: ReadonlySet<string> = new Set(['GET', 'DELETE']);
+
+/**
+ * Where a parameter of an HTTP tool goes: where `in` says, else in the path when the URL has its placeholder, else in
+ * the query for GET and DELETE and in the JSON body for the other methods.
+ */
+export function placementOf(tool: HttpTool, param: HttpTool['params'][number]): ParamPlacement {
+  if (param.in !== undefined) return param.in;
+  if (urlPlaceholders(tool.url).includes(param.name)) return 'path';
+  return BODYLESS_METHODS.has(tool.method) ? 'query' : 'body';
+}
