@@ -5,7 +5,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "e2e": "vitest run && playwright test",
-    "demo": "node scripts/record-demo.js"
+    "demo": "node scripts/record-demo.js web && node scripts/record-demo.js openapi"
   },
   "dependencies": {
     "@gen-agent/core": "workspace:*",

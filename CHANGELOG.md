@@ -18,8 +18,20 @@ All notable changes to this project are documented here. The format follows
 - Web generator (`packages/web`): form and `agent.yaml` editor kept in sync, live preview of the generated files with
   their owner, examples gallery, zip download, `agent.yaml` import and export; runs entirely in the browser.
 
+- HTTP tools: `in: path | query | body`, `{name}` placeholders in the URL, `apiName` for parameters named
+  differently in the API, `auth` (bearer token or API key header, from an environment variable) and
+  `maxResponseChars`. The generated README and the CLI list every environment variable to set.
+- OpenAPI 3.0 and 3.1 import (`packages/openapi`): `gen-agent import openapi <file|https url>` with `--include`,
+  `--expand` and `--base-url`; `openapi:` entries in agent.yaml resolved by `generate`; "Import from OpenAPI" in the
+  web generator. Operations a tool cannot send are skipped with the reason.
+- `gen-agent mcp`: validate, preview, import and generate from a coding assistant (`packages/mcp-server`).
+
 ### Security
 
 - Tool arguments from the model are treated as untrusted: boxed types and explicit checks of required arguments, whose
   message goes back to the model instead of failing the request (found by running a generated agent on a real model).
 - Maven Wrapper pins Maven 3.9.16 and checks the SHA-256 of the download.
+- Path values from the model are encoded, so a tool argument cannot change the path it calls (`../admin`); tested in
+  every generated project.
+- Tool credentials never appear in agent.yaml or in the generated code: only environment variable names.
+- `gen-agent mcp` reads and writes only inside the assistant's workspace, never overwriting a file.

@@ -1,7 +1,9 @@
-// Records e2e/test-results/web-demo.webm: the web generator, from the gallery to a downloaded project.
+// Records a demo of the web generator into e2e/test-results/<scenario>-demo.webm:
+//   node scripts/record-demo.js web       the gallery, a parameter added, the project downloaded
+//   node scripts/record-demo.js openapi   an OpenAPI spec imported, its tools previewed, the project downloaded
 // Needs the static site built and served: pnpm --filter @gen-agent/web build && node e2e/scripts/serve-web.js
-// docs/demo/web-demo.gif is made from it with ffmpeg:
-//   ffmpeg -i web-demo.webm -vf "fps=10,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse" web-demo.gif
+// docs/demo/openapi-web-demo.gif is made from openapi-demo.webm with ffmpeg:
+//   ffmpeg -i openapi-demo.webm -vf "fps=6,scale=820:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=64[p];[b][p]paletteuse" openapi-web-demo.gif
 import { copyFileSync, mkdirSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,7 +12,9 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 
 const base = process.env.BASE_URL ?? 'http://localhost:4322';
-const target = fileURLToPath(new URL('../test-results/web-demo.webm', import.meta.url));
+const scenario = process.argv[2] ?? 'web';
+if (scenario !== 'web' && scenario !== 'openapi') throw new Error(`Unknown scenario ${scenario}: web or openapi`);
+const target = fileURLToPath(new URL(`../test-results/${scenario}-demo.webm`, import.meta.url));
 const size = { width: 1280, height: 800 };
 
 // Videos show no mouse pointer: draw one that follows the mouse events. Runs in the page, hence its globals.
@@ -47,35 +51,84 @@ async function click(locator) {
   await locator.click();
 }
 
-await page.goto(`${base}/en/`);
-await page.mouse.move(640, 400);
-await pause(2500);
-await click(page.getByRole('link', { name: 'See examples' }));
-await pause(2000);
-await click(page.getByRole('link', { name: 'Open in the generator' }).nth(3));
-const files = page.getByRole('navigation', { name: 'Generated files' });
-await files.getByText('README.md').waitFor();
-await pause(1500);
+/** An existing API becomes tools: the spec is downloaded and read in the browser. */
+async function openapiScenario() {
+  await page.goto(`${base}/en/generator/`);
+  await page.mouse.move(640, 400);
+  await pause(1500);
+  const name = page.getByLabel('Name', { exact: true }).first();
+  await click(name);
+  await name.fill('');
+  await page.keyboard.type('pet-assistant', { delay: 70 });
+  await pause(600);
 
-await click(files.getByRole('button', { name: /CurrentWeatherTool\.java/ }));
-await pause(2500);
+  const open = page.getByRole('button', { name: 'Import from OpenAPI' });
+  await open.scrollIntoViewIfNeeded();
+  await click(open);
+  const dialog = page.getByRole('dialog');
+  await click(dialog.getByLabel('Or its address'));
+  await page.keyboard.type('https://petstore3.swagger.io/api/v3/openapi.json', { delay: 25 });
+  await click(dialog.getByRole('button', { name: 'Download' }));
+  await dialog.getByRole('checkbox').first().waitFor();
+  await pause(2000);
 
-// Adds a parameter to the tool: the files follow as you type.
-const addParam = page.getByRole('button', { name: 'Add a parameter' });
-await addParam.scrollIntoViewIfNeeded();
-await pause(600);
-await click(addParam);
-await page.keyboard.type('forecastDays', { delay: 90 });
-await click(page.locator('[id="field-tools.0.params.2.type"]'));
-await click(page.getByRole('option', { name: 'integer' }));
-await pause(2500);
+  // Keep the operations a customer assistant needs.
+  for (const checkbox of await dialog.getByRole('checkbox').all()) await checkbox.uncheck();
+  for (const operation of ['find-pets-by-status', 'get-pet-by-id', 'get-order-by-id']) {
+    await click(dialog.getByRole('checkbox', { name: new RegExp(`^${operation}`) }));
+  }
+  await pause(800);
+  const skipped = dialog.getByText(/operations cannot be imported/);
+  await skipped.scrollIntoViewIfNeeded();
+  await click(skipped);
+  await pause(2500);
+  await click(dialog.getByRole('button', { name: 'Add 3 tools' }));
+  await pause(1500);
 
-await click(page.getByRole('tab', { name: 'agent.yaml' }));
-await pause(3000);
-await click(page.getByRole('tab', { name: 'Files' }));
-await pause(1000);
-await click(page.getByRole('button', { name: 'Download the project' }));
-await pause(2500);
+  const files = page.getByRole('navigation', { name: 'Generated files' });
+  await click(files.getByRole('button', { name: /GetPetByIdTool\.java/ }));
+  await pause(3000);
+  await click(page.getByRole('tab', { name: 'agent.yaml' }));
+  await pause(3000);
+  await click(page.getByRole('button', { name: 'Download the project' }));
+  await pause(2500);
+}
+
+/** From the gallery to a downloaded project, with a parameter added on the way. */
+async function webScenario() {
+  await page.goto(`${base}/en/`);
+  await page.mouse.move(640, 400);
+  await pause(2500);
+  await click(page.getByRole('link', { name: 'See examples' }));
+  await pause(2000);
+  await click(page.getByRole('link', { name: 'Open in the generator' }).nth(3));
+  const files = page.getByRole('navigation', { name: 'Generated files' });
+  await files.getByText('README.md').waitFor();
+  await pause(1500);
+
+  await click(files.getByRole('button', { name: /CurrentWeatherTool\.java/ }));
+  await pause(2500);
+
+  // Adds a parameter to the tool: the files follow as you type.
+  const addParam = page.getByRole('button', { name: 'Add a parameter' });
+  await addParam.scrollIntoViewIfNeeded();
+  await pause(600);
+  await click(addParam);
+  await page.keyboard.type('forecastDays', { delay: 90 });
+  await click(page.locator('[id="field-tools.0.params.2.type"]'));
+  await click(page.getByRole('option', { name: 'integer' }));
+  await pause(2500);
+
+  await click(page.getByRole('tab', { name: 'agent.yaml' }));
+  await pause(3000);
+  await click(page.getByRole('tab', { name: 'Files' }));
+  await pause(1000);
+  await click(page.getByRole('button', { name: 'Download the project' }));
+  await pause(2500);
+}
+
+if (scenario === 'openapi') await openapiScenario();
+else await webScenario();
 
 await context.close();
 await browser.close();

@@ -20,10 +20,12 @@ A version is released only when all its end-to-end tests pass. Each version adds
 - [x] Examples gallery (customer support, HR assistant, DevOps agent, weather agent)
 - [x] Playwright tests: zip identical to the CLI output and passing `./mvnw verify`, accessibility checked with axe
 
-## V3 — Flagship features
+## V3 — Flagship features ✅
 
-- [ ] OpenAPI import into tools
-- [ ] gen-agent as an MCP server
+- [x] HTTP tools with path, query and body parameters, URL templates, bearer or API key authentication from
+      environment variables, bounded responses
+- [x] OpenAPI 3 import into tools: `gen-agent import openapi`, `openapi:` in agent.yaml, and in the web generator
+- [x] gen-agent as an MCP server: `gen-agent mcp`
 
 ## V4 — `standard` profile
 
