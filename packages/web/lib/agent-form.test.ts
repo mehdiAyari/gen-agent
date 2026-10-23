@@ -9,7 +9,9 @@ const currentWeather: AgentForm['tools'][number] = {
   description: 'Current temperature at a location',
   method: 'GET',
   url: 'https://api.open-meteo.com/v1/forecast',
-  params: [{ name: 'latitude', type: 'number', required: true, description: 'Latitude' }],
+  params: [{ name: 'latitude', type: 'number', required: true, description: 'Latitude', in: 'auto' }],
+  auth: { type: 'none', env: '', header: '' },
+  maxResponseChars: '',
 };
 
 const weather: AgentForm = {
@@ -43,6 +45,38 @@ describe('formToYaml', () => {
 describe('formFromYaml', () => {
   it('reads back what formToYaml wrote', () => {
     expect(formFromYaml(formToYaml(weather))).toEqual({ ok: true, form: weather });
+  });
+
+  it('keeps parameter placement, authentication and the response limit of HTTP tools', () => {
+    const yaml = `agent:
+  name: shop-assistant
+  model:
+    provider: ollama
+    name: llama3.1
+  tools:
+    - name: add-note
+      type: http
+      description: Adds a note to an order
+      method: POST
+      url: https://shop.example.org/orders/{orderId}/notes
+      auth: { type: header, name: X-API-Key, env: SHOP_API_KEY }
+      maxResponseChars: 5000
+      params:
+        - { name: orderId, type: string, required: true, in: path }
+        - { name: text, type: string, required: true }
+`;
+    const result = formFromYaml(yaml);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+
+    expect(result.form.tools[0]).toMatchObject({
+      auth: { type: 'header', header: 'X-API-Key', env: 'SHOP_API_KEY' },
+      maxResponseChars: '5000',
+      params: [
+        { name: 'orderId', in: 'path' },
+        { name: 'text', in: 'auto' },
+      ],
+    });
+    expect(formToYaml(result.form)).toBe(yaml);
   });
 
   it('explains what the web generator cannot handle yet', () => {

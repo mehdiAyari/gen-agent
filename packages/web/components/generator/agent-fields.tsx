@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import type { FocusEvent } from 'react';
 import { toast } from 'sonner';
 
-import type { AgentForm } from '@/lib/agent-form';
+import { emptyTool, type AgentForm } from '@/lib/agent-form';
 import { Button } from '@/components/ui/button';
 import {
   FieldDescription,
@@ -51,7 +51,7 @@ export function AgentFields({ form, errorOf, onChange, onVisit }: AgentFieldsPro
   };
   const addTool = (): void => {
     update({
-      tools: [...form.tools, { name: '', type: 'http', description: '', method: 'GET', url: '', params: [] }],
+      tools: [...form.tools, emptyTool()],
     });
     requestAnimationFrame(() => document.getElementById(controlId(`tools.${String(form.tools.length)}.name`))?.focus());
   };

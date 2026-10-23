@@ -18,7 +18,8 @@ export const EXAMPLES: readonly Example[] = [
     - name: order-status
       type: http
       description: Status and delivery date of a customer order
-      url: https://shop.example.org/api/orders/status
+      url: https://shop.example.org/api/orders/{orderId}
+      auth: { type: bearer, env: SHOP_API_TOKEN }
       params:
         - { name: orderId, type: string, required: true, description: 'Order number, as printed on the invoice' }
     - name: create-ticket
@@ -26,6 +27,7 @@ export const EXAMPLES: readonly Example[] = [
       method: POST
       description: Opens a ticket for a human agent when the question cannot be solved here
       url: https://support.example.org/api/tickets
+      auth: { type: header, name: X-API-Key, env: SUPPORT_API_KEY }
       params:
         - { name: title, type: string, required: true }
         - { name: details, type: string, required: true }

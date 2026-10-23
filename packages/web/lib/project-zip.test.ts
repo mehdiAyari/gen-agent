@@ -3,13 +3,13 @@ import { generateProject } from '@gen-agent/templates';
 import JSZip from 'jszip';
 import { describe, expect, it } from 'vitest';
 
-import { defaultForm, formToYaml, type AgentForm } from './agent-form';
+import { defaultForm, emptyTool, formToYaml, type AgentForm } from './agent-form';
 import { projectZip } from './project-zip';
 
 const form: AgentForm = {
   ...defaultForm(),
   name: 'zip-bot',
-  tools: [{ name: 'clock', type: 'java', description: 'Current time', method: 'GET', url: '', params: [] }],
+  tools: [{ ...emptyTool(), name: 'clock', type: 'java', description: 'Current time' }],
 };
 
 describe('projectZip', () => {

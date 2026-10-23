@@ -13,6 +13,8 @@ interface ParamForm {
   type: 'string' | 'number' | 'integer' | 'boolean';
   required: boolean;
   description: string;
+  /** HTTP tools only. `auto`: in the path when the URL names it, else query for GET and DELETE, body otherwise. */
+  in: 'auto' | 'path' | 'query' | 'body';
 }
 
 interface ToolForm {
@@ -23,7 +25,28 @@ interface ToolForm {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   /** HTTP tools only. */
   url: string;
+  /** HTTP tools only: the header sent with each call, its value read from the environment variable `env`. */
+  auth: { type: 'none' | 'bearer' | 'header'; env: string; header: string };
+  /** HTTP tools only; empty for the default. */
+  maxResponseChars: string;
   params: ParamForm[];
+}
+
+export function emptyTool(): ToolForm {
+  return {
+    name: '',
+    type: 'http',
+    description: '',
+    method: 'GET',
+    url: '',
+    auth: { type: 'none', env: '', header: '' },
+    maxResponseChars: '',
+    params: [],
+  };
+}
+
+export function emptyParam(): ParamForm {
+  return { name: '', type: 'string', required: true, description: '', in: 'auto' };
 }
 
 export interface AgentForm {
@@ -93,9 +116,13 @@ export function formToYaml(form: AgentForm): string {
     agent.tools = form.tools.map((tool) => {
       const written: Record<string, unknown> = { name: tool.name, type: tool.type };
       if (present(tool.description)) written.description = tool.description;
-      if (tool.type === 'http') {
+      const http = tool.type === 'http';
+      if (http) {
         if (tool.method !== 'GET') written.method = tool.method;
         written.url = tool.url;
+        if (tool.auth.type === 'bearer') written.auth = { type: 'bearer', env: tool.auth.env };
+        if (tool.auth.type === 'header') written.auth = { type: 'header', name: tool.auth.header, env: tool.auth.env };
+        if (present(tool.maxResponseChars)) written.maxResponseChars = numberOrText(tool.maxResponseChars);
       }
       if (tool.params.length > 0) {
         written.params = tool.params.map((param) => ({
@@ -103,6 +130,7 @@ export function formToYaml(form: AgentForm): string {
           type: param.type,
           ...(param.required ? { required: true } : {}),
           ...(present(param.description) ? { description: param.description } : {}),
+          ...(http && param.in !== 'auto' ? { in: param.in } : {}),
         }));
       }
       return written;
@@ -112,12 +140,15 @@ export function formToYaml(form: AgentForm): string {
   if (form.euOnly) agent.gdpr = { euOnly: true, ...(form.allowNonEuProviders ? { allowNonEuProviders: true } : {}) };
 
   const document = new Document({ agent });
-  // Parameters read best on one line each: { name: latitude, type: number, required: true }.
+  // Parameters and authentication read best on one line each: { name: latitude, type: number, required: true }.
   const tools = document.getIn(['agent', 'tools']);
   if (isSeq(tools)) {
     for (const tool of tools.items) {
-      const params = isMap(tool) ? tool.get('params') : undefined;
+      if (!isMap(tool)) continue;
+      const params = tool.get('params');
       if (isSeq(params)) for (const param of params.items) if (param instanceof YAMLMap) param.flow = true;
+      const auth = tool.get('auth');
+      if (auth instanceof YAMLMap) auth.flow = true;
     }
   }
   return document.toString({ lineWidth: 0 });
@@ -161,11 +192,20 @@ function fromConfig({ agent }: AgentFile): AgentForm {
       description: tool.description ?? '',
       method: tool.type === 'http' ? tool.method : 'GET',
       url: tool.type === 'http' ? tool.url : '',
+      auth:
+        tool.type !== 'http' || tool.auth === undefined
+          ? { type: 'none', env: '', header: '' }
+          : tool.auth.type === 'bearer'
+            ? { type: 'bearer', env: tool.auth.env, header: '' }
+            : { type: 'header', env: tool.auth.env, header: tool.auth.name },
+      maxResponseChars:
+        tool.type === 'http' && tool.maxResponseChars !== undefined ? String(tool.maxResponseChars) : '',
       params: tool.params.map((param) => ({
         name: param.name,
         type: param.type,
         required: param.required,
         description: param.description ?? '',
+        in: param.in ?? 'auto',
       })),
     })),
   };

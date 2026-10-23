@@ -99,7 +99,27 @@
       "required": "Required",
       "paramDescription": "Description",
       "removed": "{name} removed",
-      "paramRemoved": "Parameter {name} removed"
+      "paramRemoved": "Parameter {name} removed",
+      "urlHint": "Path parameters are written '{'orderId'}'",
+      "auth": "Authentication",
+      "authNone": "None",
+      "authBearer": "Bearer token",
+      "authHeader": "API key header",
+      "authEnv": "Environment variable",
+      "authEnvHint": "Holds the secret: agent.yaml never contains it",
+      "authHeaderName": "Header",
+      "maxResponseChars": "Max response size",
+      "maxResponseCharsHint": "Characters sent back to the model. Empty: {count, number}",
+      "placement": "Sent in",
+      "placementAuto": "Auto ({placement})",
+      "placementPath": "Path",
+      "placementQuery": "Query",
+      "placementBody": "Body",
+      "placementInline": {
+        "path": "path",
+        "query": "query",
+        "body": "body"
+      }
     },
     "preview": {
       "label": "Preview",

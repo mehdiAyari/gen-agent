@@ -1,10 +1,12 @@
 'use client';
 
+import { BODYLESS_METHODS, DEFAULT_MAX_RESPONSE_CHARS, urlPlaceholders } from '@gen-agent/core';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import type { AgentForm } from '@/lib/agent-form';
+import { emptyParam, type AgentForm } from '@/lib/agent-form';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet, FieldTitle } from '@/components/ui/field';
@@ -17,6 +19,8 @@ type ParamForm = ToolForm['params'][number];
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 const PARAM_TYPES = ['string', 'number', 'integer', 'boolean'] as const;
+const AUTH_TYPES = ['none', 'bearer', 'header'] as const;
+const PLACEMENTS = ['auto', 'path', 'query', 'body'] as const;
 
 interface ToolFieldsProps {
   tool: ToolForm;
@@ -40,7 +44,7 @@ export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFie
     update({ params: tool.params.map((param, i) => (i === paramIndex ? { ...param, ...patch } : param)) });
   };
   const addParam = (): void => {
-    update({ params: [...tool.params, { name: '', type: 'string', required: true, description: '' }] });
+    update({ params: [...tool.params, emptyParam()] });
     requestAnimationFrame(() =>
       document.getElementById(controlId(`${path}.params.${String(tool.params.length)}.name`))?.focus(),
     );
@@ -123,11 +127,70 @@ export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFie
               onValueChange={(url) => {
                 update({ url });
               }}
+              hint={t('urlHint')}
               type="url"
               inputMode="url"
               autoComplete="off"
               spellCheck={false}
-              placeholder="https://api.example.com/…"
+              placeholder="https://api.example.com/orders/{orderId}…"
+            />
+          </div>
+        ) : null}
+        {tool.type === 'http' ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectField
+              path={`${path}.auth.type`}
+              label={t('auth')}
+              value={tool.auth.type}
+              options={AUTH_TYPES}
+              labels={{ none: t('authNone'), bearer: t('authBearer'), header: t('authHeader') }}
+              onValueChange={(type) => {
+                update({ auth: { ...tool.auth, type } });
+              }}
+            />
+            {tool.auth.type === 'none' ? null : (
+              <TextField
+                path={`${path}.auth.env`}
+                label={t('authEnv')}
+                hint={t('authEnvHint')}
+                value={tool.auth.env}
+                error={errorOf(`${path}.auth.env`)}
+                onValueChange={(env) => {
+                  update({ auth: { ...tool.auth, env } });
+                }}
+                autoComplete="off"
+                spellCheck={false}
+                className="font-mono"
+                placeholder="SHOP_API_TOKEN…"
+              />
+            )}
+            {tool.auth.type === 'header' ? (
+              <TextField
+                path={`${path}.auth.name`}
+                label={t('authHeaderName')}
+                value={tool.auth.header}
+                error={errorOf(`${path}.auth.name`)}
+                onValueChange={(header) => {
+                  update({ auth: { ...tool.auth, header } });
+                }}
+                autoComplete="off"
+                spellCheck={false}
+                className="font-mono"
+                placeholder="X-API-Key…"
+              />
+            ) : null}
+            <TextField
+              path={`${path}.maxResponseChars`}
+              label={t('maxResponseChars')}
+              hint={t('maxResponseCharsHint', { count: DEFAULT_MAX_RESPONSE_CHARS })}
+              value={tool.maxResponseChars}
+              error={errorOf(`${path}.maxResponseChars`)}
+              onValueChange={(maxResponseChars) => {
+                update({ maxResponseChars });
+              }}
+              inputMode="numeric"
+              autoComplete="off"
+              className="tabular-nums"
             />
           </div>
         ) : null}
@@ -198,7 +261,12 @@ export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFie
                 >
                   <Trash2Icon aria-hidden="true" />
                 </Button>
-                <div className="sm:col-span-4">
+                <div
+                  className={cn(
+                    'grid gap-3 sm:col-span-4',
+                    tool.type === 'http' && 'sm:grid-cols-[minmax(0,1fr)_8rem]',
+                  )}
+                >
                   <TextField
                     path={`${paramPath}.description`}
                     label={t('paramDescription')}
@@ -209,6 +277,31 @@ export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFie
                     }}
                     autoComplete="off"
                   />
+                  {tool.type === 'http' ? (
+                    <SelectField
+                      path={`${paramPath}.in`}
+                      label={t('placement')}
+                      value={param.in}
+                      options={PLACEMENTS}
+                      labels={{
+                        // Same rule as the generator: the path when the URL names it, else query or body by method.
+                        auto: t('placementAuto', {
+                          placement: urlPlaceholders(tool.url).includes(param.name)
+                            ? t('placementInline.path')
+                            : BODYLESS_METHODS.has(tool.method)
+                              ? t('placementInline.query')
+                              : t('placementInline.body'),
+                        }),
+                        path: t('placementPath'),
+                        query: t('placementQuery'),
+                        body: t('placementBody'),
+                      }}
+                      error={errorOf(`${paramPath}.in`)}
+                      onValueChange={(placement) => {
+                        updateParam(paramIndex, { in: placement });
+                      }}
+                    />
+                  ) : null}
                 </div>
               </div>
             );

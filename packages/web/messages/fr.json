@@ -99,7 +99,27 @@
       "required": "Obligatoire",
       "paramDescription": "Description",
       "removed": "{name} supprimé",
-      "paramRemoved": "Paramètre {name} supprimé"
+      "paramRemoved": "Paramètre {name} supprimé",
+      "urlHint": "Les paramètres de chemin s’écrivent '{'orderId'}'",
+      "auth": "Authentification",
+      "authNone": "Aucune",
+      "authBearer": "Jeton Bearer",
+      "authHeader": "En-tête de clé d’API",
+      "authEnv": "Variable d’environnement",
+      "authEnvHint": "Contient le secret : agent.yaml ne le contient jamais",
+      "authHeaderName": "En-tête",
+      "maxResponseChars": "Taille max. de la réponse",
+      "maxResponseCharsHint": "Caractères renvoyés au modèle. Vide : {count, number}",
+      "placement": "Envoyé dans",
+      "placementAuto": "Auto ({placement})",
+      "placementPath": "Chemin",
+      "placementQuery": "Requête",
+      "placementBody": "Corps",
+      "placementInline": {
+        "path": "chemin",
+        "query": "requête",
+        "body": "corps"
+      }
     },
     "preview": {
       "label": "Aperçu",

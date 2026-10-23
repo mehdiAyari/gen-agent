@@ -55,6 +55,8 @@ interface SelectFieldProps<Value extends string> {
   label: ReactNode;
   value: Value;
   options: readonly Value[];
+  /** Shown instead of the raw values, when they are not meant to be read as code. */
+  labels?: Record<Value, string>;
   error?: string | undefined;
   onValueChange: (value: Value) => void;
 }
@@ -64,11 +66,12 @@ export function SelectField<Value extends string>({
   label,
   value,
   options,
+  labels,
   error,
   onValueChange,
 }: SelectFieldProps<Value>) {
   const id = controlId(path);
-  const items = options.map((option) => ({ label: option, value: option }));
+  const items = options.map((option) => ({ label: labels?.[option] ?? option, value: option }));
   return (
     <Field data-invalid={error === undefined ? undefined : true}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
@@ -90,7 +93,7 @@ export function SelectField<Value extends string>({
           ))}
         </SelectContent>
       </Select>
-      <FieldError>{error}</FieldError>
+      <FieldError id={`${id}-error`}>{error}</FieldError>
     </Field>
   );
 }
