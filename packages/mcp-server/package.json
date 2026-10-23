@@ -1,0 +1,29 @@
+{
+  "name": "@gen-agent/mcp-server",
+  "version": "0.0.0",
+  "description": "gen-agent as an MCP server: coding assistants validate, preview and generate Spring AI agents",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@gen-agent/core": "workspace:*",
+    "@gen-agent/openapi": "workspace:*",
+    "@gen-agent/templates": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  }
+}

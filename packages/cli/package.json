@@ -22,12 +22,13 @@
     "java"
   ],
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --noEmit -p tsconfig.build.json && esbuild src/bin.ts --bundle --platform=node --format=esm --target=node22 --external:@clack/prompts --external:commander --external:ejs --external:prettier --external:prettier-plugin-java --external:yaml --external:zod --outfile=dist/bin.js",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --noEmit -p tsconfig.build.json && esbuild src/bin.ts --bundle --platform=node --format=esm --target=node22 --external:@clack/prompts --external:@modelcontextprotocol/sdk --external:commander --external:ejs --external:prettier --external:prettier-plugin-java --external:yaml --external:zod --outfile=dist/bin.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
     "@clack/prompts": "^1.8.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "commander": "^15.0.0",
     "ejs": "^7.0.2",
     "prettier": "^3.9.10",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@gen-agent/core": "workspace:*",
+    "@gen-agent/mcp-server": "workspace:*",
     "@gen-agent/openapi": "workspace:*",
     "@gen-agent/templates": "workspace:*",
     "esbuild": "^0.28.2"

@@ -1,5 +1,7 @@
 #!/usr/bin/env node
+import { createGenAgentServer } from '@gen-agent/mcp-server';
 import { intro, log, outro } from '@clack/prompts';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { Command, Option } from 'commander';
 
 import { generateCommand, newCommand, type Output } from './commands.js';
@@ -74,6 +76,14 @@ program
     if (options.expand === true) command.expand = true;
     if (options.baseUrl !== undefined) command.baseUrl = options.baseUrl;
     process.exitCode = await importOpenApiCommand(command, terminal);
+  });
+
+program
+  .command('mcp')
+  .description('run gen-agent as an MCP server on stdio, for coding assistants (Claude Code, Cursor…)')
+  .action(async () => {
+    // stdout carries the protocol: nothing else is printed there.
+    await createGenAgentServer({ root: process.cwd(), version: VERSION }).connect(new StdioServerTransport());
   });
 
 await program.parseAsync();

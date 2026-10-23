@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "workspaces": {
     "packages/cli": {
-      "ignoreDependencies": ["ejs", "prettier", "prettier-plugin-java", "zod"]
+      "ignoreDependencies": ["ejs", "prettier", "prettier-plugin-java"]
     },
     "e2e": {
       "ignoreDependencies": ["gen-agent", "@gen-agent/web"]

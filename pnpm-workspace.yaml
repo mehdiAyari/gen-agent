@@ -8,3 +8,5 @@ allowBuilds:
   unrs-resolver: false
   '@parcel/watcher': false
   '@swc/core': false
+minimumReleaseAgeExclude:
+  - '@modelcontextprotocol/sdk@1.32.2'
