@@ -1,7 +1,7 @@
 import { validateAgentYaml } from '@gen-agent/core';
 import { describe, expect, it } from 'vitest';
 
-import { defaultForm, formFromYaml, formToYaml, validateForm, type AgentForm } from './agent-form';
+import { defaultForm, formFromYaml, formToYaml, validateForm, withProfile, type AgentForm } from './agent-form';
 
 const currentWeather: AgentForm['tools'][number] = {
   name: 'current-weather',
@@ -39,6 +39,62 @@ describe('formToYaml', () => {
 
     expect(yaml).toContain('temperature: 0');
     expect(validateAgentYaml(yaml)).toMatchObject({ ok: true, warnings: [] });
+  });
+});
+
+describe('the standard profile', () => {
+  it('writes only what differs from the profile', () => {
+    expect(formToYaml(withProfile(defaultForm(), 'standard'))).toBe(`agent:
+  name: my-agent
+  profile: standard
+  model:
+    provider: mistral
+    name: mistral-small-latest
+`);
+  });
+
+  it('reads back a standard agent with its own choices', () => {
+    const yaml = `agent:
+  name: desk
+  profile: standard
+  model:
+    provider: ollama
+    name: llama3.1
+  memory:
+    type: in-memory
+  security:
+    rateLimit: 10/min
+  deploy: []
+`;
+    const result = formFromYaml(yaml);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+
+    expect(result.form).toMatchObject({
+      profile: 'standard',
+      memoryType: 'in-memory',
+      auth: 'oidc',
+      rateLimit: '10/min',
+      tokenBudget: '100000/day',
+      dockerCompose: false,
+    });
+    expect(formToYaml(result.form)).toBe(yaml);
+  });
+
+  it('switches to the defaults of the chosen profile', () => {
+    expect(withProfile(defaultForm(), 'standard')).toMatchObject({
+      memoryType: 'jdbc',
+      auth: 'oidc',
+      rateLimit: '30/min',
+      tokenBudget: '100000/day',
+      dockerCompose: true,
+    });
+    expect(withProfile(withProfile(defaultForm(), 'standard'), 'minimal')).toEqual(defaultForm());
+  });
+
+  it('maps the limit errors to their fields', () => {
+    const form = { ...defaultForm(), rateLimit: '30/min' };
+
+    expect(Object.keys(validateForm(form).errors)).toEqual(['rateLimit']);
   });
 });
 
@@ -86,7 +142,7 @@ describe('formFromYaml', () => {
 
     expect(result).toEqual({
       ok: false,
-      errors: ['agent.profile: "production" arrives in V5 (V1 generates the minimal profile)'],
+      errors: ['agent.profile: "production" arrives in V5 (minimal and standard are generated)'],
     });
   });
 

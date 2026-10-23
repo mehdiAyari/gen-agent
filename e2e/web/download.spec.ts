@@ -55,3 +55,34 @@ test('downloads the same project as the CLI, and it passes mvnw verify', async (
     encoding: 'utf8',
   });
 });
+
+test('downloads a standard project that passes mvnw verify against real Postgres and Redis', async ({ page }) => {
+  test.setTimeout(15 * 60 * 1000);
+  await page.goto('/en/generator/');
+  await page.getByLabel('Name', { exact: true }).first().fill('desk-agent');
+  await page.getByRole('button', { name: 'Standard' }).click();
+  await expect(page.getByRole('navigation', { name: 'Generated files' }).getByText('compose.yaml')).toBeVisible({
+    timeout: 30_000,
+  });
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Download the project' }).click(),
+  ]);
+  const zip = await JSZip.loadAsync(readFileSync(await download.path()));
+  const project = join(output, '..', 'web-standard');
+  rmSync(project, { recursive: true, force: true });
+  for (const entry of Object.values(zip.files).filter((file) => !file.dir)) {
+    const path = join(project, entry.name);
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, await entry.async('nodebuffer'));
+    const mode = Number(entry.unixPermissions ?? 0) & 0o777;
+    if (mode !== 0) chmodSync(path, mode);
+  }
+  const root = join(project, 'desk-agent');
+  execFileSync(join(root, 'mvnw'), ['--batch-mode', '--no-transfer-progress', 'verify'], {
+    cwd: root,
+    stdio: 'pipe',
+    encoding: 'utf8',
+  });
+});

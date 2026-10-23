@@ -182,6 +182,27 @@
       "add": "{count, plural, =0 {Ajouter des outils} one {Ajouter # outil} other {Ajouter # outils}}",
       "added": "{count, plural, one {# outil ajouté} other {# outils ajoutés}}",
       "renamed": "{from} renommé {to} : le nom était pris"
+    },
+    "profile": {
+      "legend": "Profil",
+      "hint": "Le niveau d’équipement de l’agent généré. Chaque élément reste modifiable.",
+      "profile": "Profil",
+      "minimal": "Minimal",
+      "standard": "Standard",
+      "minimalHint": "L’agent seul : un prototype ou un outil interne, rien d’autre à lancer.",
+      "standardHint": "Prêt à exposer : conversations dans Postgres, connexion par votre fournisseur d’identité, limites par utilisateur, Docker Compose.",
+      "memory": "Conversations",
+      "memoryInMemory": "En mémoire",
+      "memoryJdbc": "Postgres",
+      "auth": "Connexion",
+      "authNone": "Aucune",
+      "authOidc": "OIDC (Keycloak, Auth0, Entra ID…)",
+      "rateLimit": "Requêtes par utilisateur",
+      "rateLimitHint": "Par ex. 30/min (sec, min, hour, day). Au-delà : 429.",
+      "tokenBudget": "Budget de tokens par utilisateur",
+      "tokenBudgetHint": "Par ex. 100000/day, compté d’après ce que le modèle déclare.",
+      "docker": "Docker Compose",
+      "dockerHint": "Un Dockerfile et un compose.yaml avec les services dont l’agent a besoin."
     }
   },
   "gallery": {

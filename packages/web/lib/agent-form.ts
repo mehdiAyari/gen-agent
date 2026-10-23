@@ -1,4 +1,5 @@
 import {
+  STANDARD_LIMITS,
   SUGGESTED_MODELS,
   unsupportedFeatures,
   validateAgentYaml,
@@ -65,6 +66,34 @@ export interface AgentForm {
   euOnly: boolean;
   allowNonEuProviders: boolean;
   tools: ToolForm[];
+  profile: Profile;
+  memoryType: 'in-memory' | 'jdbc';
+  /** oidc: every request needs a JWT; conversations belong to their user. */
+  auth: 'none' | 'oidc';
+  /** 30/min; empty for none. Only with oidc: limits are counted per user. */
+  rateLimit: string;
+  /** 100000/day; empty for none. */
+  tokenBudget: string;
+  dockerCompose: boolean;
+}
+
+type Profile = 'minimal' | 'standard';
+type Equipment = Pick<AgentForm, 'memoryType' | 'auth' | 'rateLimit' | 'tokenBudget' | 'dockerCompose'>;
+
+/** What each profile equips the agent with, as core applies it: standard adds Postgres, OIDC, limits and Docker. */
+function equipmentOf(profile: Profile): Equipment {
+  return profile === 'standard'
+    ? { memoryType: 'jdbc', auth: 'oidc', ...STANDARD_LIMITS, dockerCompose: true }
+    : { memoryType: 'in-memory', auth: 'none', rateLimit: '', tokenBudget: '', dockerCompose: false };
+}
+
+/** The limits core adds by itself: only for the standard profile with sign-in. */
+const defaultLimits = (form: Pick<AgentForm, 'profile' | 'auth'>): Pick<AgentForm, 'rateLimit' | 'tokenBudget'> =>
+  form.profile === 'standard' && form.auth === 'oidc' ? STANDARD_LIMITS : { rateLimit: '', tokenBudget: '' };
+
+/** The form with another profile, and the equipment that comes with it. */
+export function withProfile(form: AgentForm, profile: Profile): AgentForm {
+  return { ...form, profile, ...equipmentOf(profile) };
 }
 
 const DEFAULT_PROMPT = 'prompts/system.md';
@@ -85,6 +114,8 @@ export function defaultForm(): AgentForm {
     euOnly: false,
     allowNonEuProviders: false,
     tools: [],
+    profile: 'minimal',
+    ...equipmentOf('minimal'),
   };
 }
 
@@ -105,14 +136,19 @@ export function formToYaml(form: AgentForm): string {
   const agent: Record<string, unknown> = { name: form.name };
   if (present(form.description)) agent.description = form.description;
   if (present(form.package)) agent.package = form.package;
+  if (form.profile !== 'minimal') agent.profile = form.profile;
   agent.model = model;
+  const equipment = equipmentOf(form.profile);
 
   const prompt: Record<string, unknown> = {};
   if (form.systemPromptPath !== DEFAULT_PROMPT) prompt.system = form.systemPromptPath;
   if (!form.aiDisclosure) prompt.aiDisclosure = false;
   if (Object.keys(prompt).length > 0) agent.prompt = prompt;
 
-  if (form.memoryWindow !== DEFAULT_WINDOW) agent.memory = { window: numberOrText(form.memoryWindow) };
+  const memory: Record<string, unknown> = {};
+  if (form.memoryType !== equipment.memoryType) memory.type = form.memoryType;
+  if (form.memoryWindow !== DEFAULT_WINDOW) memory.window = numberOrText(form.memoryWindow);
+  if (Object.keys(memory).length > 0) agent.memory = memory;
 
   if (form.tools.length > 0) {
     agent.tools = form.tools.map((tool) => {
@@ -140,7 +176,15 @@ export function formToYaml(form: AgentForm): string {
     });
   }
 
+  const security: Record<string, unknown> = {};
+  const limits = defaultLimits(form);
+  if (form.auth !== equipment.auth) security.auth = form.auth;
+  if (present(form.rateLimit) && form.rateLimit !== limits.rateLimit) security.rateLimit = form.rateLimit;
+  if (present(form.tokenBudget) && form.tokenBudget !== limits.tokenBudget) security.tokenBudget = form.tokenBudget;
+  if (Object.keys(security).length > 0) agent.security = security;
+
   if (form.euOnly) agent.gdpr = { euOnly: true, ...(form.allowNonEuProviders ? { allowNonEuProviders: true } : {}) };
+  if (form.dockerCompose !== equipment.dockerCompose) agent.deploy = form.dockerCompose ? ['docker-compose'] : [];
 
   const document = new Document({ agent });
   // Parameters and authentication read best on one line each: { name: latitude, type: number, required: true }.
@@ -189,6 +233,12 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     memoryWindow: String(agent.memory.window),
     euOnly: agent.gdpr?.euOnly ?? false,
     allowNonEuProviders: agent.gdpr?.allowNonEuProviders ?? false,
+    profile: agent.profile === 'standard' ? 'standard' : 'minimal',
+    memoryType: agent.memory.type === 'jdbc' ? 'jdbc' : 'in-memory',
+    auth: agent.security?.auth ?? 'none',
+    rateLimit: agent.security?.rateLimit ?? '',
+    tokenBudget: agent.security?.tokenBudget ?? '',
+    dockerCompose: agent.deploy?.includes('docker-compose') ?? false,
     tools: agent.tools.map((tool) => ({
       name: tool.name,
       type: tool.type,
@@ -226,6 +276,8 @@ const FIELDS: Record<string, keyof AgentForm> = {
   'agent.model.maxTokens': 'maxTokens',
   'agent.prompt.system': 'systemPromptPath',
   'agent.memory.window': 'memoryWindow',
+  'agent.security.rateLimit': 'rateLimit',
+  'agent.security.tokenBudget': 'tokenBudget',
 };
 
 function fieldOf(path: string): string {

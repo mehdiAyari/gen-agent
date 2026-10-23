@@ -2,10 +2,11 @@
 
 import type { ComponentProps, ReactNode } from 'react';
 
-import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel, FieldTitle } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 /** DOM id of the control bound to a form path, such as `tools.0.url`. */
 export const controlId = (path: string): string => `field-${path}`;
@@ -115,6 +116,52 @@ export function SwitchField({ path, label, hint, checked, onCheckedChange }: Swi
         <FieldDescription id={`${id}-hint`}>{hint}</FieldDescription>
       </FieldContent>
       <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} aria-describedby={`${id}-hint`} />
+    </Field>
+  );
+}
+
+interface ChoiceFieldProps<Value extends string> {
+  path: string;
+  label: ReactNode;
+  hint?: ReactNode;
+  value: Value;
+  options: readonly Value[];
+  labels: Record<Value, ReactNode>;
+  onValueChange: (value: Value) => void;
+}
+
+/** One choice among a few, all visible at once. */
+export function ChoiceField<Value extends string>({
+  path,
+  label,
+  hint,
+  value,
+  options,
+  labels,
+  onValueChange,
+}: ChoiceFieldProps<Value>) {
+  const id = controlId(path);
+  return (
+    <Field>
+      <FieldTitle id={id}>{label}</FieldTitle>
+      <ToggleGroup
+        aria-labelledby={id}
+        aria-describedby={hint === undefined ? undefined : `${id}-hint`}
+        variant="outline"
+        className="flex-wrap"
+        value={[value]}
+        onValueChange={(next: string[]) => {
+          const chosen = options.find((option) => option === next[0]);
+          if (chosen !== undefined) onValueChange(chosen);
+        }}
+      >
+        {options.map((option) => (
+          <ToggleGroupItem key={option} value={option}>
+            {labels[option]}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+      {hint === undefined ? null : <FieldDescription id={`${id}-hint`}>{hint}</FieldDescription>}
     </Field>
   );
 }
