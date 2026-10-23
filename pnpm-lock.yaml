@@ -293,6 +293,15 @@ importers:
         specifier: ^3.1.5
         version: 3.1.5
 
+  packages/openapi:
+    dependencies:
+      '@gen-agent/core':
+        specifier: workspace:*
+        version: link:../core
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
+
   packages/templates:
     dependencies:
       '@gen-agent/core':

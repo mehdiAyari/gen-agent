@@ -247,7 +247,7 @@
                           },
                           "name": {
                             "type": "string",
-                            "pattern": "^[A-Za-z0-9-]+$"
+                            "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
                           },
                           "env": {
                             "type": "string",

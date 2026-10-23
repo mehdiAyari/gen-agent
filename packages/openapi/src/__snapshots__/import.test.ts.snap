@@ -1,0 +1,54 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`importOpenApi > imports the official Petstore spec: what it can, and why it skips the rest 1`] = `
+[
+  "find-pets-by-status",
+  "get-pet-by-id",
+  "update-pet-with-form",
+  "delete-pet",
+  "get-inventory",
+  "place-order",
+  "get-order-by-id",
+  "delete-order",
+  "create-user",
+  "login-user",
+  "logout-user",
+  "get-user-by-name",
+  "update-user",
+  "delete-user",
+]
+`;
+
+exports[`importOpenApi > imports the official Petstore spec: what it can, and why it skips the rest 2`] = `
+[
+  {
+    "operation": "addPet",
+    "reason": "its body property photoUrls is an array: only flat objects are supported",
+  },
+  {
+    "operation": "updatePet",
+    "reason": "its body property photoUrls is an array: only flat objects are supported",
+  },
+  {
+    "operation": "findPetsByTags",
+    "reason": "its tags parameter is an array: only single values are supported",
+  },
+  {
+    "operation": "uploadFile",
+    "reason": "the body is application/octet-stream: only JSON bodies are supported",
+  },
+  {
+    "operation": "createUsersWithListInput",
+    "reason": "the JSON body is an array: only flat objects are supported",
+  },
+]
+`;
+
+exports[`importOpenApi > imports the official Petstore spec: what it can, and why it skips the rest 3`] = `
+[
+  "find-pets-by-status: OAuth 2 is not run by the agent: put an access token in PETSTORE_TOKEN (sent as a bearer token)",
+  "update-pet-with-form: OAuth 2 is not run by the agent: put an access token in PETSTORE_TOKEN (sent as a bearer token)",
+  "delete-pet: the optional api_key header is left out",
+  "delete-pet: OAuth 2 is not run by the agent: put an access token in PETSTORE_TOKEN (sent as a bearer token)",
+]
+`;

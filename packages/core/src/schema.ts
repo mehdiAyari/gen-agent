@@ -32,8 +32,8 @@ const javaPackage = z
 /** Exact semantic version: `latest` and ranges are refused. */
 const exactVersion = z.string().regex(/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/, 'must be an exact version, e.g. 1.0.0');
 
-// Java keywords and literals: a tool parameter becomes a Java parameter name.
-const JAVA_RESERVED = new Set(
+/** Java keywords and literals: a tool parameter becomes a Java parameter name. */
+export const JAVA_RESERVED: ReadonlySet<string> = new Set(
   (
     'abstract assert boolean break byte case catch char class const continue default do double else enum extends ' +
     'final finally float for goto if implements import instanceof int interface long native new package private ' +
@@ -124,7 +124,7 @@ const auth = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('bearer'), env: environmentVariable }),
   z.strictObject({
     type: z.literal('header'),
-    name: z.string().regex(/^[A-Za-z0-9-]+$/, 'must be an HTTP header name, e.g. X-API-Key'),
+    name: z.string().regex(/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/, 'must be an HTTP header name, e.g. X-API-Key'),
     env: environmentVariable,
   }),
 ]);
