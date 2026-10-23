@@ -8,12 +8,38 @@ package <%= project.generatedPackage %>;
  *
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
+<%_ if (features.limits) { _%>
+ * @param limits what each user may use
+<%_ } _%>
  */
 @<%= type('org.springframework.boot.context.properties.ConfigurationProperties') %>("agent")
+<%_ if (features.limits) { _%>
+public record AgentProperties(<%= type('org.springframework.core.io.Resource') %> systemPrompt, Memory memory, Limits limits) {
+<%_ } else { _%>
 public record AgentProperties(<%= type('org.springframework.core.io.Resource') %> systemPrompt, Memory memory) {
+<%_ } _%>
 
     /**
      * @param window number of recent messages kept per conversation
      */
     public record Memory(int window) {}
+<%_ if (features.limits) { _%>
+
+    /**
+     * What each user may use<%= limits.requests && limits.tokens ? ', counted separately' : '' %>.
+     *
+<%_   if (limits.requests) { _%>
+     * @param requests messages a user may send per {@code requestsPeriod}
+     * @param requestsPeriod period of the request limit
+<%_   } _%>
+<%_   if (limits.tokens) { _%>
+     * @param tokens model tokens a user may spend per {@code tokensPeriod}
+     * @param tokensPeriod period of the token budget, given back in full at its end
+<%_   } _%>
+     */
+    public record Limits(<%- [
+      ...(limits.requests ? ['long requests', `${type('java.time.Duration')} requestsPeriod`] : []),
+      ...(limits.tokens ? ['long tokens', `${type('java.time.Duration')} tokensPeriod`] : []),
+    ].join(', ') %>) {}
+<%_ } _%>
 }

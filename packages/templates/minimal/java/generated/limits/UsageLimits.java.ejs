@@ -1,0 +1,64 @@
+// Managed by gen-agent: changes here are overwritten. Set the limits in application.yml.
+package <%= project.generatedPackage %>.limits;
+
+<%- imports %>
+
+/**
+ * Limits each user<%= limits.requests ? ' to a number of requests' : '' %><%= limits.requests && limits.tokens ? ' and' : '' %><%= limits.tokens ? ' to a budget of model tokens' : '' %> per period, so that nobody can
+ * exhaust the agent or its bill.
+ */
+@<%= type('org.springframework.stereotype.Component') %>
+public class UsageLimits {
+
+    private final <%= type('io.github.bucket4j.distributed.proxy.ProxyManager') %><String> buckets;
+
+    private final <%= type(`${project.generatedPackage}.AgentProperties`) %>.Limits limits;
+
+    UsageLimits(ProxyManager<String> buckets, AgentProperties properties) {
+        this.buckets = buckets;
+        this.limits = properties.limits();
+    }
+
+    /** Throws {@link LimitExceededException} when the user may not send one more request now. */
+    public void checkRequest(String userId) {
+<%_ if (limits.requests) { _%>
+        <%= type('io.github.bucket4j.ConsumptionProbe') %> request = requests(userId).tryConsumeAndReturnRemaining(1);
+        if (!request.isConsumed()) {
+            throw new LimitExceededException(
+                    "Too many requests: wait before sending another message.",
+                    <%= type('java.time.Duration') %>.ofNanos(request.getNanosToWaitForRefill()));
+        }
+<%_ } _%>
+<%_ if (limits.tokens) { _%>
+        <%= type('io.github.bucket4j.EstimationProbe') %> budget = tokens(userId).estimateAbilityToConsume(1);
+        if (!budget.canBeConsumed()) {
+            throw new LimitExceededException(
+                    "The token budget of this period is used up.", <%= type('java.time.Duration') %>.ofNanos(budget.getNanosToWaitForRefill()));
+        }
+<%_ } _%>
+    }
+<%_ if (limits.tokens) { _%>
+
+    /** Counts the tokens the model used for a reply; the budget may go below zero, and the next request waits. */
+    public void recordTokens(String userId, long tokens) {
+        tokens(userId).consumeIgnoringRateLimits(tokens);
+    }
+<%_ } _%>
+<%_ if (limits.requests) { _%>
+
+    private <%= type('io.github.bucket4j.Bucket') %> requests(String userId) {
+        return buckets.builder().build("requests:" + userId, () -> <%= type('io.github.bucket4j.BucketConfiguration') %>.builder()
+                .addLimit(limit -> limit.capacity(limits.requests()).refillGreedy(limits.requests(), limits.requestsPeriod()))
+                .build());
+    }
+<%_ } _%>
+<%_ if (limits.tokens) { _%>
+
+    private <%= type('io.github.bucket4j.Bucket') %> tokens(String userId) {
+        return buckets.builder().build("tokens:" + userId, () -> <%= type('io.github.bucket4j.BucketConfiguration') %>.builder()
+                // The whole budget comes back at once, at the end of each period.
+                .addLimit(limit -> limit.capacity(limits.tokens()).refillIntervally(limits.tokens(), limits.tokensPeriod()))
+                .build());
+    }
+<%_ } _%>
+}

@@ -1,6 +1,25 @@
 spring:
   application:
     name: <%= project.artifactId %>
+<%_ if (features.jdbcMemory) { _%>
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/agent}
+    username: ${DATABASE_USERNAME:agent}
+    password: ${DATABASE_PASSWORD}
+<%_ } _%>
+<%_ if (features.limits) { _%>
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+<%_ } _%>
+<%_ if (features.oidc) { _%>
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Only tokens of this issuer are accepted; its keys are found through its OIDC discovery document.
+          issuer-uri: ${OIDC_ISSUER_URI}
+<%_ } _%>
   ai:
     <%= provider.configKey %>:
 <%_ if (provider.apiKeyEnv) { _%>
@@ -14,11 +33,30 @@ spring:
 <%_ if (provider.maxTokens !== undefined) { _%>
         <%= provider.maxTokensProperty %>: <%= provider.maxTokens %>
 <%_ } _%>
+<%_ if (features.jdbcMemory) { _%>
+    chat:
+      memory:
+        repository:
+          jdbc:
+            # Creates the table of Spring AI's chat memory when it does not exist yet.
+            initialize-schema: always
+<%_ } _%>
 
 agent:
   system-prompt: classpath:<%= prompt.resource %>
   memory:
     window: <%= memory.window %>
+<%_ if (features.limits) { _%>
+  limits:
+<%_   if (limits.requests) { _%>
+    requests: <%= limits.requests.capacity %>
+    requests-period: <%= limits.requests.period %>
+<%_   } _%>
+<%_   if (limits.tokens) { _%>
+    tokens: <%= limits.tokens.capacity %>
+    tokens-period: <%= limits.tokens.period %>
+<%_   } _%>
+<%_ } _%>
 <%_ if (features.httpTools) { _%>
   tools:
 <%_   for (const tool of tools) { _%>

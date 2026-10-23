@@ -12,6 +12,29 @@ class ChatExceptionHandler extends <%= type('org.springframework.web.servlet.mvc
 
     private static final <%= type('org.slf4j.Logger') %> log = <%= type('org.slf4j.LoggerFactory') %>.getLogger(ChatExceptionHandler.class);
 
+<%_ if (features.oidc) { _%>
+    @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>
+    <%= type('org.springframework.http.ProblemDetail') %> handleUnknownConversation(UnknownConversationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                <%= type('org.springframework.http.HttpStatus') %>.NOT_FOUND, "No such conversation: start a new one without conversationId.");
+        problem.setTitle("Unknown conversation");
+        return problem;
+    }
+
+<%_ } _%>
+<%_ if (features.limits) { _%>
+    @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>
+    <%= type('org.springframework.http.ResponseEntity') %><<%= type('org.springframework.http.ProblemDetail') %>> handleLimitExceeded(<%= type(`${project.generatedPackage}.limits.LimitExceededException`) %> exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(<%= type('org.springframework.http.HttpStatus') %>.TOO_MANY_REQUESTS, exception.getMessage());
+        problem.setTitle("Limit reached");
+        // Whole seconds, rounded up: a client that waits this long is served.
+        long seconds = Math.max(1, exception.retryAfter().toSeconds() + (exception.retryAfter().toNanosPart() > 0 ? 1 : 0));
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(<%= type('org.springframework.http.HttpHeaders') %>.RETRY_AFTER, String.valueOf(seconds))
+                .body(problem);
+    }
+
+<%_ } _%>
     @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>(Exception.class)
     <%= type('org.springframework.http.ProblemDetail') %> handleUnexpected(Exception exception) {
         log.error("The agent could not answer", exception);

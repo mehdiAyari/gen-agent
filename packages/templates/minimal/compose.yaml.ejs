@@ -1,0 +1,88 @@
+# The agent and the services it needs, for a local run: docker compose up --build
+<%_ if (features.oidc) { _%>
+# Sign in as demo / demo through Keycloak (http://localhost:8180, admin / admin): see README.md.
+<%_ } _%>
+services:
+  agent:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+<%_ if (features.jdbcMemory) { _%>
+      DATABASE_URL: jdbc:postgresql://postgres:5432/agent
+      DATABASE_USERNAME: agent
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-agent}
+<%_ } _%>
+<%_ if (features.limits) { _%>
+      REDIS_URL: redis://redis:6379
+<%_ } _%>
+<%_ if (features.oidc) { _%>
+      # Tokens are issued for the address users sign in at; inside Compose, the keys are fetched from keycloak.
+      OIDC_ISSUER_URI: http://localhost:8180/realms/agent
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI: http://keycloak:8080/realms/agent/protocol/openid-connect/certs
+<%_ } _%>
+<%_ if (provider.id === 'ollama') { _%>
+      # Ollama runs on the host: ollama pull <%= provider.model %>
+      SPRING_AI_OLLAMA_BASE_URL: http://host.docker.internal:11434
+<%_ } _%>
+<%_ for (const secret of secrets) { _%>
+      <%= secret %>: ${<%= secret %>:?export <%= secret %> before docker compose up}
+<%_ } _%>
+<%_ if (provider.id === 'ollama') { _%>
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+<%_ } _%>
+<%_ if (features.jdbcMemory || features.limits) { _%>
+    depends_on:
+<%_   if (features.jdbcMemory) { _%>
+      postgres:
+        condition: service_healthy
+<%_   } _%>
+<%_   if (features.limits) { _%>
+      redis:
+        condition: service_healthy
+<%_   } _%>
+<%_ } _%>
+<%_ if (features.jdbcMemory) { _%>
+
+  postgres:
+    image: <%= images.postgres %>
+    environment:
+      POSTGRES_DB: agent
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-agent}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent -d agent"]
+      interval: 5s
+      retries: 10
+<%_ } _%>
+<%_ if (features.limits) { _%>
+
+  redis:
+    image: <%= images.redis %>
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+<%_ } _%>
+<%_ if (features.oidc) { _%>
+
+  keycloak:
+    image: <%= images.keycloak %>
+    command: start-dev --import-realm
+    ports:
+      - "8180:8080"
+    environment:
+      KC_HOSTNAME: http://localhost:8180
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
+<%_ } _%>
+<%_ if (features.jdbcMemory) { _%>
+
+volumes:
+  postgres-data:
+<%_ } _%>

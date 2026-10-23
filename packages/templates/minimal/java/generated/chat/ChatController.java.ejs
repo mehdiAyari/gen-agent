@@ -13,8 +13,17 @@ class ChatController {
         this.chatService = chatService;
     }
 
+<%_ if (features.oidc) { _%>
+    @<%= type('org.springframework.web.bind.annotation.PostMapping') %>
+    ChatMessageResponse chat(
+            @<%= type('jakarta.validation.Valid') %> @<%= type('org.springframework.web.bind.annotation.RequestBody') %> ChatMessageRequest request,
+            @<%= type('org.springframework.security.core.annotation.AuthenticationPrincipal') %> <%= type('org.springframework.security.oauth2.jwt.Jwt') %> user) {
+        return chatService.reply(request, user.getSubject());
+    }
+<%_ } else { _%>
     @<%= type('org.springframework.web.bind.annotation.PostMapping') %>
     ChatMessageResponse chat(@<%= type('jakarta.validation.Valid') %> @<%= type('org.springframework.web.bind.annotation.RequestBody') %> ChatMessageRequest request) {
         return chatService.reply(request);
     }
+<%_ } _%>
 }

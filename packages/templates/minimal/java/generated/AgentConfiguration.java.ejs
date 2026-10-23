@@ -13,12 +13,22 @@ package <%= project.generatedPackage %>;
 class AgentConfiguration {
 
     @<%= type('org.springframework.context.annotation.Bean') %>
+<%_ if (features.jdbcMemory) { _%>
+    <%= type('org.springframework.ai.chat.memory.ChatMemory') %> chatMemory(<%= type('org.springframework.ai.chat.memory.ChatMemoryRepository') %> repository, AgentProperties properties) {
+        // The repository is Spring AI's JDBC one: conversations survive restarts.
+        return <%= type('org.springframework.ai.chat.memory.MessageWindowChatMemory') %>.builder()
+                .chatMemoryRepository(repository)
+                .maxMessages(properties.memory().window())
+                .build();
+    }
+<%_ } else { _%>
     <%= type('org.springframework.ai.chat.memory.ChatMemory') %> chatMemory(AgentProperties properties) {
         return <%= type('org.springframework.ai.chat.memory.MessageWindowChatMemory') %>.builder()
                 .chatMemoryRepository(new <%= type('org.springframework.ai.chat.memory.InMemoryChatMemoryRepository') %>())
                 .maxMessages(properties.memory().window())
                 .build();
     }
+<%_ } _%>
 
     @Bean
     <%= type('org.springframework.ai.chat.client.ChatClient') %> chatClient(

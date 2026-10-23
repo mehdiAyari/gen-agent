@@ -1,0 +1,21 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.security;
+
+<%- imports %>
+
+/**
+ * Every request needs a JWT from the OIDC issuer of {@code application.yml}. No session and no cookie: the token is
+ * sent with each request, so there is nothing for a cross-site request to forge.
+ */
+@<%= type('org.springframework.context.annotation.Configuration') %>(proxyBeanMethods = false)
+public class SecurityConfiguration {
+
+    @<%= type('org.springframework.context.annotation.Bean') %>
+    <%= type('org.springframework.security.web.SecurityFilterChain') %> securityFilterChain(<%= type('org.springframework.security.config.annotation.web.builders.HttpSecurity') %> http) throws Exception {
+        return http.authorizeHttpRequests(requests -> requests.anyRequest().authenticated())
+                .oauth2ResourceServer(server -> server.jwt(<%= type('org.springframework.security.config.Customizer') %>.withDefaults()))
+                .sessionManagement(session -> session.sessionCreationPolicy(<%= type('org.springframework.security.config.http.SessionCreationPolicy') %>.STATELESS))
+                .csrf(<%= type('org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer') %>::disable)
+                .build();
+    }
+}

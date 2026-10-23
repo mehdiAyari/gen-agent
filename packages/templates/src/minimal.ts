@@ -17,6 +17,25 @@ export const minimalEntries: TemplateEntry[] = [
     output: () => '.mvn/wrapper/maven-wrapper.properties',
   },
   { template: 'README.md.ejs', owner: 'merged', output: () => 'README.md' },
+  { template: 'Dockerfile.ejs', owner: 'merged', when: (m) => m.features.dockerCompose, output: () => 'Dockerfile' },
+  {
+    template: 'dockerignore.ejs',
+    owner: 'merged',
+    when: (m) => m.features.dockerCompose,
+    output: () => '.dockerignore',
+  },
+  {
+    template: 'compose.yaml.ejs',
+    owner: 'merged',
+    when: (m) => m.features.dockerCompose,
+    output: () => 'compose.yaml',
+  },
+  {
+    template: 'docker/realm-agent.json.ejs',
+    owner: 'merged',
+    when: (m) => m.features.dockerCompose && m.features.oidc,
+    output: () => 'docker/keycloak/realm-agent.json',
+  },
   { template: 'application.yml.ejs', owner: 'merged', output: () => 'src/main/resources/application.yml' },
   { template: 'system-prompt.md.ejs', owner: 'user', output: (m) => `src/main/resources/${m.prompt.resource}` },
 
@@ -62,6 +81,25 @@ export const minimalEntries: TemplateEntry[] = [
   },
 
   {
+    template: 'java/generated/chat/UnknownConversationException.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.oidc,
+    output: (m) => main(m, 'generated/chat/UnknownConversationException.java'),
+  },
+  {
+    template: 'java/generated/security/SecurityConfiguration.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.oidc,
+    output: (m) => main(m, 'generated/security/SecurityConfiguration.java'),
+  },
+  ...['UsageLimits', 'LimitExceededException', 'LimitsConfiguration'].map((name): TemplateEntry => ({
+    template: `java/generated/limits/${name}.java.ejs`,
+    owner: 'generated',
+    when: (m) => m.features.limits,
+    output: (m) => main(m, `generated/limits/${name}.java`),
+  })),
+
+  {
     template: 'java/generated/tool/HttpTool.java.ejs',
     owner: 'generated',
     each: 'httpTool',
@@ -102,6 +140,12 @@ export const minimalEntries: TemplateEntry[] = [
     template: 'test/ApplicationTests.java.ejs',
     owner: 'merged',
     output: (m) => test(m, `${m.project.applicationClass}Tests.java`),
+  },
+  {
+    template: 'test/generated/TestcontainersConfiguration.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.jdbcMemory || m.features.limits,
+    output: (m) => test(m, 'generated/TestcontainersConfiguration.java'),
   },
   {
     template: 'test/generated/chat/ChatControllerTests.java.ejs',

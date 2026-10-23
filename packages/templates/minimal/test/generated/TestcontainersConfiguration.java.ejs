@@ -1,0 +1,28 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>;
+
+<%- imports %>
+
+/**
+ * The services of the agent, started in Docker for the tests and wired to Spring by {@code @ServiceConnection}: the
+ * tests run against the same <%= [features.jdbcMemory ? 'Postgres' : '', features.limits ? 'Redis' : ''].filter(Boolean).join(' and ') %> as production, not against mocks.
+ */
+@<%= type('org.springframework.boot.test.context.TestConfiguration') %>(proxyBeanMethods = false)
+public class TestcontainersConfiguration {
+<%_ if (features.jdbcMemory) { _%>
+
+    @<%= type('org.springframework.context.annotation.Bean') %>
+    @<%= type('org.springframework.boot.testcontainers.service.connection.ServiceConnection') %>
+    <%= type('org.testcontainers.postgresql.PostgreSQLContainer') %> postgres() {
+        return new PostgreSQLContainer("<%= images.postgres %>");
+    }
+<%_ } _%>
+<%_ if (features.limits) { _%>
+
+    @<%= type('org.springframework.context.annotation.Bean') %>
+    @<%= type('org.springframework.boot.testcontainers.service.connection.ServiceConnection') %>
+    <%= type('com.redis.testcontainers.RedisContainer') %> redis() {
+        return new RedisContainer("<%= images.redis %>");
+    }
+<%_ } _%>
+}

@@ -3,16 +3,71 @@ package <%= project.generatedPackage %>.chat;
 
 <%- imports %>
 
+<%_ if (features.oidc) { _%>
+/**
+ * Sends a user message to the model within its conversation, so earlier messages are remembered. Conversations are
+ * kept under their user: nobody can read or continue someone else's.
+ */
+<%_ } else { _%>
 /** Sends a user message to the model within its conversation, so earlier messages are remembered. */
+<%_ } _%>
 @<%= type('org.springframework.stereotype.Service') %>
 class ChatService {
 
     private final <%= type('org.springframework.ai.chat.client.ChatClient') %> chatClient;
+<%_ if (features.oidc) { _%>
 
-    ChatService(ChatClient chatClient) {
+    private final <%= type('org.springframework.ai.chat.memory.ChatMemory') %> chatMemory;
+<%_ } _%>
+<%_ if (features.limits) { _%>
+
+    private final <%= type(`${project.generatedPackage}.limits.UsageLimits`) %> usageLimits;
+<%_ } _%>
+
+    ChatService(<%- ['ChatClient chatClient', ...(features.oidc ? ['ChatMemory chatMemory'] : []), ...(features.limits ? ['UsageLimits usageLimits'] : [])].join(', ') %>) {
         this.chatClient = chatClient;
+<%_ if (features.oidc) { _%>
+        this.chatMemory = chatMemory;
+<%_ } _%>
+<%_ if (features.limits) { _%>
+        this.usageLimits = usageLimits;
+<%_ } _%>
     }
 
+<%_ if (features.oidc) { _%>
+    ChatMessageResponse reply(ChatMessageRequest request, String userId) {
+<%_   if (features.limits) { _%>
+        usageLimits.checkRequest(userId);
+<%_   } _%>
+        String conversationId = request.conversationId() != null
+                ? request.conversationId()
+                : <%= type('java.util.UUID') %>.randomUUID().toString();
+        // Stored under a key of its user: another user's conversation id leads nowhere. A name-based UUID keeps the
+        // key within the 36 characters of Spring AI's memory table.
+        String memoryKey = <%= type('java.util.UUID') %>.nameUUIDFromBytes((userId + ":" + conversationId).getBytes(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8)).toString();
+        if (request.conversationId() != null && chatMemory.get(memoryKey).isEmpty()) {
+            throw new UnknownConversationException(conversationId);
+        }
+<%_   if (limits.tokens) { _%>
+        <%= type('org.springframework.ai.chat.model.ChatResponse') %> response = chatClient
+                .prompt()
+                .user(request.message())
+                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
+                .call()
+                .chatResponse();
+        usageLimits.recordTokens(userId, response.getMetadata().getUsage().getTotalTokens());
+        return new ChatMessageResponse(conversationId, response.getResult().getOutput().getText());
+<%_   } else { _%>
+        String reply = chatClient
+                .prompt()
+                .user(request.message())
+                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
+                .call()
+                .content();
+        return new ChatMessageResponse(conversationId, reply);
+<%_   } _%>
+    }
+<%_ } else { _%>
     ChatMessageResponse reply(ChatMessageRequest request) {
         String conversationId = request.conversationId() != null
                 ? request.conversationId()
@@ -25,4 +80,5 @@ class ChatService {
                 .content();
         return new ChatMessageResponse(conversationId, reply);
     }
+<%_ } _%>
 }

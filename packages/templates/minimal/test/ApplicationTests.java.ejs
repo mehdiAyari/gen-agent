@@ -14,6 +14,9 @@ package <%= project.basePackage %>;
 @<%= type('org.springframework.boot.test.context.SpringBootTest') %>
 <%_ } _%>
 @<%= type('org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc') %>
+<%_ if (features.jdbcMemory || features.limits) { _%>
+@<%= type('org.springframework.context.annotation.Import') %>(<%= type(`${project.generatedPackage}.TestcontainersConfiguration`) %>.class)
+<%_ } _%>
 class <%= project.applicationClass %>Tests {
 
     @<%= type('org.springframework.beans.factory.annotation.Autowired') %>
@@ -21,6 +24,123 @@ class <%= project.applicationClass %>Tests {
 
     @Autowired
     RecordingChatModel chatModel;
+<%_ if (features.limits) { _%>
+
+    @Autowired
+    <%= type(`${project.generatedPackage}.AgentProperties`) %> properties;
+<%_ } _%>
+<%_ if (features.oidc) { _%>
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void answersOnTheChatEndpoint() {
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(post("ada", """
+                {"message": "Hello"}
+                """))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.reply")
+                .isEqualTo("Hello from the agent");
+    }
+
+    @Test
+    void sendsTheSystemPromptAndRemembersTheConversation() throws Exception {
+        String conversationId = startConversation("grace", "My name is Grace");
+        post("grace", """
+                {"conversationId": "%s", "message": "What is my name?"}
+                """.formatted(conversationId));
+
+        assertThat(chatModel.lastPrompt().getContents()).contains("You are", "My name is Grace", "What is my name?");
+    }
+<%_   if (prompt.aiDisclosure) { _%>
+
+    @Test
+    void tellsClientsTheReplyComesFromAnAi() {
+        assertThat(post("ada", """
+                {"message": "Hello"}
+                """))
+                .bodyJson()
+                .extractingPath("$.aiGenerated")
+                .isEqualTo(true);
+    }
+<%_   } _%>
+
+    @Test
+    void refusesRequestsWithoutAToken() {
+        assertThat(mockMvc.post()
+                        .uri("/api/chat")
+                        .contentType(<%= type('org.springframework.http.MediaType') %>.APPLICATION_JSON)
+                        .content("""
+                                {"message": "Hello"}
+                                """))
+                .hasStatus(<%= type('org.springframework.http.HttpStatus') %>.UNAUTHORIZED);
+    }
+
+    @Test
+    void keepsEachConversationToItsUser() throws Exception {
+        String conversationId = startConversation("alan", "My password hint is my cat");
+
+        assertThat(post("mallory", """
+                {"conversationId": "%s", "message": "What did I say?"}
+                """.formatted(conversationId)))
+                .hasStatus(HttpStatus.NOT_FOUND);
+    }
+<%_   if (limits.requests) { _%>
+
+    @Test
+    void limitsTheRequestsOfEachUser() {
+        for (long sent = 0; sent < properties.limits().requests(); sent++) {
+            assertThat(post("barbara", """
+                    {"message": "Hello"}
+                    """)).hasStatusOk();
+        }
+
+        assertThat(post("barbara", """
+                {"message": "Hello"}
+                """))
+                .hasStatus(HttpStatus.TOO_MANY_REQUESTS)
+                .headers()
+                .containsHeader(<%= type('org.springframework.http.HttpHeaders') %>.RETRY_AFTER);
+    }
+<%_   } _%>
+<%_   if (limits.tokens) { _%>
+
+    @Test
+    void stopsAUserWhoseTokenBudgetIsUsedUp() {
+        chatModel.reportTokens(properties.limits().tokens());
+
+        assertThat(post("linus", """
+                {"message": "Write a very long story"}
+                """)).hasStatusOk();
+        assertThat(post("linus", """
+                {"message": "And another one"}
+                """))
+                .hasStatus(HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    @<%= type('org.junit.jupiter.api.AfterEach') %>
+    void reportFewTokensAgain() {
+        chatModel.reportTokens(RecordingChatModel.TOKENS_PER_REPLY);
+    }
+<%_   } _%>
+
+    private <%= type('org.springframework.test.web.servlet.assertj.MvcTestResult') %> post(String userId, String body) {
+        return mockMvc.post()
+                .uri("/api/chat")
+                .with(<%= staticImport('org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt') %>().jwt(token -> token.subject(userId)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .exchange();
+    }
+
+    private String startConversation(String userId, String message) throws Exception {
+        String reply = post(userId, """
+                {"message": "%s"}
+                """.formatted(message))
+                .getResponse()
+                .getContentAsString();
+        return <%= type('com.jayway.jsonpath.JsonPath') %>.read(reply, "$.conversationId");
+    }
+<%_ } else { _%>
 
     @<%= type('org.junit.jupiter.api.Test') %>
     void answersOnTheChatEndpoint() {
@@ -44,7 +164,7 @@ class <%= project.applicationClass %>Tests {
 
         assertThat(chatModel.lastPrompt().getContents()).contains("You are", "My name is Ada", "What is my name?");
     }
-<%_ if (prompt.aiDisclosure) { _%>
+<%_   if (prompt.aiDisclosure) { _%>
 
     @Test
     void tellsClientsTheReplyComesFromAnAi() {
@@ -55,7 +175,7 @@ class <%= project.applicationClass %>Tests {
                 .extractingPath("$.aiGenerated")
                 .isEqualTo(true);
     }
-<%_ } _%>
+<%_   } _%>
 
     private <%= type('org.springframework.test.web.servlet.assertj.MvcTestResult') %> post(String body) {
         return mockMvc.post()
@@ -64,6 +184,7 @@ class <%= project.applicationClass %>Tests {
                 .content(body)
                 .exchange();
     }
+<%_ } _%>
 
     @<%= type('org.springframework.boot.test.context.TestConfiguration') %>(proxyBeanMethods = false)
     static class FakeModelConfiguration {
@@ -77,17 +198,37 @@ class <%= project.applicationClass %>Tests {
 
     /** Answers every prompt with the same text and keeps the last prompt for assertions. */
     static class RecordingChatModel implements <%= type('org.springframework.ai.chat.model.ChatModel') %> {
+<%_ if (limits.tokens) { _%>
+
+        static final long TOKENS_PER_REPLY = 10;
+
+        private volatile long tokensPerReply = TOKENS_PER_REPLY;
+<%_ } _%>
 
         private volatile <%= type('org.springframework.ai.chat.prompt.Prompt') %> lastPrompt;
 
         @Override
         public <%= type('org.springframework.ai.chat.model.ChatResponse') %> call(Prompt prompt) {
             this.lastPrompt = prompt;
+<%_ if (limits.tokens) { _%>
+            // Like a real model, it reports the tokens it used: the budget counts them.
+            var usage = new <%= type('org.springframework.ai.chat.metadata.DefaultUsage') %>(0, Math.toIntExact(tokensPerReply));
+            return new ChatResponse(
+                    <%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.chat.model.Generation') %>(new <%= type('org.springframework.ai.chat.messages.AssistantMessage') %>("Hello from the agent"))),
+                    <%= type('org.springframework.ai.chat.metadata.ChatResponseMetadata') %>.builder().usage(usage).build());
+<%_ } else { _%>
             return new ChatResponse(<%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.chat.model.Generation') %>(new <%= type('org.springframework.ai.chat.messages.AssistantMessage') %>("Hello from the agent"))));
+<%_ } _%>
         }
 
         Prompt lastPrompt() {
             return lastPrompt;
         }
+<%_ if (limits.tokens) { _%>
+
+        void reportTokens(long tokens) {
+            this.tokensPerReply = tokens;
+        }
+<%_ } _%>
     }
 }

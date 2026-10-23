@@ -85,6 +85,14 @@ describe('gen-agent generate --from', () => {
     expect(out.text()).toMatch(/warn: agent.yaml agent.openapi.0: upload skipped: the body is text\/csv/);
   });
 
+  it('runs a standard project with Docker Compose', async () => {
+    writeFileSync(join(cwd, 'agent.yaml'), agentYaml.replace('  tools:', '  profile: standard\n  tools:'));
+
+    expect(await generateCommand({ from: 'agent.yaml', cwd }, out)).toBe(0);
+    expect(existsSync(join(cwd, 'weather-bot/compose.yaml'))).toBe(true);
+    expect(out.text()).toMatch(/export MISTRAL_API_KEY=\.\.\.\n {2}docker compose up --build/);
+  });
+
   it('writes to --output when given', async () => {
     writeFileSync(join(cwd, 'agent.yaml'), agentYaml);
 
@@ -105,12 +113,12 @@ describe('gen-agent generate --from', () => {
   });
 
   it('refuses what this version cannot generate yet, with the version that brings it', async () => {
-    writeFileSync(join(cwd, 'agent.yaml'), agentYaml.replace('  tools:', '  profile: standard\n  tools:'));
+    writeFileSync(join(cwd, 'agent.yaml'), agentYaml.replace('  tools:', '  profile: production\n  tools:'));
 
     const code = await generateCommand({ from: 'agent.yaml', cwd }, out);
 
     expect(code).toBe(1);
-    expect(out.text()).toMatch(/agent.profile: "standard" arrives in V4/);
+    expect(out.text()).toMatch(/agent.profile: "production" arrives in V5/);
     expect(existsSync(join(cwd, 'weather-bot'))).toBe(false);
   });
 

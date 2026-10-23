@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: support-desk
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/agent}
+    username: ${DATABASE_USERNAME:agent}
+    password: ${DATABASE_PASSWORD}
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Only tokens of this issuer are accepted; its keys are found through its OIDC discovery document.
+          issuer-uri: ${OIDC_ISSUER_URI}
+  ai:
+    mistralai:
+      api-key: ${MISTRAL_API_KEY}
+      chat:
+        model: mistral-small-latest
+    chat:
+      memory:
+        repository:
+          jdbc:
+            # Creates the table of Spring AI's chat memory when it does not exist yet.
+            initialize-schema: always
+
+agent:
+  system-prompt: classpath:prompts/system.md
+  memory:
+    window: 20
+  limits:
+    requests: 30
+    requests-period: 1m
+    tokens: 100000
+    tokens-period: 1d
+  tools:
+    order-status:
+      url: "https://shop.example.org/api/orders/{orderId}"
+      token: ${SHOP_API_TOKEN}
+      max-response-chars: 20000

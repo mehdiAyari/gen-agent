@@ -1,0 +1,16 @@
+# Standard profile: JDBC memory, OIDC, request and token limits, Docker Compose; an authenticated HTTP tool.
+agent:
+  name: support-desk
+  description: Answers the customers of the shop, signed in through the shop's identity provider
+  profile: standard
+  model:
+    provider: mistral
+    name: mistral-small-latest
+  tools:
+    - name: order-status
+      type: http
+      description: Status and delivery date of a customer order
+      url: https://shop.example.org/api/orders/{orderId}
+      auth: { type: bearer, env: SHOP_API_TOKEN }
+      params:
+        - { name: orderId, type: string, required: true }

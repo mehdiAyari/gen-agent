@@ -1,0 +1,31 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.limits;
+
+<%- imports %>
+
+/** Keeps the limit counters of every user in Redis, so they hold across restarts and instances. */
+@<%= type('org.springframework.context.annotation.Configuration') %>(proxyBeanMethods = false)
+class LimitsConfiguration {
+
+    @<%= type('org.springframework.context.annotation.Bean') %>(destroyMethod = "shutdown")
+    <%= type('io.lettuce.core.RedisClient') %> limitsRedisClient(<%= type('org.springframework.boot.data.redis.autoconfigure.DataRedisConnectionDetails') %> connection) {
+        DataRedisConnectionDetails.Standalone server = connection.getStandalone();
+        <%= type('io.lettuce.core.RedisURI') %>.Builder uri = RedisURI.builder()
+                .withHost(server.getHost())
+                .withPort(server.getPort())
+                .withDatabase(server.getDatabase());
+        if (connection.getPassword() != null) {
+            uri.withPassword(connection.getPassword().toCharArray());
+        }
+        return RedisClient.create(uri.build());
+    }
+
+    @Bean
+    <%= type('io.github.bucket4j.distributed.proxy.ProxyManager') %><String> buckets(RedisClient limitsRedisClient) {
+        return <%= type('io.github.bucket4j.redis.lettuce.Bucket4jLettuce') %>.casBasedBuilder(limitsRedisClient)
+                // A counter left alone expires once full again: idle users cost nothing in Redis.
+                .expirationAfterWrite(<%= type('io.github.bucket4j.distributed.ExpirationAfterWriteStrategy') %>.basedOnTimeForRefillingBucketUpToMax(<%= type('java.time.Duration') %>.ofMinutes(1)))
+                .build()
+                .withMapper((String key) -> key.getBytes(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8));
+    }
+}

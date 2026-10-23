@@ -126,14 +126,15 @@ async function generateFromSource(
     writeFileSync(join(directory, file.path), file.content, file.executable === true ? { mode: 0o755 } : {});
   }
 
-  const { provider, secrets } = buildModel(config);
+  const { provider, secrets, features } = buildModel(config);
   out.info(
     [
       `Created ${config.agent.name} in ${shown} (${String(files.length)} files). Next steps:`,
       `  cd ${shown}`,
       ...(provider.apiKeyEnv === undefined ? [`  ollama pull ${provider.model}`] : []),
       ...secrets.map((secret) => `  export ${secret}=...`),
-      '  ./mvnw spring-boot:run',
+      // With Compose, the agent starts with its database, Redis and identity provider.
+      features.dockerCompose ? '  docker compose up --build' : '  ./mvnw spring-boot:run',
     ].join('\n'),
   );
   return 0;
