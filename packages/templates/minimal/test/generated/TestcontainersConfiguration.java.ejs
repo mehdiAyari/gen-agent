@@ -5,7 +5,7 @@ package <%= project.generatedPackage %>;
 
 /**
  * The services of the agent, started in Docker for the tests and wired to Spring by {@code @ServiceConnection}: the
- * tests run against the same <%= [features.jdbcMemory ? 'Postgres' : '', features.limits ? 'Redis' : ''].filter(Boolean).join(' and ') %> as production, not against mocks.
+ * tests run against the same <%= [features.jdbcMemory ? 'Postgres' : '', features.redis ? 'Redis' : ''].filter(Boolean).join(' and ') %> as production, not against mocks.
  */
 @<%= type('org.springframework.boot.test.context.TestConfiguration') %>(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
@@ -17,7 +17,7 @@ public class TestcontainersConfiguration {
         return new PostgreSQLContainer("<%= images.postgres %>");
     }
 <%_ } _%>
-<%_ if (features.limits) { _%>
+<%_ if (features.redis) { _%>
 
     @<%= type('org.springframework.context.annotation.Bean') %>
     @<%= type('org.springframework.boot.testcontainers.service.connection.ServiceConnection') %>

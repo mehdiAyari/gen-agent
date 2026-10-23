@@ -100,6 +100,24 @@ export const minimalEntries: TemplateEntry[] = [
   })),
 
   {
+    template: 'java/generated/cache/ReplyCache.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.cache,
+    output: (m) => main(m, 'generated/cache/ReplyCache.java'),
+  },
+  {
+    template: 'java/generated/tool/ToolCalls.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.trackToolCalls,
+    output: (m) => main(m, 'generated/tool/ToolCalls.java'),
+  },
+  {
+    template: 'java/generated/tool/RecordedToolCallback.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.trackToolCalls && m.features.mcp,
+    output: (m) => main(m, 'generated/tool/RecordedToolCallback.java'),
+  },
+  {
     template: 'java/generated/tool/HttpTool.java.ejs',
     owner: 'generated',
     each: 'httpTool',
@@ -140,6 +158,12 @@ export const minimalEntries: TemplateEntry[] = [
     template: 'test/ApplicationTests.java.ejs',
     owner: 'merged',
     output: (m) => test(m, `${m.project.applicationClass}Tests.java`),
+  },
+  {
+    template: 'test/ObservabilityTests.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.otel || m.features.prometheus,
+    output: (m) => test(m, 'ObservabilityTests.java'),
   },
   {
     template: 'test/generated/TestcontainersConfiguration.java.ejs',

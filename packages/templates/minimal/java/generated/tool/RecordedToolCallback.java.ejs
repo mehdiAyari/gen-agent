@@ -1,0 +1,39 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.tool;
+
+<%- imports %>
+
+/** A tool of an MCP server that reports its calls to {@link ToolCalls}. */
+class RecordedToolCallback implements <%= type('org.springframework.ai.tool.ToolCallback') %> {
+
+    private final ToolCallback delegate;
+
+    private final ToolCalls toolCalls;
+
+    RecordedToolCallback(ToolCallback delegate, ToolCalls toolCalls) {
+        this.delegate = delegate;
+        this.toolCalls = toolCalls;
+    }
+
+    @Override
+    public <%= type('org.springframework.ai.tool.definition.ToolDefinition') %> getToolDefinition() {
+        return delegate.getToolDefinition();
+    }
+
+    @Override
+    public <%= type('org.springframework.ai.tool.metadata.ToolMetadata') %> getToolMetadata() {
+        return delegate.getToolMetadata();
+    }
+
+    @Override
+    public String call(String toolInput) {
+        toolCalls.record();
+        return delegate.call(toolInput);
+    }
+
+    @Override
+    public String call(String toolInput, <%= type('org.springframework.ai.chat.model.ToolContext') %> toolContext) {
+        toolCalls.record();
+        return delegate.call(toolInput, toolContext);
+    }
+}

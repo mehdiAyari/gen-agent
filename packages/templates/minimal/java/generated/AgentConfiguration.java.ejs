@@ -35,11 +35,21 @@ class AgentConfiguration {
             ChatClient.Builder builder,
             ChatMemory chatMemory,
             AgentProperties properties<%_ for (const tool of tools) { _%>,
-            <%= type(`${project.generatedPackage}.tool.${tool.className}`) %> <%= tool.methodName %>Tool<%_ } _%>) {
+            <%= type(`${project.generatedPackage}.tool.${tool.className}`) %> <%= tool.methodName %>Tool<%_ } _%><%_ if (features.mcp) { _%>,
+            // The tools of the MCP servers of application.yml; none when spring.ai.mcp.client.enabled is false.
+            <%= type('java.util.List') %><<%= type('org.springframework.ai.tool.ToolCallbackProvider') %>> mcpTools<%_ } _%><%_ if (features.trackToolCalls && features.mcp) { _%>,
+            <%= type(`${project.generatedPackage}.tool.ToolCalls`) %> toolCalls<%_ } _%>) {
         return builder.defaultSystem(properties.systemPrompt())
                 .defaultAdvisors(<%= type('org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor') %>.builder(chatMemory).build())
 <%_ if (tools.length > 0) { _%>
                 .defaultTools(<%= tools.map((tool) => `${tool.methodName}Tool`).join(', ') %>)
+<%_ } _%>
+<%_ if (features.mcp && features.trackToolCalls) { _%>
+                .defaultToolCallbacks(toolCalls.recorded(mcpTools.stream()
+                        .flatMap(provider -> <%= type('java.util.Arrays') %>.stream(provider.getToolCallbacks()))
+                        .toArray(<%= type('org.springframework.ai.tool.ToolCallback') %>[]::new)))
+<%_ } else if (features.mcp) { _%>
+                .defaultToolCallbacks(mcpTools.toArray(ToolCallbackProvider[]::new))
 <%_ } _%>
                 .build();
     }

@@ -62,15 +62,42 @@
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 <%_ } _%>
-<%_ if (features.limits) { _%>
+<%_ if (features.redis) { _%>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
+<%_ } _%>
+<%_ if (features.limits) { _%>
         <dependency>
             <groupId>com.bucket4j</groupId>
             <artifactId>bucket4j_jdk17-lettuce</artifactId>
             <version>${bucket4j.version}</version>
+        </dependency>
+<%_ } _%>
+<%_ if (features.mcp) { _%>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-client</artifactId>
+        </dependency>
+<%_ } _%>
+<%_ if (features.otel || features.prometheus) { _%>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+<%_ } _%>
+<%_ if (features.otel) { _%>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-opentelemetry</artifactId>
+        </dependency>
+<%_ } _%>
+<%_ if (features.prometheus) { _%>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>runtime</scope>
         </dependency>
 <%_ } _%>
 
@@ -93,7 +120,7 @@
             <scope>test</scope>
         </dependency>
 <%_ } _%>
-<%_ if (features.jdbcMemory || features.limits) { _%>
+<%_ if (features.jdbcMemory || features.redis) { _%>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-testcontainers</artifactId>
@@ -107,7 +134,7 @@
             <scope>test</scope>
         </dependency>
 <%_ } _%>
-<%_ if (features.limits) { _%>
+<%_ if (features.redis) { _%>
         <dependency>
             <groupId>com.redis</groupId>
             <artifactId>testcontainers-redis</artifactId>

@@ -7,7 +7,7 @@ spring:
     username: ${DATABASE_USERNAME:agent}
     password: ${DATABASE_PASSWORD}
 <%_ } _%>
-<%_ if (features.limits) { _%>
+<%_ if (features.redis) { _%>
   data:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}
@@ -32,6 +32,26 @@ spring:
 <%_ } _%>
 <%_ if (provider.maxTokens !== undefined) { _%>
         <%= provider.maxTokensProperty %>: <%= provider.maxTokens %>
+<%_ } _%>
+<%_ if (features.mcp) { _%>
+    mcp:
+      client:
+        stdio:
+          connections:
+<%_   for (const server of mcpServers) { _%>
+            <%= server.name %>:
+              command: <%= server.command %>
+              args:
+<%_     for (const arg of server.args) { _%>
+                - <%= yamlString(arg) %>
+<%_     } _%>
+<%_     if (server.env.length > 0) { _%>
+              env:
+<%_       for (const name of server.env) { _%>
+                <%= name %>: ${<%= name %>}
+<%_       } _%>
+<%_     } _%>
+<%_   } _%>
 <%_ } _%>
 <%_ if (features.jdbcMemory) { _%>
     chat:
@@ -68,5 +88,40 @@ agent:
 <%_       } _%>
       max-response-chars: <%= tool.maxResponseChars %>
 <%_     } _%>
+<%_   } _%>
+<%_ } _%>
+<%_ if (features.cache) { _%>
+  cache:
+    # How long a first answer is reused for the same question of the same user.
+    ttl: 1h
+<%_ } _%>
+<%_ if (features.otel || features.prometheus) { _%>
+
+management:
+  server:
+    # Health and metrics on their own port, kept off the public one.
+    port: ${MANAGEMENT_PORT:8081}
+  endpoints:
+    web:
+      exposure:
+        include: <%= ['health', ...(features.prometheus ? ['prometheus'] : [])].join(', ') %>
+<%_   if (features.otel) { _%>
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      otlp:
+        # Sent to an OpenTelemetry collector when OTLP_ENABLED is true: docker compose starts one, with Grafana.
+        enabled: ${OTLP_ENABLED:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTLP_ENABLED:false}
+        url: ${OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
 <%_   } _%>
 <%_ } _%>

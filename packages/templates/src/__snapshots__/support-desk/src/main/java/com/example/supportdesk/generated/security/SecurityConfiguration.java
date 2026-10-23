@@ -18,8 +18,15 @@ public class SecurityConfiguration {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Health and metrics are served on the management port only, which stays inside the network.
         return http
-            .authorizeHttpRequests(requests -> requests.anyRequest().authenticated())
+            .authorizeHttpRequests(requests ->
+                requests
+                    .requestMatchers("/actuator/health", "/actuator/prometheus")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated()
+            )
             .oauth2ResourceServer(server -> server.jwt(Customizer.withDefaults()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .csrf(AbstractHttpConfigurer::disable)

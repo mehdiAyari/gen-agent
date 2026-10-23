@@ -11,13 +11,17 @@ package <%= project.generatedPackage %>;
 <%_ if (features.limits) { _%>
  * @param limits what each user may use
 <%_ } _%>
+<%_ if (features.cache) { _%>
+ * @param cache how long first answers are reused
+<%_ } _%>
  */
 @<%= type('org.springframework.boot.context.properties.ConfigurationProperties') %>("agent")
-<%_ if (features.limits) { _%>
-public record AgentProperties(<%= type('org.springframework.core.io.Resource') %> systemPrompt, Memory memory, Limits limits) {
-<%_ } else { _%>
-public record AgentProperties(<%= type('org.springframework.core.io.Resource') %> systemPrompt, Memory memory) {
-<%_ } _%>
+public record AgentProperties(<%- [
+  `${type('org.springframework.core.io.Resource')} systemPrompt`,
+  'Memory memory',
+  ...(features.limits ? ['Limits limits'] : []),
+  ...(features.cache ? ['Cache cache'] : []),
+].join(', ') %>) {
 
     /**
      * @param window number of recent messages kept per conversation
@@ -41,5 +45,12 @@ public record AgentProperties(<%= type('org.springframework.core.io.Resource') %
       ...(limits.requests ? ['long requests', `${type('java.time.Duration')} requestsPeriod`] : []),
       ...(limits.tokens ? ['long tokens', `${type('java.time.Duration')} tokensPeriod`] : []),
     ].join(', ') %>) {}
+<%_ } _%>
+<%_ if (features.cache) { _%>
+
+    /**
+     * @param ttl how long a first answer is reused for the same question of the same user
+     */
+    public record Cache(<%= type('java.time.Duration') %> ttl) {}
 <%_ } _%>
 }

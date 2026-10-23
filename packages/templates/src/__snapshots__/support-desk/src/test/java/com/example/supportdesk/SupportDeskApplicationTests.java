@@ -7,6 +7,7 @@ import com.example.supportdesk.generated.AgentProperties;
 import com.example.supportdesk.generated.TestcontainersConfiguration;
 import com.jayway.jsonpath.JsonPath;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -37,6 +38,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
     properties = {
         "spring.ai.mistralai.api-key=test-key",
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org",
+        "spring.ai.mcp.client.enabled=false",
         "agent.tools.order-status.token=test-token",
     }
 )
@@ -95,6 +97,42 @@ class SupportDeskApplicationTests {
             .bodyJson()
             .extractingPath("$.aiGenerated")
             .isEqualTo(true);
+    }
+
+    @Test
+    void answersARepeatedFirstQuestionFromTheCacheOfItsUser() {
+        int calls = chatModel.calls();
+
+        assertThat(
+            post(
+                "carol",
+                """
+                {"message": "What are your opening hours?"}
+                """
+            )
+        ).hasStatusOk();
+        assertThat(
+            post(
+                "carol",
+                """
+                {"message": "what are your   opening hours?"}
+                """
+            )
+        )
+            .hasStatusOk()
+            .bodyJson()
+            .extractingPath("$.reply")
+            .isEqualTo("Hello from the agent");
+        assertThat(chatModel.calls()).isEqualTo(calls + 1);
+
+        // Another user never gets it.
+        post(
+            "dave",
+            """
+            {"message": "What are your opening hours?"}
+            """
+        );
+        assertThat(chatModel.calls()).isEqualTo(calls + 2);
     }
 
     @Test
@@ -220,9 +258,12 @@ class SupportDeskApplicationTests {
 
         private volatile Prompt lastPrompt;
 
+        private final AtomicInteger calls = new AtomicInteger();
+
         @Override
         public ChatResponse call(Prompt prompt) {
             this.lastPrompt = prompt;
+            calls.incrementAndGet();
             // Like a real model, it reports the tokens it used: the budget counts them.
             var usage = new DefaultUsage(0, Math.toIntExact(tokensPerReply));
             return new ChatResponse(
@@ -233,6 +274,10 @@ class SupportDeskApplicationTests {
 
         Prompt lastPrompt() {
             return lastPrompt;
+        }
+
+        int calls() {
+            return calls.get();
         }
 
         void reportTokens(long tokens) {

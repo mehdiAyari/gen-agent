@@ -1,0 +1,49 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.basePackage %>;
+
+<%- imports %>
+
+/** Health and metrics answer on the management port, without a token: they never leave the private network. */
+@<%= type('org.springframework.boot.test.context.SpringBootTest') %>(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {<%- [...testProperties, 'management.server.port=0'].map((property) => javaString(property)).join(', ') %>})
+<%_ if (features.jdbcMemory || features.redis) { _%>
+@<%= type('org.springframework.context.annotation.Import') %>({<%= project.applicationClass %>Tests.FakeModelConfiguration.class, <%= type(`${project.generatedPackage}.TestcontainersConfiguration`) %>.class})
+<%_ } else { _%>
+@<%= type('org.springframework.context.annotation.Import') %>(<%= project.applicationClass %>Tests.FakeModelConfiguration.class)
+<%_ } _%>
+class ObservabilityTests {
+
+    @<%= type('org.springframework.beans.factory.annotation.Value') %>("${local.management.port}")
+    int managementPort;
+
+    @<%= type('org.springframework.beans.factory.annotation.Autowired') %>
+    <%= type('org.springframework.ai.chat.client.ChatClient') %> chatClient;
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void answersHealthChecks() {
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(get("/actuator/health")).contains("UP");
+    }
+<%_ if (features.prometheus) { _%>
+
+    @Test
+    void exposesTheMetricsOfTheChatClientToPrometheus() {
+        chatClient
+                .prompt()
+                .user("Hello")
+                .advisors(advisor -> advisor.param(<%= type('org.springframework.ai.chat.memory.ChatMemory') %>.CONVERSATION_ID, "observability"))
+                .call()
+                .content();
+
+        assertThat(get("/actuator/prometheus")).contains("spring_ai_chat_client");
+    }
+<%_ } _%>
+
+    private String get(String path) {
+        return <%= type('org.springframework.web.client.RestClient') %>.create("http://localhost:" + managementPort)
+                .get()
+                .uri(path)
+                .retrieve()
+                .body(String.class);
+    }
+}

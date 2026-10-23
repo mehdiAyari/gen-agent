@@ -43,6 +43,25 @@ Every reply carries `"aiGenerated": true`, so clients can tell users they are ta
 
 Beyond, the agent answers 429 with `Retry-After`. Change them under `agent.limits` in `application.yml`.
 
+## Cache
+
+The first answer of a conversation is kept in Redis for an hour (`agent.cache.ttl`): the same user asking the same
+question again gets it without a call to the model. It is never shared between users, and an answer that used a tool is never kept: it depends on live data.
+
+## Observability
+
+Health and metrics answer on port 8081 (`MANAGEMENT_PORT`), not on the public one: `/actuator/health`, `/actuator/prometheus`.
+Traces and metrics of every conversation (model calls, tools, tokens) go to OpenTelemetry when `OTLP_ENABLED` is
+true: Docker Compose sends them to Grafana, at http://localhost:3000.
+
+## MCP servers
+
+| Server | Runs with | Variables it gets |
+| --- | --- | --- |
+| `time` | a throwaway Docker container | none |
+
+Their tools are given to the model with the ones of agent.yaml. The tests do not start them.
+
 ## Test
 
 ```bash
@@ -57,6 +76,7 @@ Docker must run: the tests start Postgres and Redis in containers (Testcontainer
 | Path | Owner |
 | --- | --- |
 | `src/main/resources/prompts/system.md` | yours: the system prompt |
+| `src/main/java/com/example/supportdesk/tool/` | yours: the logic of your Java tools |
 | `src/main/java/com/example/supportdesk/generated/` | gen-agent: overwritten on regeneration, do not edit |
 | `pom.xml`, `application.yml` | shared: gen-agent will merge its changes with yours |
 
@@ -65,3 +85,4 @@ Docker must run: the tests start Postgres and Redis in containers (Testcontainer
 | Tool | Kind | Implementation |
 | --- | --- | --- |
 | `order-status` | HTTP `GET` | `agent.tools.order-status.url` in `application.yml` |
+| `refund` | Java | `tool/DefaultRefundHandler.java` |

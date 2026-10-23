@@ -11,9 +11,10 @@ import org.springframework.core.io.Resource;
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
  * @param limits what each user may use
+ * @param cache how long first answers are reused
  */
 @ConfigurationProperties("agent")
-public record AgentProperties(Resource systemPrompt, Memory memory, Limits limits) {
+public record AgentProperties(Resource systemPrompt, Memory memory, Limits limits, Cache cache) {
     /**
      * @param window number of recent messages kept per conversation
      */
@@ -28,4 +29,9 @@ public record AgentProperties(Resource systemPrompt, Memory memory, Limits limit
      * @param tokensPeriod period of the token budget, given back in full at its end
      */
     public record Limits(long requests, Duration requestsPeriod, long tokens, Duration tokensPeriod) {}
+
+    /**
+     * @param ttl how long a first answer is reused for the same question of the same user
+     */
+    public record Cache(Duration ttl) {}
 }

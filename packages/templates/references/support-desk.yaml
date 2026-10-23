@@ -1,4 +1,5 @@
-# Standard profile: JDBC memory, OIDC, request and token limits, Docker Compose; an authenticated HTTP tool.
+# Standard profile: JDBC memory, OIDC, request and token limits, exact cache, OpenTelemetry and Prometheus, Docker
+# Compose; an authenticated HTTP tool and a sandboxed MCP server.
 agent:
   name: support-desk
   description: Answers the customers of the shop, signed in through the shop's identity provider
@@ -14,3 +15,13 @@ agent:
       auth: { type: bearer, env: SHOP_API_TOKEN }
       params:
         - { name: orderId, type: string, required: true }
+    - name: refund
+      type: java
+      description: Refunds an order of the customer
+      params:
+        - { name: orderId, type: string, required: true }
+  mcp:
+    - name: time
+      package: mcp-server-time
+      version: 2026.10.19
+      runtime: python

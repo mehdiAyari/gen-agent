@@ -1,0 +1,54 @@
+// Managed by gen-agent: changes here are overwritten. Set the duration in application.yml.
+package <%= project.generatedPackage %>.cache;
+
+<%- imports %>
+
+/**
+ * Reuses the first answer of a conversation when the same user asks the same question again, without calling the
+ * model. The key holds the user, the model and the system prompt: an answer never reaches another user, and a new
+ * prompt or model starts afresh.
+ */
+@<%= type('org.springframework.stereotype.Component') %>
+public class ReplyCache {
+
+    private final <%= type('org.springframework.data.redis.core.StringRedisTemplate') %> redis;
+
+    private final <%= type('java.time.Duration') %> ttl;
+
+    private final String context;
+
+    ReplyCache(
+            StringRedisTemplate redis,
+            <%= type(`${project.generatedPackage}.AgentProperties`) %> properties,
+            @<%= type('org.springframework.beans.factory.annotation.Value') %>("${<%= provider.propertyPrefix %>.chat.model}") String model) {
+        this.redis = redis;
+        this.ttl = properties.cache().ttl();
+        try {
+            this.context = model + "\n" + properties.systemPrompt().getContentAsString(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8);
+        } catch (<%= type('java.io.IOException') %> exception) {
+            throw new <%= type('java.io.UncheckedIOException') %>("Cannot read the system prompt", exception);
+        }
+    }
+
+    public <%= type('java.util.Optional') %><String> find(String userId, String question) {
+        return Optional.ofNullable(redis.opsForValue().get(key(userId, question)));
+    }
+
+    public void put(String userId, String question, String answer) {
+        redis.opsForValue().set(key(userId, question), answer, ttl);
+    }
+
+    /** Questions that differ only by case or spacing share their answer. */
+    private String key(String userId, String question) {
+        String normalized = question.strip().replaceAll("\\s+", " ").toLowerCase(<%= type('java.util.Locale') %>.ROOT);
+        return "reply:" + <%= type('java.util.HexFormat') %>.of().formatHex(sha256(userId + "\n" + context + "\n" + normalized));
+    }
+
+    private static byte[] sha256(String text) {
+        try {
+            return <%= type('java.security.MessageDigest') %>.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8));
+        } catch (<%= type('java.security.NoSuchAlgorithmException') %> exception) {
+            throw new IllegalStateException("SHA-256 is part of every Java runtime", exception);
+        }
+    }
+}

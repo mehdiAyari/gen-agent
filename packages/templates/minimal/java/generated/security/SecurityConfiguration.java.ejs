@@ -12,7 +12,15 @@ public class SecurityConfiguration {
 
     @<%= type('org.springframework.context.annotation.Bean') %>
     <%= type('org.springframework.security.web.SecurityFilterChain') %> securityFilterChain(<%= type('org.springframework.security.config.annotation.web.builders.HttpSecurity') %> http) throws Exception {
+<%_ if (features.otel || features.prometheus) { _%>
+        // Health and metrics are served on the management port only, which stays inside the network.
+        return http.authorizeHttpRequests(requests -> requests.requestMatchers(<%- ['"/actuator/health"', ...(features.prometheus ? ['"/actuator/prometheus"'] : [])].join(', ') %>)
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
+<%_ } else { _%>
         return http.authorizeHttpRequests(requests -> requests.anyRequest().authenticated())
+<%_ } _%>
                 .oauth2ResourceServer(server -> server.jwt(<%= type('org.springframework.security.config.Customizer') %>.withDefaults()))
                 .sessionManagement(session -> session.sessionCreationPolicy(<%= type('org.springframework.security.config.http.SessionCreationPolicy') %>.STATELESS))
                 .csrf(<%= type('org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer') %>::disable)

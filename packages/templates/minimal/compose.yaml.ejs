@@ -13,7 +13,7 @@ services:
       DATABASE_USERNAME: agent
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-agent}
 <%_ } _%>
-<%_ if (features.limits) { _%>
+<%_ if (features.redis) { _%>
       REDIS_URL: redis://redis:6379
 <%_ } _%>
 <%_ if (features.oidc) { _%>
@@ -25,6 +25,15 @@ services:
       # Ollama runs on the host: ollama pull <%= provider.model %>
       SPRING_AI_OLLAMA_BASE_URL: http://host.docker.internal:11434
 <%_ } _%>
+<%_ if (features.otel) { _%>
+      OTLP_ENABLED: "true"
+      OTLP_ENDPOINT: http://lgtm:4318
+<%_ } _%>
+<%_ if (mcpServers.some((server) => server.sandboxed)) { _%>
+      # Sandboxed MCP servers run with docker, which the container of the agent does not have:
+      # run the agent with ./mvnw spring-boot:run to use their tools, or set sandbox: none in agent.yaml.
+      SPRING_AI_MCP_CLIENT_ENABLED: "false"
+<%_ } _%>
 <%_ for (const secret of secrets) { _%>
       <%= secret %>: ${<%= secret %>:?export <%= secret %> before docker compose up}
 <%_ } _%>
@@ -32,13 +41,13 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 <%_ } _%>
-<%_ if (features.jdbcMemory || features.limits) { _%>
+<%_ if (features.jdbcMemory || features.redis) { _%>
     depends_on:
 <%_   if (features.jdbcMemory) { _%>
       postgres:
         condition: service_healthy
 <%_   } _%>
-<%_   if (features.limits) { _%>
+<%_   if (features.redis) { _%>
       redis:
         condition: service_healthy
 <%_   } _%>
@@ -58,7 +67,7 @@ services:
       interval: 5s
       retries: 10
 <%_ } _%>
-<%_ if (features.limits) { _%>
+<%_ if (features.redis) { _%>
 
   redis:
     image: <%= images.redis %>
@@ -80,6 +89,14 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
     volumes:
       - ./docker/keycloak:/opt/keycloak/data/import:ro
+<%_ } _%>
+<%_ if (features.otel) { _%>
+
+  # Grafana with Tempo (traces), Prometheus (metrics) and Loki: http://localhost:3000
+  lgtm:
+    image: <%= images.lgtm %>
+    ports:
+      - "3000:3000"
 <%_ } _%>
 <%_ if (features.jdbcMemory) { _%>
 

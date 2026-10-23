@@ -13,6 +13,11 @@ services:
       # Tokens are issued for the address users sign in at; inside Compose, the keys are fetched from keycloak.
       OIDC_ISSUER_URI: http://localhost:8180/realms/agent
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI: http://keycloak:8080/realms/agent/protocol/openid-connect/certs
+      OTLP_ENABLED: "true"
+      OTLP_ENDPOINT: http://lgtm:4318
+      # Sandboxed MCP servers run with docker, which the container of the agent does not have:
+      # run the agent with ./mvnw spring-boot:run to use their tools, or set sandbox: none in agent.yaml.
+      SPRING_AI_MCP_CLIENT_ENABLED: "false"
       MISTRAL_API_KEY: ${MISTRAL_API_KEY:?export MISTRAL_API_KEY before docker compose up}
       SHOP_API_TOKEN: ${SHOP_API_TOKEN:?export SHOP_API_TOKEN before docker compose up}
     depends_on:
@@ -52,6 +57,12 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
     volumes:
       - ./docker/keycloak:/opt/keycloak/data/import:ro
+
+  # Grafana with Tempo (traces), Prometheus (metrics) and Loki: http://localhost:3000
+  lgtm:
+    image: grafana/otel-lgtm:0.38.0
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres-data:

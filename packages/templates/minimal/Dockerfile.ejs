@@ -10,6 +10,11 @@ COPY src/ src/
 RUN ./mvnw --batch-mode --quiet package -DskipTests
 
 FROM <%= images.jre %>
+<%_ const packages = [...(mcpServers.some((server) => !server.sandboxed && server.command === 'npx') ? ['nodejs', 'npm'] : []), ...(mcpServers.some((server) => !server.sandboxed && server.command === 'uvx') ? ['uv'] : [])]; _%>
+<%_ if (packages.length > 0) { _%>
+# The MCP servers of agent.yaml run inside this container.
+RUN apk add --no-cache <%= packages.join(' ') %>
+<%_ } _%>
 RUN addgroup -S agent && adduser -S agent -G agent
 USER agent
 WORKDIR /app

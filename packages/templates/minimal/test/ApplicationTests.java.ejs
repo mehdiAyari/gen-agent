@@ -14,7 +14,7 @@ package <%= project.basePackage %>;
 @<%= type('org.springframework.boot.test.context.SpringBootTest') %>
 <%_ } _%>
 @<%= type('org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc') %>
-<%_ if (features.jdbcMemory || features.limits) { _%>
+<%_ if (features.jdbcMemory || features.redis) { _%>
 @<%= type('org.springframework.context.annotation.Import') %>(<%= type(`${project.generatedPackage}.TestcontainersConfiguration`) %>.class)
 <%_ } _%>
 class <%= project.applicationClass %>Tests {
@@ -64,6 +64,31 @@ class <%= project.applicationClass %>Tests {
     }
 <%_   } _%>
 
+<%_   if (features.cache) { _%>
+    @Test
+    void answersARepeatedFirstQuestionFromTheCacheOfItsUser() {
+        int calls = chatModel.calls();
+
+        assertThat(post("carol", """
+                {"message": "What are your opening hours?"}
+                """)).hasStatusOk();
+        assertThat(post("carol", """
+                {"message": "what are your   opening hours?"}
+                """))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.reply")
+                .isEqualTo("Hello from the agent");
+        assertThat(chatModel.calls()).isEqualTo(calls + 1);
+
+        // Another user never gets it.
+        post("dave", """
+                {"message": "What are your opening hours?"}
+                """);
+        assertThat(chatModel.calls()).isEqualTo(calls + 2);
+    }
+
+<%_   } _%>
     @Test
     void refusesRequestsWithoutAToken() {
         assertThat(mockMvc.post()
@@ -206,10 +231,17 @@ class <%= project.applicationClass %>Tests {
 <%_ } _%>
 
         private volatile <%= type('org.springframework.ai.chat.prompt.Prompt') %> lastPrompt;
+<%_ if (features.cache) { _%>
+
+        private final <%= type('java.util.concurrent.atomic.AtomicInteger') %> calls = new AtomicInteger();
+<%_ } _%>
 
         @Override
         public <%= type('org.springframework.ai.chat.model.ChatResponse') %> call(Prompt prompt) {
             this.lastPrompt = prompt;
+<%_ if (features.cache) { _%>
+            calls.incrementAndGet();
+<%_ } _%>
 <%_ if (limits.tokens) { _%>
             // Like a real model, it reports the tokens it used: the budget counts them.
             var usage = new <%= type('org.springframework.ai.chat.metadata.DefaultUsage') %>(0, Math.toIntExact(tokensPerReply));
@@ -224,6 +256,12 @@ class <%= project.applicationClass %>Tests {
         Prompt lastPrompt() {
             return lastPrompt;
         }
+<%_ if (features.cache) { _%>
+
+        int calls() {
+            return calls.get();
+        }
+<%_ } _%>
 <%_ if (limits.tokens) { _%>
 
         void reportTokens(long tokens) {

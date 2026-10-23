@@ -19,6 +19,19 @@ spring:
       api-key: ${MISTRAL_API_KEY}
       chat:
         model: mistral-small-latest
+    mcp:
+      client:
+        stdio:
+          connections:
+            time:
+              command: docker
+              args:
+                - run
+                - --interactive
+                - --rm
+                - astral/uv:0.13.5-python3.13-alpine
+                - uvx
+                - "mcp-server-time==2026.10.19"
     chat:
       memory:
         repository:
@@ -40,3 +53,32 @@ agent:
       url: "https://shop.example.org/api/orders/{orderId}"
       token: ${SHOP_API_TOKEN}
       max-response-chars: 20000
+  cache:
+    # How long a first answer is reused for the same question of the same user.
+    ttl: 1h
+
+management:
+  server:
+    # Health and metrics on their own port, kept off the public one.
+    port: ${MANAGEMENT_PORT:8081}
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      otlp:
+        # Sent to an OpenTelemetry collector when OTLP_ENABLED is true: docker compose starts one, with Grafana.
+        enabled: ${OTLP_ENABLED:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTLP_ENABLED:false}
+        url: ${OTLP_ENDPOINT:http://localhost:4318}/v1/metrics

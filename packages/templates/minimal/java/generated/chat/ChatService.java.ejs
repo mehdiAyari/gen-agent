@@ -23,14 +23,34 @@ class ChatService {
 
     private final <%= type(`${project.generatedPackage}.limits.UsageLimits`) %> usageLimits;
 <%_ } _%>
+<%_ if (features.cache) { _%>
 
-    ChatService(<%- ['ChatClient chatClient', ...(features.oidc ? ['ChatMemory chatMemory'] : []), ...(features.limits ? ['UsageLimits usageLimits'] : [])].join(', ') %>) {
+    private final <%= type(`${project.generatedPackage}.cache.ReplyCache`) %> replyCache;
+<%_ } _%>
+<%_ if (features.trackToolCalls) { _%>
+
+    private final <%= type(`${project.generatedPackage}.tool.ToolCalls`) %> toolCalls;
+<%_ } _%>
+
+    ChatService(<%- [
+      'ChatClient chatClient',
+      ...(features.oidc ? ['ChatMemory chatMemory'] : []),
+      ...(features.limits ? ['UsageLimits usageLimits'] : []),
+      ...(features.cache ? ['ReplyCache replyCache'] : []),
+      ...(features.trackToolCalls ? ['ToolCalls toolCalls'] : []),
+    ].join(', ') %>) {
         this.chatClient = chatClient;
 <%_ if (features.oidc) { _%>
         this.chatMemory = chatMemory;
 <%_ } _%>
 <%_ if (features.limits) { _%>
         this.usageLimits = usageLimits;
+<%_ } _%>
+<%_ if (features.cache) { _%>
+        this.replyCache = replyCache;
+<%_ } _%>
+<%_ if (features.trackToolCalls) { _%>
+        this.toolCalls = toolCalls;
 <%_ } _%>
     }
 
@@ -44,10 +64,24 @@ class ChatService {
                 : <%= type('java.util.UUID') %>.randomUUID().toString();
         // Stored under a key of its user: another user's conversation id leads nowhere. A name-based UUID keeps the
         // key within the 36 characters of Spring AI's memory table.
-        String memoryKey = <%= type('java.util.UUID') %>.nameUUIDFromBytes((userId + ":" + conversationId).getBytes(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8)).toString();
+        String memoryKey = UUID.nameUUIDFromBytes((userId + ":" + conversationId).getBytes(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8)).toString();
         if (request.conversationId() != null && chatMemory.get(memoryKey).isEmpty()) {
             throw new UnknownConversationException(conversationId);
         }
+<%_   if (features.cache) { _%>
+        boolean firstMessage = request.conversationId() == null;
+        if (firstMessage) {
+            <%= type('java.util.Optional') %><String> cached = replyCache.find(userId, request.message());
+            if (cached.isPresent()) {
+                // Kept in the conversation as if the model had answered, so that it can go on from there.
+                chatMemory.add(memoryKey, <%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.chat.messages.UserMessage') %>(request.message()), new <%= type('org.springframework.ai.chat.messages.AssistantMessage') %>(cached.get())));
+                return new ChatMessageResponse(conversationId, cached.get());
+            }
+        }
+<%_   } _%>
+<%_   if (features.trackToolCalls) { _%>
+        toolCalls.start();
+<%_   } _%>
 <%_   if (limits.tokens) { _%>
         <%= type('org.springframework.ai.chat.model.ChatResponse') %> response = chatClient
                 .prompt()
@@ -56,7 +90,7 @@ class ChatService {
                 .call()
                 .chatResponse();
         usageLimits.recordTokens(userId, response.getMetadata().getUsage().getTotalTokens());
-        return new ChatMessageResponse(conversationId, response.getResult().getOutput().getText());
+        String reply = response.getResult().getOutput().getText();
 <%_   } else { _%>
         String reply = chatClient
                 .prompt()
@@ -64,8 +98,18 @@ class ChatService {
                 .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
                 .call()
                 .content();
-        return new ChatMessageResponse(conversationId, reply);
 <%_   } _%>
+<%_   if (features.cache && features.trackToolCalls) { _%>
+        // An answer built from a tool depends on live data: it is never reused.
+        if (firstMessage && !toolCalls.happened()) {
+            replyCache.put(userId, request.message(), reply);
+        }
+<%_   } else if (features.cache) { _%>
+        if (firstMessage) {
+            replyCache.put(userId, request.message(), reply);
+        }
+<%_   } _%>
+        return new ChatMessageResponse(conversationId, reply);
     }
 <%_ } else { _%>
     ChatMessageResponse reply(ChatMessageRequest request) {
