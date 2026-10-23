@@ -161,6 +161,27 @@
       "startOver": "Recommencer",
       "cleared": "Formulaire vidé",
       "copyFailed": "Le navigateur a bloqué le presse-papiers : enregistrez agent.yaml puis lancez npx gen-agent generate --from agent.yaml"
+    },
+    "openapi": {
+      "open": "Importer depuis OpenAPI",
+      "title": "Importer une spec OpenAPI",
+      "description": "Chaque opération de l’API devient un outil. La spec est lue dans votre navigateur et n’est envoyée nulle part.",
+      "file": "Fichier de spec (OpenAPI 3, JSON ou YAML)",
+      "chooseFile": "Choisir un fichier",
+      "url": "Ou son adresse",
+      "download": "Télécharger",
+      "downloading": "Téléchargement…",
+      "downloadFailed": "Le navigateur n’a pas pu la télécharger (le serveur ne l’autorise peut-être pas) : enregistrez le fichier, puis choisissez-le ci-dessus.",
+      "baseUrl": "URL de base de l’API",
+      "baseUrlHint": "Seulement si la spec ne donne pas d’adresse complète, ou pour appeler un autre serveur.",
+      "needsBaseUrl": "La spec ne donne pas d’adresse complète pour l’API : indiquez son URL de base ci-dessus.",
+      "operations": "{title} : {count, plural, one {# opération peut} other {# opérations peuvent}} devenir des outils",
+      "tooMany": "Seules les {max} premières sont cochées : les modèles choisissent moins bien avec plus d’outils.",
+      "skipped": "{count, plural, one {# opération ne peut pas être importée} other {# opérations ne peuvent pas être importées}}",
+      "cancel": "Annuler",
+      "add": "{count, plural, =0 {Ajouter des outils} one {Ajouter # outil} other {Ajouter # outils}}",
+      "added": "{count, plural, one {# outil ajouté} other {# outils ajoutés}}",
+      "renamed": "{from} renommé {to} : le nom était pris"
     }
   },
   "gallery": {

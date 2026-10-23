@@ -21,3 +21,23 @@ for (const path of ['/en/', '/fr/gallery/', '/en/generator/?example=devops-agent
     ).toEqual([]);
   });
 }
+
+test('the OpenAPI import dialog has no accessibility violations', async ({ page }) => {
+  await page.goto('/en/generator/');
+  await page.getByRole('button', { name: 'Import from OpenAPI' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog
+    .getByLabel('Spec file (OpenAPI 3, JSON or YAML)')
+    .setInputFiles(new URL('../../packages/openapi/src/__fixtures__/petstore3.json', import.meta.url).pathname);
+  await dialog.getByLabel('Base URL of the API').fill('https://petstore3.swagger.io/api/v3');
+  await expect(dialog.getByRole('checkbox').first()).toBeVisible();
+
+  const { violations } = await new AxeBuilder({ page })
+    .include('[role="dialog"]')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+
+  expect(violations.map(({ id, nodes }) => `${id}: ${nodes.map((node) => node.target.join(' ')).join(', ')}`)).toEqual(
+    [],
+  );
+});

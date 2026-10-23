@@ -331,6 +331,9 @@ importers:
       '@gen-agent/core':
         specifier: workspace:*
         version: link:../core
+      '@gen-agent/openapi':
+        specifier: workspace:*
+        version: link:../openapi
       '@gen-agent/templates':
         specifier: workspace:*
         version: link:../templates

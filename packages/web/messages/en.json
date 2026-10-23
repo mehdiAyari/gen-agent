@@ -161,6 +161,27 @@
       "startOver": "Start over",
       "cleared": "Form cleared",
       "copyFailed": "The browser blocked the clipboard: save agent.yaml instead and run npx gen-agent generate --from agent.yaml"
+    },
+    "openapi": {
+      "open": "Import from OpenAPI",
+      "title": "Import from an OpenAPI spec",
+      "description": "Each operation of the API becomes a tool. The spec is read in your browser and never sent anywhere.",
+      "file": "Spec file (OpenAPI 3, JSON or YAML)",
+      "chooseFile": "Choose a file",
+      "url": "Or its address",
+      "download": "Download",
+      "downloading": "Downloading…",
+      "downloadFailed": "The browser could not download it (the server may not allow it): save the file, then choose it above.",
+      "baseUrl": "Base URL of the API",
+      "baseUrlHint": "Only when the spec gives no full address, or to call another server.",
+      "needsBaseUrl": "The spec gives no full address for the API: enter its base URL above.",
+      "operations": "{title}: {count, plural, one {# operation} other {# operations}} can become tools",
+      "tooMany": "Only the first {max} are ticked: models choose less reliably with more tools.",
+      "skipped": "{count, plural, one {# operation cannot be imported} other {# operations cannot be imported}}",
+      "cancel": "Cancel",
+      "add": "{count, plural, =0 {Add tools} one {Add # tool} other {Add # tools}}",
+      "added": "{count, plural, one {# tool added} other {# tools added}}",
+      "renamed": "{from} renamed {to}: the name was taken"
     }
   },
   "gallery": {

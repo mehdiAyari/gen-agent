@@ -7,6 +7,7 @@ import type { FocusEvent } from 'react';
 import { toast } from 'sonner';
 
 import { emptyTool, type AgentForm } from '@/lib/agent-form';
+import { addImportedTools } from '@/lib/openapi-tools';
 import { Button } from '@/components/ui/button';
 import {
   FieldDescription,
@@ -20,6 +21,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 import { controlId, SwitchField, TextField } from './form-controls';
+import { OpenApiDialog } from './openapi-dialog';
 import { ToolFields } from './tool-fields';
 
 const PROVIDER_NAMES: Record<Provider, string> = {
@@ -217,10 +219,24 @@ export function AgentFields({ form, errorOf, onChange, onVisit }: AgentFieldsPro
               }}
             />
           ))}
-          <Button id={ADD_TOOL_ID} type="button" variant="outline" className="self-start" onClick={addTool}>
-            <PlusIcon data-icon="inline-start" aria-hidden="true" />
-            {t('tools.add')}
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button id={ADD_TOOL_ID} type="button" variant="outline" onClick={addTool}>
+              <PlusIcon data-icon="inline-start" aria-hidden="true" />
+              {t('tools.add')}
+            </Button>
+            <OpenApiDialog
+              onImport={(tools) => {
+                const { form: updated, renamed } = addImportedTools(form, tools);
+                onChange(updated);
+                toast.success(t('openapi.added', { count: tools.length }), {
+                  description:
+                    renamed.length === 0
+                      ? undefined
+                      : renamed.map(({ from, to }) => t('openapi.renamed', { from, to })).join('\n'),
+                });
+              }}
+            />
+          </div>
         </FieldGroup>
       </FieldSet>
 
