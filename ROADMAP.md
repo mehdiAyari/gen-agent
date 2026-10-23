@@ -32,7 +32,8 @@ A version is released only when all its end-to-end tests pass. Each version adds
 - [x] V4a: JDBC memory (Postgres), OIDC authentication with conversations bound to their user, request and token
       limits per user (Bucket4j + Redis), Dockerfile and Docker Compose (Postgres, Redis, Keycloak), profile in the web
       generator
-- [ ] V4b: exact cache (Redis), OpenTelemetry and metrics, MCP clients
+- [x] V4b: exact cache (Redis, per user, not for answers built from a tool), OpenTelemetry traces and metrics with
+      Grafana in Docker Compose and a Prometheus endpoint, MCP clients (npx, uvx or a Docker container)
 - [ ] V4c: chat UI, `gen-agent add tool` and `gen-agent add mcp`
 
 ## V5 — `production` profile

@@ -30,6 +30,9 @@ All notable changes to this project are documented here. The format follows
   the user of the token, request rate and token budget per user (Bucket4j + Redis, 429 with `Retry-After`),
   Dockerfile and `compose.yaml` with Postgres, Redis and a Keycloak test realm. Its tests run against real containers
   (Testcontainers). Every piece can be set on its own in agent.yaml and in the web generator.
+- Exact cache of first answers (Redis, per user, never for answers that called a tool), OpenTelemetry traces and
+  metrics (Grafana through `otel-lgtm` in Compose) and a Prometheus endpoint on the management port, MCP servers
+  (`npx`, `uvx` or a throwaway Docker container, with `args` and the names of the variables they get).
 
 ### Security
 

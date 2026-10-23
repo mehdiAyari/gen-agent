@@ -91,10 +91,10 @@ curl -s localhost:8080/api/chat -H 'Content-Type: application/json' -d '{"messag
 
 ## Profiles
 
-| Profile    | What the agent comes with                                                                                                                                                                          |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `minimal`  | the agent alone: chat endpoint, memory, tools; nothing else to run                                                                                                                                 |
-| `standard` | conversations in Postgres, OIDC sign-in (each user sees only their conversations), request and token limits per user in Redis, a Dockerfile and a `compose.yaml` with Postgres, Redis and Keycloak |
+| Profile    | What the agent comes with                                                                                                                                                                                                                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `minimal`  | the agent alone: chat endpoint, memory, tools; nothing else to run                                                                                                                                                                                                                                                                             |
+| `standard` | conversations in Postgres, OIDC sign-in (each user sees only their conversations), request and token limits per user, cache of first answers (Redis, per user, never for answers built from a tool), OpenTelemetry traces and metrics with a Prometheus endpoint, a Dockerfile and a `compose.yaml` with Postgres, Redis, Keycloak and Grafana |
 
 ```yaml
 agent:
@@ -105,8 +105,20 @@ agent:
     tokenBudget: 100000/day
 ```
 
-`docker compose up --build` starts a `standard` agent with its services and a test user; its tests run against real
-Postgres and Redis containers (Testcontainers).
+`docker compose up --build` starts a `standard` agent with its services, a test user and Grafana; its tests run
+against real Postgres and Redis containers (Testcontainers).
+
+Any agent can also use existing MCP servers, started with `npx` or `uvx` or inside a throwaway Docker container:
+
+```yaml
+mcp:
+  - name: files
+    package: '@modelcontextprotocol/server-filesystem'
+    version: 2.0.0 # exact: latest is refused
+    runtime: node
+    args: [/srv/documents]
+    env: [] # names of the environment variables it gets, never their values
+```
 
 ## Describe your agent
 
@@ -165,8 +177,7 @@ versions can regenerate safely ([ADR 0001](docs/adr/0001-separate-generated-and-
 ## Limits
 
 - `minimal` and `standard` profiles. A valid `agent.yaml` may describe the whole specification (`profile: production`,
-  RAG, MCP clients, cache, observability…); gen-agent then refuses to generate and says which version brings each
-  feature.
+  RAG, semantic cache, PII masking…); gen-agent then refuses to generate and says which version brings each feature.
 - Maven only; Spring AI version pinned to 2.0.1.
 - `generate` writes into a new or empty directory; `add` and `upgrade` come later.
 - OpenAPI import: JSON bodies must be flat objects, and OAuth 2 flows are not run (an access token is read from an
