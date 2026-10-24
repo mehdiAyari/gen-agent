@@ -39,6 +39,13 @@ All notable changes to this project are documented here. The format follows
   files rewritten only when unchanged since generation (fingerprints of `.gen-agent.json`), else written next to them
   as `.gen-agent-new`. `generate` keeps agent.yaml and its specs in the project.
 
+- `production` profile, personal data: emails, phone numbers, IBANs, Luhn-checked card numbers and French social
+  security numbers replaced by tokens before the model and put back in the answer and in tool arguments (values kept
+  in Redis), masked in the logs and stack traces with a correlation id per request, `DELETE /api/me` and
+  `DELETE /api/users/{id}` (role `agent-admin`) erasing conversations, personal data, cache and limits, retention of
+  conversations with an hourly purge (Flyway table `agent_conversation`), and a semantic cache per user in pgvector
+  that never keeps an answer built from a tool or holding personal data. In the web generator too.
+
 ### Security
 
 - Tool arguments from the model are treated as untrusted: boxed types and explicit checks of required arguments, whose
