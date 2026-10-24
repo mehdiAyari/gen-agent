@@ -45,6 +45,11 @@ All notable changes to this project are documented here. The format follows
   `DELETE /api/users/{id}` (role `agent-admin`) erasing conversations, personal data, cache and limits, retention of
   conversations with an hourly purge (Flyway table `agent_conversation`), and a semantic cache per user in pgvector
   that never keeps an answer built from a tool or holding personal data. In the web generator too.
+- Guardrails (`production`, or one by one): prompt injection detection on messages and tool results (English and
+  French, plainly or in base64) answered with a refusal without calling the model; tool results marked as untrusted
+  data, and only read-only tools left once one held instructions; answers that repeat the system prompt refused and API
+  keys masked (`security.outputGuard`); `limits.maxIterations` through Spring AI's tool call limits (422) and
+  `limits.timeout` interrupting the whole request (504).
 
 ### Security
 

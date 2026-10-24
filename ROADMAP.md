@@ -41,8 +41,10 @@ A version is released only when all its end-to-end tests pass. Each version adds
 
 - [x] V5a: PII masking before the model and in the logs (with a correlation id), erasure endpoints (`DELETE /api/me`,
       admin `DELETE /api/users/{id}`), retention with an hourly purge, semantic cache per user (pgvector)
-- [ ] V5b: prompt injection detection, output guardrails, loop limits, retries and circuit breaker, fallback provider,
-      model routing, human approval, kill switches
+- [x] V5b1: prompt injection detection (English and French, base64 too), untrusted tool results, output guardrails,
+      tool call and request time limits
+- [ ] V5b2: retries and circuit breaker, fallback provider then fallback answer, model routing, conversation summaries
+- [ ] V5b3: human approval of tool calls, kill switches
 - [ ] V5c: RAG in pgvector, documents treated as untrusted data
 - [ ] V5d: evaluations and red teaming, generated CI workflow, Grafana dashboard, Helm chart
 
