@@ -143,14 +143,12 @@ async function generateFromSource(
     writeFileSync(join(directory, file.path), file.content, file.executable === true ? { mode: 0o755 } : {});
   }
 
-  const { provider, secrets, features, embedding } = buildModel(config);
+  const { secrets, features, ollamaModels } = buildModel(config);
   out.info(
     [
       `Created ${config.agent.name} in ${shown} (${String(files.length)} files). Next steps:`,
       `  cd ${shown}`,
-      ...(provider.apiKeyEnv === undefined
-        ? [`  ollama pull ${provider.model}`, ...(embedding === undefined ? [] : [`  ollama pull ${embedding.model}`])]
-        : []),
+      ...ollamaModels.map((model) => `  ollama pull ${model}`),
       ...secrets.map((secret) => `  export ${secret}=...`),
       // With Compose, the agent starts with its database, Redis and identity provider.
       features.dockerCompose ? '  docker compose up --build' : '  ./mvnw spring-boot:run',
