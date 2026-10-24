@@ -223,7 +223,15 @@
       "erasure": "Erasure on request",
       "erasureHint": "DELETE /api/me erases a user's conversations, cache and limits; DELETE /api/users/{id} for the agent-admin role.",
       "retention": "Retention",
-      "retentionHint": "e.g. 30d (s, m, h, d): conversations unused for longer are purged every hour. Empty: kept."
+      "retentionHint": "e.g. 30d (s, m, h, d): conversations unused for longer are purged every hour. Empty: kept.",
+      "injectionDetection": "Prompt injection detection",
+      "injectionDetectionHint": "Messages that try to take over the agent get a refusal without reaching the model. Tool results reach it as untrusted data; once one holds instructions, only the tools that read data stay callable.",
+      "outputGuard": "Answer checks",
+      "outputGuardHint": "An answer that repeats the system prompt is refused; API keys are masked.",
+      "maxIterations": "Tool calls per message",
+      "maxIterationsHint": "Beyond, the request stops with 422. Empty: Spring AI's default.",
+      "timeout": "Request timeout",
+      "timeoutHint": "e.g. 60s: beyond, the request is stopped with 504. Empty: none."
     },
     "mcp": {
       "legend": "MCP servers",

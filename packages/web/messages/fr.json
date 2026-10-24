@@ -223,7 +223,15 @@
       "erasure": "Effacement sur demande",
       "erasureHint": "DELETE /api/me efface les conversations, le cache et les limites d’un utilisateur ; DELETE /api/users/{id} pour le rôle agent-admin.",
       "retention": "Conservation",
-      "retentionHint": "Par ex. 30d (s, m, h, d) : les conversations inutilisées plus longtemps sont purgées toutes les heures. Vide : conservées."
+      "retentionHint": "Par ex. 30d (s, m, h, d) : les conversations inutilisées plus longtemps sont purgées toutes les heures. Vide : conservées.",
+      "injectionDetection": "Détection d’injection de prompt",
+      "injectionDetectionHint": "Un message qui tente de prendre le contrôle de l’agent reçoit un refus sans atteindre le modèle. Les résultats d’outils lui arrivent comme données non fiables ; dès qu’un résultat contient des instructions, seuls les outils de lecture restent utilisables.",
+      "outputGuard": "Contrôle des réponses",
+      "outputGuardHint": "Une réponse qui répète le prompt système est refusée ; les clés d’API sont masquées.",
+      "maxIterations": "Appels d’outils par message",
+      "maxIterationsHint": "Au-delà, la requête s’arrête avec 422. Vide : la valeur par défaut de Spring AI.",
+      "timeout": "Délai maximal d’une requête",
+      "timeoutHint": "Par ex. 60s : au-delà, la requête est arrêtée avec 504. Vide : aucun."
     },
     "mcp": {
       "legend": "Serveurs MCP",

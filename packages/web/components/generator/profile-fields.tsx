@@ -182,6 +182,54 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
           />
         ) : null}
         <SwitchField
+          path="injectionDetection"
+          label={t('injectionDetection')}
+          hint={t('injectionDetectionHint')}
+          checked={form.injectionDetection}
+          onCheckedChange={(injectionDetection) => {
+            update({ injectionDetection });
+          }}
+        />
+        <SwitchField
+          path="outputGuard"
+          label={t('outputGuard')}
+          hint={t('outputGuardHint')}
+          checked={form.outputGuard}
+          onCheckedChange={(outputGuard) => {
+            update({ outputGuard });
+          }}
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField
+            path="maxIterations"
+            label={t('maxIterations')}
+            hint={t('maxIterationsHint')}
+            value={form.maxIterations}
+            error={errorOf('maxIterations')}
+            onValueChange={(maxIterations) => {
+              update({ maxIterations });
+            }}
+            inputMode="numeric"
+            autoComplete="off"
+            className="font-mono"
+            placeholder="8…"
+          />
+          <TextField
+            path="timeout"
+            label={t('timeout')}
+            hint={t('timeoutHint')}
+            value={form.timeout}
+            error={errorOf('timeout')}
+            onValueChange={(timeout) => {
+              update({ timeout });
+            }}
+            autoComplete="off"
+            spellCheck={false}
+            className="font-mono"
+            placeholder="60s…"
+          />
+        </div>
+        <SwitchField
           path="chatUi"
           label={t('chatUi')}
           hint={form.auth === 'oidc' ? t('chatUiOidcHint') : t('chatUiHint')}

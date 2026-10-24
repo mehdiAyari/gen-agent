@@ -95,6 +95,14 @@ export interface AgentForm {
   /** Answers to questions of the same meaning, per user: needs oidc and a provider with embeddings. */
   semanticCache: boolean;
   semanticThreshold: string;
+  /** Messages and tool results checked for prompt injection. */
+  injectionDetection: boolean;
+  /** Answers that repeat the system prompt refused, secrets masked. */
+  outputGuard: boolean;
+  /** Tool calls per message; empty for Spring AI's default. */
+  maxIterations: string;
+  /** 60s: the longest a request may take; empty for none. */
+  timeout: string;
 }
 
 interface McpForm {
@@ -131,6 +139,10 @@ type Equipment = Pick<
   | 'retention'
   | 'semanticCache'
   | 'semanticThreshold'
+  | 'injectionDetection'
+  | 'outputGuard'
+  | 'maxIterations'
+  | 'timeout'
 >;
 
 const DEFAULT_THRESHOLD = String(PRODUCTION_DEFAULTS.semanticThreshold);
@@ -157,6 +169,10 @@ function addedByCore(form: Pick<AgentForm, 'profile' | 'auth' | 'provider' | 'me
     retention: production && form.memoryType === 'jdbc' ? PRODUCTION_DEFAULTS.retention : '',
     semanticCache: production && signedIn && EMBEDDING_PROVIDERS.includes(form.provider),
     semanticThreshold: DEFAULT_THRESHOLD,
+    injectionDetection: production,
+    outputGuard: production,
+    maxIterations: production ? String(PRODUCTION_DEFAULTS.maxIterations) : '',
+    timeout: production ? PRODUCTION_DEFAULTS.timeout : '',
   };
 }
 
@@ -277,6 +293,8 @@ export function formToYaml(form: AgentForm): string {
     security.tokenBudget = form.tokenBudget;
   }
   if (form.piiMasking !== equipment.piiMasking) security.piiMasking = form.piiMasking;
+  if (form.injectionDetection !== equipment.injectionDetection) security.injectionDetection = form.injectionDetection;
+  if (form.outputGuard !== equipment.outputGuard) security.outputGuard = form.outputGuard;
   if (Object.keys(security).length > 0) agent.security = security;
   // Core adds the cache only when agent.yaml has none: any change writes it whole.
   if (
@@ -292,6 +310,14 @@ export function formToYaml(form: AgentForm): string {
   if (form.observability !== equipment.observability) {
     agent.observability = form.observability ? { otel: true, metrics: 'prometheus' } : { otel: false, metrics: 'none' };
   }
+
+  // Core keeps the limits agent.yaml sets and adds the others: only the changed ones are written.
+  const limits: Record<string, unknown> = {};
+  if (present(form.maxIterations) && form.maxIterations !== equipment.maxIterations) {
+    limits.maxIterations = numberOrText(form.maxIterations);
+  }
+  if (present(form.timeout) && form.timeout !== equipment.timeout) limits.timeout = form.timeout;
+  if (Object.keys(limits).length > 0) agent.limits = limits;
 
   const gdpr: Record<string, unknown> = {};
   if (form.euOnly)
@@ -374,6 +400,10 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     retention: agent.memory.retention ?? '',
     semanticCache: agent.cache?.semantic !== undefined,
     semanticThreshold: String(agent.cache?.semantic?.threshold ?? DEFAULT_THRESHOLD),
+    injectionDetection: agent.security?.injectionDetection ?? false,
+    outputGuard: agent.security?.outputGuard ?? false,
+    maxIterations: agent.limits?.maxIterations === undefined ? '' : String(agent.limits.maxIterations),
+    timeout: agent.limits?.timeout ?? '',
     mcp: (agent.mcp ?? []).map((server) => ({
       name: server.name,
       package: server.package,
@@ -424,6 +454,8 @@ const FIELDS: Record<string, keyof AgentForm> = {
   'agent.security.tokenBudget': 'tokenBudget',
   'agent.memory.retention': 'retention',
   'agent.cache.semantic.threshold': 'semanticThreshold',
+  'agent.limits.maxIterations': 'maxIterations',
+  'agent.limits.timeout': 'timeout',
 };
 
 function fieldOf(path: string): string {

@@ -182,6 +182,10 @@ describe('the production profile', () => {
       retention: '30d',
       semanticCache: true,
       semanticThreshold: '0.95',
+      injectionDetection: true,
+      outputGuard: true,
+      maxIterations: '8',
+      timeout: '60s',
     });
     expect(withProfile(withProfile(defaultForm(), 'production'), 'minimal')).toEqual(defaultForm());
   });
@@ -204,11 +208,14 @@ describe('the production profile', () => {
     retention: 7d
   security:
     piiMasking: false
+    outputGuard: false
   cache:
     exact: redis
     semantic:
       threshold: 0.9
       scope: user
+  limits:
+    timeout: 30s
   gdpr:
     erasureEndpoint: false
 `;
@@ -223,6 +230,10 @@ describe('the production profile', () => {
       erasure: false,
       semanticCache: true,
       semanticThreshold: '0.9',
+      injectionDetection: true,
+      outputGuard: false,
+      maxIterations: '8',
+      timeout: '30s',
     });
     expect(formToYaml(result.form)).toBe(yaml);
     expect(validateForm(result.form).errors).toEqual({});
@@ -238,6 +249,15 @@ describe('the production profile', () => {
     const form = { ...withProfile(defaultForm(), 'production'), retention: 'a month', semanticThreshold: '2' };
 
     expect(Object.keys(validateForm(form).errors)).toEqual(['retention', 'semanticThreshold']);
+  });
+
+  it('limits any agent when asked, and reports limits that are not valid on their field', () => {
+    expect(formToYaml({ ...defaultForm(), maxIterations: '5', timeout: '20s' })).toContain(
+      'limits:\n    maxIterations: 5\n    timeout: 20s\n',
+    );
+    const form = { ...defaultForm(), maxIterations: '0', timeout: 'soon' };
+
+    expect(Object.keys(validateForm(form).errors).sort()).toEqual(['maxIterations', 'timeout']);
   });
 });
 
