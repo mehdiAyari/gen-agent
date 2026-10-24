@@ -26,7 +26,7 @@ import { OpenApiDialog } from './openapi-dialog';
 import { ProfileFields } from './profile-fields';
 import { ToolFields } from './tool-fields';
 
-const PROVIDER_NAMES: Record<Provider, string> = {
+export const PROVIDER_NAMES: Record<Provider, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   mistral: 'Mistral',

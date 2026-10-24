@@ -1,12 +1,13 @@
 'use client';
 
-import { EMBEDDING_PROVIDERS } from '@gen-agent/core';
+import { EMBEDDING_PROVIDERS, PROVIDERS, SUGGESTED_MODELS } from '@gen-agent/core';
 import { useTranslations } from 'next-intl';
 
 import { withProfile, type AgentForm } from '@/lib/agent-form';
 import { FieldDescription, FieldGroup, FieldLegend, FieldSet } from '@/components/ui/field';
 
-import { ChoiceField, SwitchField, TextField } from './form-controls';
+import { PROVIDER_NAMES } from './agent-fields';
+import { ChoiceField, SelectField, SwitchField, TextField } from './form-controls';
 
 interface ProfileFieldsProps {
   form: AgentForm;
@@ -45,8 +46,8 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
             options={['in-memory', 'jdbc'] as const}
             labels={{ 'in-memory': t('memoryInMemory'), jdbc: t('memoryJdbc') }}
             onValueChange={(memoryType) => {
-              // Only conversations kept in Postgres are purged.
-              update(memoryType === 'jdbc' ? { memoryType } : { memoryType, retention: '' });
+              // Only conversations kept in Postgres are purged, or erased per user.
+              update(memoryType === 'jdbc' ? { memoryType } : { memoryType, retention: '', erasure: false });
             }}
           />
           <ChoiceField
@@ -154,7 +155,7 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
             update({ logsWithoutPii });
           }}
         />
-        {form.auth === 'oidc' ? (
+        {form.auth === 'oidc' && form.memoryType === 'jdbc' ? (
           <SwitchField
             path="erasure"
             label={t('erasure')}
@@ -229,6 +230,99 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
             placeholder="60s…"
           />
         </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SelectField
+            path="fallbackProvider"
+            label={t('fallback')}
+            value={form.fallbackProvider === '' ? 'none' : form.fallbackProvider}
+            options={['none', ...PROVIDERS] as const}
+            labels={{ none: t('fallbackNone'), ...PROVIDER_NAMES }}
+            onValueChange={(choice) => {
+              const fallbackProvider = choice === 'none' ? '' : choice;
+              update({
+                fallbackProvider,
+                fallbackModel: fallbackProvider === '' ? '' : form.fallbackModel || SUGGESTED_MODELS[fallbackProvider],
+              });
+            }}
+          />
+          {form.fallbackProvider === '' ? null : (
+            <TextField
+              path="fallbackModel"
+              label={t('fallbackModel')}
+              hint={t('fallbackHint')}
+              value={form.fallbackModel}
+              error={errorOf('fallbackModel')}
+              onValueChange={(fallbackModel) => {
+                update({ fallbackModel });
+              }}
+              autoComplete="off"
+              spellCheck={false}
+              className="font-mono"
+            />
+          )}
+        </div>
+        <ChoiceField
+          path="routing"
+          label={t('routing')}
+          hint={
+            form.routing === 'classifier'
+              ? t('routingClassifierHint')
+              : form.routing === 'rules'
+                ? t('routingRulesHint')
+                : t('routingHint')
+          }
+          value={form.routing === '' ? 'none' : form.routing}
+          options={['none', 'rules', 'classifier'] as const}
+          labels={{ none: t('routingNone'), rules: t('routingRules'), classifier: t('routingClassifier') }}
+          onValueChange={(choice) => {
+            update(
+              choice === 'none'
+                ? { routing: '' }
+                : {
+                    routing: choice,
+                    routingSimple: form.routingSimple || form.model,
+                    routingComplex: form.routingComplex || form.model,
+                  },
+            );
+          }}
+        />
+        {form.routing === '' ? null : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField
+              path="routingSimple"
+              label={t('routingSimple')}
+              value={form.routingSimple}
+              error={errorOf('routingSimple')}
+              onValueChange={(routingSimple) => {
+                update({ routingSimple });
+              }}
+              autoComplete="off"
+              spellCheck={false}
+              className="font-mono"
+            />
+            <TextField
+              path="routingComplex"
+              label={t('routingComplex')}
+              value={form.routingComplex}
+              error={errorOf('routingComplex')}
+              onValueChange={(routingComplex) => {
+                update({ routingComplex });
+              }}
+              autoComplete="off"
+              spellCheck={false}
+              className="font-mono"
+            />
+          </div>
+        )}
+        <SwitchField
+          path="summarize"
+          label={t('summarize')}
+          hint={t('summarizeHint')}
+          checked={form.summarize}
+          onCheckedChange={(summarize) => {
+            update({ summarize });
+          }}
+        />
         <SwitchField
           path="chatUi"
           label={t('chatUi')}

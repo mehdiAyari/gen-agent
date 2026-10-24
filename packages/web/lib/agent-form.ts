@@ -103,6 +103,15 @@ export interface AgentForm {
   maxIterations: string;
   /** 60s: the longest a request may take; empty for none. */
   timeout: string;
+  /** The provider of the model that answers when the first fails; empty for none. */
+  fallbackProvider: Provider | '';
+  fallbackModel: string;
+  /** How simple messages are told from the others; empty for no routing. */
+  routing: 'rules' | 'classifier' | '';
+  routingSimple: string;
+  routingComplex: string;
+  /** Messages beyond the window summarized instead of forgotten. */
+  summarize: boolean;
 }
 
 interface McpForm {
@@ -165,7 +174,7 @@ function addedByCore(form: Pick<AgentForm, 'profile' | 'auth' | 'provider' | 'me
     observability: full,
     piiMasking: production,
     logsWithoutPii: production,
-    erasure: production && signedIn,
+    erasure: production && signedIn && form.memoryType === 'jdbc',
     retention: production && form.memoryType === 'jdbc' ? PRODUCTION_DEFAULTS.retention : '',
     semanticCache: production && signedIn && EMBEDDING_PROVIDERS.includes(form.provider),
     semanticThreshold: DEFAULT_THRESHOLD,
@@ -209,6 +218,12 @@ export function defaultForm(): AgentForm {
     euOnly: false,
     allowNonEuProviders: false,
     tools: [],
+    fallbackProvider: '',
+    fallbackModel: '',
+    routing: '',
+    routingSimple: '',
+    routingComplex: '',
+    summarize: false,
     profile: 'minimal',
     ...addedByCore({ profile: 'minimal', auth: 'none', provider: 'mistral', memoryType: 'in-memory' }),
     mcp: [],
@@ -229,6 +244,10 @@ export function formToYaml(form: AgentForm): string {
   const model: Record<string, unknown> = { provider: form.provider, name: form.model };
   if (present(form.temperature)) model.temperature = numberOrText(form.temperature);
   if (present(form.maxTokens)) model.maxTokens = numberOrText(form.maxTokens);
+  if (form.routing !== '') {
+    model.routing = { strategy: form.routing, simple: form.routingSimple, complex: form.routingComplex };
+  }
+  if (form.fallbackProvider !== '') model.fallback = { provider: form.fallbackProvider, name: form.fallbackModel };
 
   const agent: Record<string, unknown> = { name: form.name };
   if (present(form.description)) agent.description = form.description;
@@ -245,6 +264,7 @@ export function formToYaml(form: AgentForm): string {
   const memory: Record<string, unknown> = {};
   if (form.memoryType !== equipment.memoryType) memory.type = form.memoryType;
   if (form.memoryWindow !== DEFAULT_WINDOW) memory.window = numberOrText(form.memoryWindow);
+  if (form.summarize) memory.summarize = true;
   if (present(form.retention) && form.retention !== equipment.retention) memory.retention = form.retention;
   if (Object.keys(memory).length > 0) agent.memory = memory;
 
@@ -404,6 +424,12 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     outputGuard: agent.security?.outputGuard ?? false,
     maxIterations: agent.limits?.maxIterations === undefined ? '' : String(agent.limits.maxIterations),
     timeout: agent.limits?.timeout ?? '',
+    fallbackProvider: agent.model.fallback?.provider ?? '',
+    fallbackModel: agent.model.fallback?.name ?? '',
+    routing: agent.model.routing?.strategy ?? '',
+    routingSimple: agent.model.routing?.simple ?? '',
+    routingComplex: agent.model.routing?.complex ?? '',
+    summarize: agent.memory.summarize ?? false,
     mcp: (agent.mcp ?? []).map((server) => ({
       name: server.name,
       package: server.package,
@@ -456,6 +482,10 @@ const FIELDS: Record<string, keyof AgentForm> = {
   'agent.cache.semantic.threshold': 'semanticThreshold',
   'agent.limits.maxIterations': 'maxIterations',
   'agent.limits.timeout': 'timeout',
+  'agent.model.fallback.name': 'fallbackModel',
+  'agent.model.fallback': 'fallbackModel',
+  'agent.model.routing.simple': 'routingSimple',
+  'agent.model.routing.complex': 'routingComplex',
 };
 
 function fieldOf(path: string): string {

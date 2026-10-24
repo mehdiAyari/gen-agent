@@ -251,6 +251,42 @@ describe('the production profile', () => {
     expect(Object.keys(validateForm(form).errors)).toEqual(['retention', 'semanticThreshold']);
   });
 
+  it('keeps a fallback model, a routing and summaries', () => {
+    const yaml = `agent:
+  name: desk
+  model:
+    provider: mistral
+    name: mistral-medium-latest
+    routing:
+      strategy: rules
+      simple: mistral-small-latest
+      complex: mistral-medium-latest
+    fallback:
+      provider: ollama
+      name: qwen2.5:3b
+  memory:
+    summarize: true
+`;
+    const result = formFromYaml(yaml);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+
+    expect(result.form).toMatchObject({
+      fallbackProvider: 'ollama',
+      fallbackModel: 'qwen2.5:3b',
+      routing: 'rules',
+      routingSimple: 'mistral-small-latest',
+      routingComplex: 'mistral-medium-latest',
+      summarize: true,
+    });
+    expect(formToYaml(result.form)).toBe(yaml);
+  });
+
+  it('reports a fallback without a model on its field', () => {
+    const form = { ...defaultForm(), fallbackProvider: 'ollama' as const, fallbackModel: '' };
+
+    expect(Object.keys(validateForm(form).errors)).toEqual(['fallbackModel']);
+  });
+
   it('limits any agent when asked, and reports limits that are not valid on their field', () => {
     expect(formToYaml({ ...defaultForm(), maxIterations: '5', timeout: '20s' })).toContain(
       'limits:\n    maxIterations: 5\n    timeout: 20s\n',

@@ -231,7 +231,22 @@
       "maxIterations": "Appels d’outils par message",
       "maxIterationsHint": "Au-delà, la requête s’arrête avec 422. Vide : la valeur par défaut de Spring AI.",
       "timeout": "Délai maximal d’une requête",
-      "timeoutHint": "Par ex. 60s : au-delà, la requête est arrêtée avec 504. Vide : aucun."
+      "timeoutHint": "Par ex. 60s : au-delà, la requête est arrêtée avec 504. Vide : aucun.",
+      "fallback": "Modèle de secours",
+      "fallbackNone": "Aucun",
+      "fallbackModel": "Nom du modèle de secours",
+      "fallbackHint": "Répond quand le premier modèle échoue, derrière un disjoncteur. gdpr.euOnly s’y applique aussi.",
+      "routing": "Routage entre modèles",
+      "routingNone": "Aucun",
+      "routingRules": "Règles",
+      "routingClassifier": "Classifieur",
+      "routingHint": "Chaque message va au modèle ci-dessus.",
+      "routingRulesHint": "Les messages longs, avec du code, plusieurs questions ou une demande d’explication ou de comparaison vont au modèle complexe ; les autres au simple.",
+      "routingClassifierHint": "Le modèle simple dit d’abord si un message est simple ; s’il ne sait pas, le modèle complexe répond.",
+      "routingSimple": "Modèle simple",
+      "routingComplex": "Modèle complexe",
+      "summarize": "Résumé des longues conversations",
+      "summarizeHint": "Au-delà de la fenêtre, les anciens messages sont résumés par le modèle au lieu d’être oubliés."
     },
     "mcp": {
       "legend": "Serveurs MCP",

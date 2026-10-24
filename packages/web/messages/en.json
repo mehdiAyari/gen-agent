@@ -231,7 +231,22 @@
       "maxIterations": "Tool calls per message",
       "maxIterationsHint": "Beyond, the request stops with 422. Empty: Spring AI's default.",
       "timeout": "Request timeout",
-      "timeoutHint": "e.g. 60s: beyond, the request is stopped with 504. Empty: none."
+      "timeoutHint": "e.g. 60s: beyond, the request is stopped with 504. Empty: none.",
+      "fallback": "Fallback model",
+      "fallbackNone": "None",
+      "fallbackModel": "Fallback model name",
+      "fallbackHint": "Answers when the first model fails, behind a circuit breaker. gdpr.euOnly applies to it too.",
+      "routing": "Model routing",
+      "routingNone": "None",
+      "routingRules": "Rules",
+      "routingClassifier": "Classifier",
+      "routingHint": "Every message goes to the model above.",
+      "routingRulesHint": "Long messages, code, several questions or a request to explain or compare go to the complex model; the others to the simple one.",
+      "routingClassifierHint": "The simple model first tells whether a message is simple; when it cannot tell, the complex model answers.",
+      "routingSimple": "Simple model",
+      "routingComplex": "Complex model",
+      "summarize": "Summaries of long conversations",
+      "summarizeHint": "Beyond the window, older messages are summarized by the model instead of being forgotten."
     },
     "mcp": {
       "legend": "MCP servers",
