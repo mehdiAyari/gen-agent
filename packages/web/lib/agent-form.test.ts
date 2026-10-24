@@ -12,6 +12,8 @@ const currentWeather: AgentForm['tools'][number] = {
   params: [{ name: 'latitude', type: 'number', required: true, description: 'Latitude', in: 'auto', apiName: '' }],
   auth: { type: 'none', env: '', header: '' },
   maxResponseChars: '',
+  approval: false,
+  approvalExpiresAfter: '',
 };
 
 const weather: AgentForm = {
@@ -285,6 +287,38 @@ describe('the production profile', () => {
     const form = { ...defaultForm(), fallbackProvider: 'ollama' as const, fallbackModel: '' };
 
     expect(Object.keys(validateForm(form).errors)).toEqual(['fallbackModel']);
+  });
+
+  it('keeps tools that wait for approval and the kill switches', () => {
+    const yaml = `agent:
+  name: vault
+  profile: production
+  model:
+    provider: mistral
+    name: mistral-small-latest
+  tools:
+    - name: block-card
+      type: java
+      approval:
+        required: true
+        expiresAfter: 1h
+    - name: wire
+      type: java
+      approval:
+        required: true
+  security:
+    killSwitches: false
+`;
+    const result = formFromYaml(yaml);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+
+    expect(result.form.killSwitches).toBe(false);
+    expect(result.form.tools.map((tool) => [tool.approval, tool.approvalExpiresAfter])).toEqual([
+      [true, '1h'],
+      [true, ''],
+    ]);
+    expect(formToYaml(result.form)).toBe(yaml);
+    expect(withProfile(defaultForm(), 'production').killSwitches).toBe(true);
   });
 
   it('limits any agent when asked, and reports limits that are not valid on their field', () => {

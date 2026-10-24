@@ -120,7 +120,10 @@
         "query": "requête",
         "body": "corps"
       },
-      "apiName": "Nom dans l’API"
+      "apiName": "Nom dans l’API",
+      "approval": "Soumis à la validation de l’utilisateur",
+      "approvalExpiresAfter": "La demande expire après",
+      "approvalExpiresAfterHint": "Par ex. 1h (s, m, h, d). Vide : 24h. Demande la connexion et les conversations dans Postgres."
     },
     "preview": {
       "label": "Aperçu",
@@ -246,7 +249,9 @@
       "routingSimple": "Modèle simple",
       "routingComplex": "Modèle complexe",
       "summarize": "Résumé des longues conversations",
-      "summarizeHint": "Au-delà de la fenêtre, les anciens messages sont résumés par le modèle au lieu d’être oubliés."
+      "summarizeHint": "Au-delà de la fenêtre, les anciens messages sont résumés par le modèle au lieu d’être oubliés.",
+      "killSwitches": "Interrupteurs d’urgence",
+      "killSwitchesHint": "Les utilisateurs du rôle agent-admin coupent l’agent ou l’un de ses outils immédiatement."
     },
     "mcp": {
       "legend": "Serveurs MCP",

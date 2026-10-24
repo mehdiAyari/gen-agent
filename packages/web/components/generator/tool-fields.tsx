@@ -194,6 +194,37 @@ export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFie
             />
           </div>
         ) : null}
+        <div className="grid items-start gap-4 sm:grid-cols-2">
+          <Field orientation="horizontal" className="sm:mt-8">
+            <Checkbox
+              id={controlId(`${path}.approval`)}
+              checked={tool.approval}
+              onCheckedChange={(approval) => {
+                update({ approval });
+              }}
+            />
+            <FieldLabel htmlFor={controlId(`${path}.approval`)} className="font-normal">
+              {t('approval')}
+            </FieldLabel>
+            <FieldError>{errorOf(`${path}.approval`)}</FieldError>
+          </Field>
+          {tool.approval ? (
+            <TextField
+              path={`${path}.approval.expiresAfter`}
+              label={t('approvalExpiresAfter')}
+              hint={t('approvalExpiresAfterHint')}
+              value={tool.approvalExpiresAfter}
+              error={errorOf(`${path}.approval.expiresAfter`)}
+              onValueChange={(approvalExpiresAfter) => {
+                update({ approvalExpiresAfter });
+              }}
+              autoComplete="off"
+              spellCheck={false}
+              className="font-mono"
+              placeholder="24h…"
+            />
+          ) : null}
+        </div>
         <FieldSet>
           <FieldLegend variant="label">{t('params')}</FieldLegend>
           <FieldError>{errorOf(`${path}.params`)}</FieldError>

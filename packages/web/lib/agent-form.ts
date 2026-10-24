@@ -35,6 +35,10 @@ interface ToolForm {
   /** HTTP tools only; empty for the default. */
   maxResponseChars: string;
   params: ParamForm[];
+  /** Each call waits for the approval of the user who asked. */
+  approval: boolean;
+  /** 24h when empty. */
+  approvalExpiresAfter: string;
 }
 
 export function emptyTool(): ToolForm {
@@ -47,6 +51,8 @@ export function emptyTool(): ToolForm {
     auth: { type: 'none', env: '', header: '' },
     maxResponseChars: '',
     params: [],
+    approval: false,
+    approvalExpiresAfter: '',
   };
 }
 
@@ -112,6 +118,8 @@ export interface AgentForm {
   routingComplex: string;
   /** Messages beyond the window summarized instead of forgotten. */
   summarize: boolean;
+  /** An administrator switches the agent or a tool off at once: needs oidc. */
+  killSwitches: boolean;
 }
 
 interface McpForm {
@@ -152,6 +160,7 @@ type Equipment = Pick<
   | 'outputGuard'
   | 'maxIterations'
   | 'timeout'
+  | 'killSwitches'
 >;
 
 const DEFAULT_THRESHOLD = String(PRODUCTION_DEFAULTS.semanticThreshold);
@@ -182,6 +191,7 @@ function addedByCore(form: Pick<AgentForm, 'profile' | 'auth' | 'provider' | 'me
     outputGuard: production,
     maxIterations: production ? String(PRODUCTION_DEFAULTS.maxIterations) : '',
     timeout: production ? PRODUCTION_DEFAULTS.timeout : '',
+    killSwitches: production && signedIn,
   };
 }
 
@@ -290,6 +300,12 @@ export function formToYaml(form: AgentForm): string {
           ...(http && present(param.apiName) ? { apiName: param.apiName } : {}),
         }));
       }
+      if (tool.approval) {
+        written.approval = {
+          required: true,
+          ...(present(tool.approvalExpiresAfter) ? { expiresAfter: tool.approvalExpiresAfter } : {}),
+        };
+      }
       return written;
     });
   }
@@ -315,6 +331,7 @@ export function formToYaml(form: AgentForm): string {
   if (form.piiMasking !== equipment.piiMasking) security.piiMasking = form.piiMasking;
   if (form.injectionDetection !== equipment.injectionDetection) security.injectionDetection = form.injectionDetection;
   if (form.outputGuard !== equipment.outputGuard) security.outputGuard = form.outputGuard;
+  if (form.killSwitches !== equipment.killSwitches) security.killSwitches = form.killSwitches;
   if (Object.keys(security).length > 0) agent.security = security;
   // Core adds the cache only when agent.yaml has none: any change writes it whole.
   if (
@@ -430,6 +447,7 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     routingSimple: agent.model.routing?.simple ?? '',
     routingComplex: agent.model.routing?.complex ?? '',
     summarize: agent.memory.summarize ?? false,
+    killSwitches: agent.security?.killSwitches ?? false,
     mcp: (agent.mcp ?? []).map((server) => ({
       name: server.name,
       package: server.package,
@@ -461,6 +479,8 @@ function fromConfig({ agent }: AgentFile): AgentForm {
         in: param.in ?? 'auto',
         apiName: param.apiName ?? '',
       })),
+      approval: tool.approval?.required ?? false,
+      approvalExpiresAfter: tool.approval?.expiresAfter ?? '',
     })),
   };
 }

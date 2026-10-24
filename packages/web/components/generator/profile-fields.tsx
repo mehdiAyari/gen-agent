@@ -60,7 +60,15 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
               // Limits are counted per user: without sign-in they go.
               update(
                 auth === 'none'
-                  ? { auth, rateLimit: '', tokenBudget: '', cache: false, semanticCache: false, erasure: false }
+                  ? {
+                      auth,
+                      rateLimit: '',
+                      tokenBudget: '',
+                      cache: false,
+                      semanticCache: false,
+                      erasure: false,
+                      killSwitches: false,
+                    }
                   : { auth },
               );
             }}
@@ -155,6 +163,17 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
             update({ logsWithoutPii });
           }}
         />
+        {form.auth === 'oidc' ? (
+          <SwitchField
+            path="killSwitches"
+            label={t('killSwitches')}
+            hint={t('killSwitchesHint')}
+            checked={form.killSwitches}
+            onCheckedChange={(killSwitches) => {
+              update({ killSwitches });
+            }}
+          />
+        ) : null}
         {form.auth === 'oidc' && form.memoryType === 'jdbc' ? (
           <SwitchField
             path="erasure"
