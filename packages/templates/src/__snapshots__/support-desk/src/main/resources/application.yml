@@ -41,6 +41,9 @@ spring:
 
 agent:
   system-prompt: classpath:prompts/system.md
+  chat-ui:
+    # Public client of the chat page at the OIDC provider: authorization code with PKCE, no secret.
+    client-id: ${OIDC_CLIENT_ID:agent-client}
   memory:
     window: 20
   limits:

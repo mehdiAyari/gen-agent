@@ -89,6 +89,23 @@ class <%= project.applicationClass %>Tests {
     }
 
 <%_   } _%>
+<%_   if (features.chatUi) { _%>
+    @Test
+    void servesTheChatPageAndItsSettingsWithoutAToken() {
+        assertThat(mockMvc.get().uri("/")).hasStatusOk().hasForwardedUrl("index.html");
+        assertThat(mockMvc.get().uri("/index.html"))
+                .hasStatusOk()
+                .headers()
+                .hasValue("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; connect-src 'self' https://issuer.example.org; frame-ancestors 'none'; form-action 'self' https://issuer.example.org");
+        assertThat(mockMvc.get().uri("/chat-config.json"))
+                .hasStatusOk()
+                .bodyJson()
+                .isLenientlyEqualTo("""
+                        {"auth": "oidc", "issuer": "https://issuer.example.org", "clientId": "agent-client"}
+                        """);
+    }
+
+<%_   } _%>
     @Test
     void refusesRequestsWithoutAToken() {
         assertThat(mockMvc.post()
@@ -199,6 +216,15 @@ class <%= project.applicationClass %>Tests {
                 .bodyJson()
                 .extractingPath("$.aiGenerated")
                 .isEqualTo(true);
+    }
+<%_   } _%>
+
+<%_   if (features.chatUi) { _%>
+
+    @Test
+    void servesTheChatPage() {
+        assertThat(mockMvc.get().uri("/index.html")).hasStatusOk();
+        assertThat(mockMvc.get().uri("/chat-config.json")).hasStatusOk().bodyJson().extractingPath("$.auth").isEqualTo("none");
     }
 <%_   } _%>
 

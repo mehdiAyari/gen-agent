@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= project.artifactId %></title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="chat.css" />
+    <script type="module" src="chat.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1 translate="no"><%= project.artifactId %></h1>
+<%_ if (features.oidc) { _%>
+      <button type="button" id="sign-out" hidden>Sign out</button>
+<%_ } _%>
+    </header>
+    <main>
+<%_ if (agent.description) { _%>
+      <p class="intro"><%= xmlText(agent.description) %></p>
+<%_ } _%>
+<%_ if (features.oidc) { _%>
+      <section id="sign-in" hidden>
+        <p>Sign in to talk to the agent.</p>
+        <button type="button" id="sign-in-button">Sign in</button>
+      </section>
+<%_ } _%>
+      <ol id="messages" role="log" aria-live="polite" aria-label="Conversation"></ol>
+      <p id="error" role="alert" hidden></p>
+      <form id="chat"<%= features.oidc ? ' hidden' : '' %>>
+        <label for="message">Your message</label>
+        <textarea id="message" name="message" rows="3" maxlength="4000" required></textarea>
+        <div class="actions">
+<%_ if (prompt.aiDisclosure) { _%>
+          <p class="disclosure">Answers are written by an AI and may be wrong.</p>
+<%_ } _%>
+          <button type="button" id="new-conversation">New conversation</button>
+          <button type="submit">Send</button>
+        </div>
+      </form>
+    </main>
+  </body>
+</html>

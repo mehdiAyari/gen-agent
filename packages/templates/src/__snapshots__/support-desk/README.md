@@ -43,6 +43,13 @@ Every reply carries `"aiGenerated": true`, so clients can tell users they are ta
 
 Beyond, the agent answers 429 with `Retry-After`. Change them under `agent.limits` in `application.yml`.
 
+## Chat page
+
+Open http://localhost:8080 to talk to the agent in a browser (sign in as `demo` / `demo` with Docker Compose).
+The page is plain HTML, CSS and JavaScript in `src/main/resources/static`: change it as you like.
+It signs users in with the authorization code flow and PKCE, through the public client `agent-client`
+(`OIDC_CLIENT_ID`), and sends their token with each message: the agent keeps no session.
+
 ## Cache
 
 The first answer of a conversation is kept in Redis for an hour (`agent.cache.ttl`): the same user asking the same

@@ -41,4 +41,9 @@ export default tseslint.config(
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: { globals: globals.node },
   },
+  {
+    // The chat page of the generated agents runs in browsers.
+    files: ['packages/templates/minimal/static/*.js'],
+    languageOptions: { globals: globals.browser },
+  },
 );

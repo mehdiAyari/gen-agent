@@ -38,6 +38,19 @@ export const minimalEntries: TemplateEntry[] = [
   },
   { template: 'application.yml.ejs', owner: 'merged', output: () => 'src/main/resources/application.yml' },
   { template: 'system-prompt.md.ejs', owner: 'user', output: (m) => `src/main/resources/${m.prompt.resource}` },
+  {
+    template: 'static/index.html.ejs',
+    owner: 'merged',
+    when: (m) => m.features.chatUi,
+    output: () => 'src/main/resources/static/index.html',
+  },
+  ...['chat.js', 'chat.css'].map((name): TemplateEntry => ({
+    template: `static/${name}`,
+    owner: 'merged',
+    raw: true,
+    when: (m) => m.features.chatUi,
+    output: () => `src/main/resources/static/${name}`,
+  })),
 
   {
     template: 'java/Application.java.ejs',
@@ -85,6 +98,12 @@ export const minimalEntries: TemplateEntry[] = [
     owner: 'generated',
     when: (m) => m.features.oidc,
     output: (m) => main(m, 'generated/chat/UnknownConversationException.java'),
+  },
+  {
+    template: 'java/generated/ui/ChatUiController.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.chatUi,
+    output: (m) => main(m, 'generated/ui/ChatUiController.java'),
   },
   {
     template: 'java/generated/security/SecurityConfiguration.java.ejs',

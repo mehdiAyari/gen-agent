@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { unsupportedFeatures, validateAgentYaml, type AgentFile, type GeneratedFile } from '@gen-agent/core';
 
+import { minimalEntries } from './minimal.js';
 import { generateProject } from './index.js';
 
 const REFERENCES = new URL('../references/', import.meta.url);
@@ -38,7 +39,12 @@ describe.each(references)('reference agent %s', (reference) => {
   });
 
   it('leaves no trace of templating and no dead imports', async () => {
+    // Files copied as they are (scripts of the Maven Wrapper, the chat page) are not rendered: nothing to leak.
+    const copied = new Set(
+      minimalEntries.flatMap((entry) => (entry.each === undefined && entry.raw === true ? [entry.template] : [])),
+    );
     for (const file of await files) {
+      if ([...copied].some((template) => file.path.endsWith(template.slice(template.lastIndexOf('/') + 1)))) continue;
       expect(file.content, file.path).not.toMatch(/<%|%>|undefined|\[object Object\]/);
       expect(file.content, file.path).not.toMatch(/\n\n\n/);
     }
