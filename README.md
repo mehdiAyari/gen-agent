@@ -80,6 +80,17 @@ npx gen-agent new my-assistant          # answer a few questions
 npx gen-agent generate --from agent.yaml
 ```
 
+Grow the project later without losing your changes:
+
+```bash
+gen-agent add tool order-status --url 'https://shop.example.org/orders/{orderId}' --param orderId:string:required
+gen-agent add mcp files --package @modelcontextprotocol/server-filesystem --version 2.0.0 --arg /srv/docs
+gen-agent update        # after editing agent.yaml by hand
+```
+
+Generated files are rewritten, your files never are, and a shared file you changed (README, `pom.xml`…) gets the new
+version next to it as `<file>.gen-agent-new`, to merge.
+
 Then:
 
 ```bash
@@ -91,10 +102,10 @@ curl -s localhost:8080/api/chat -H 'Content-Type: application/json' -d '{"messag
 
 ## Profiles
 
-| Profile    | What the agent comes with                                                                                                                                                                                                                                                                                                                      |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `minimal`  | the agent alone: chat endpoint, memory, tools; nothing else to run                                                                                                                                                                                                                                                                             |
-| `standard` | conversations in Postgres, OIDC sign-in (each user sees only their conversations), request and token limits per user, cache of first answers (Redis, per user, never for answers built from a tool), OpenTelemetry traces and metrics with a Prometheus endpoint, a Dockerfile and a `compose.yaml` with Postgres, Redis, Keycloak and Grafana |
+| Profile    | What the agent comes with                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `minimal`  | the agent alone: chat endpoint, memory, tools; nothing else to run                                                                                                                                                                                                                                                                                                                                                                         |
+| `standard` | conversations in Postgres, OIDC sign-in (each user sees only their conversations), request and token limits per user, cache of first answers (Redis, per user, never for answers built from a tool), OpenTelemetry traces and metrics with a Prometheus endpoint, a Dockerfile and a `compose.yaml` with Postgres, Redis, Keycloak and Grafana; optionally a chat page (`interface: [rest, chat-ui]`) where users sign in from the browser |
 
 ```yaml
 agent:
@@ -179,7 +190,8 @@ versions can regenerate safely ([ADR 0001](docs/adr/0001-separate-generated-and-
 - `minimal` and `standard` profiles. A valid `agent.yaml` may describe the whole specification (`profile: production`,
   RAG, semantic cache, PII masking…); gen-agent then refuses to generate and says which version brings each feature.
 - Maven only; Spring AI version pinned to 2.0.1.
-- `generate` writes into a new or empty directory; `add` and `upgrade` come later.
+- `generate` writes into a new or empty directory; `add` and `update` grow an existing project; `upgrade` to a new
+  version of gen-agent comes later.
 - OpenAPI import: JSON bodies must be flat objects, and OAuth 2 flows are not run (an access token is read from an
   environment variable instead).
 

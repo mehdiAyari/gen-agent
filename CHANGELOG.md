@@ -33,6 +33,11 @@ All notable changes to this project are documented here. The format follows
 - Exact cache of first answers (Redis, per user, never for answers that called a tool), OpenTelemetry traces and
   metrics (Grafana through `otel-lgtm` in Compose) and a Prometheus endpoint on the management port, MCP servers
   (`npx`, `uvx` or a throwaway Docker container, with `args` and the names of the variables they get).
+- Chat page (`interface: [rest, chat-ui]`): plain HTML, CSS and JavaScript served by the agent; with OIDC, users sign
+  in from the browser (authorization code with PKCE) and the API stays stateless.
+- `gen-agent add tool`, `gen-agent add mcp` and `gen-agent update`: generated files rewritten, user files kept, shared
+  files rewritten only when unchanged since generation (fingerprints of `.gen-agent.json`), else written next to them
+  as `.gen-agent-new`. `generate` keeps agent.yaml and its specs in the project.
 
 ### Security
 
@@ -45,3 +50,5 @@ All notable changes to this project are documented here. The format follows
 - `gen-agent mcp` reads and writes only inside the assistant's workspace, never overwriting a file.
 - `standard` agents: no request without a valid token, a user cannot read or continue another user's conversation
   (404), and limits per user keep anyone from exhausting the agent or its bill.
+- The chat page shows replies as text, never as HTML, under a content security policy that only allows the agent and
+  its identity provider.

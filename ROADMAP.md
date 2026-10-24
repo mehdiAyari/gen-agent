@@ -27,14 +27,15 @@ A version is released only when all its end-to-end tests pass. Each version adds
 - [x] OpenAPI 3 import into tools: `gen-agent import openapi`, `openapi:` in agent.yaml, and in the web generator
 - [x] gen-agent as an MCP server: `gen-agent mcp`
 
-## V4 — `standard` profile
+## V4 — `standard` profile ✅
 
 - [x] V4a: JDBC memory (Postgres), OIDC authentication with conversations bound to their user, request and token
       limits per user (Bucket4j + Redis), Dockerfile and Docker Compose (Postgres, Redis, Keycloak), profile in the web
       generator
 - [x] V4b: exact cache (Redis, per user, not for answers built from a tool), OpenTelemetry traces and metrics with
       Grafana in Docker Compose and a Prometheus endpoint, MCP clients (npx, uvx or a Docker container)
-- [ ] V4c: chat UI, `gen-agent add tool` and `gen-agent add mcp`
+- [x] V4c: chat page (sign-in with the authorization code and PKCE, strict content security policy),
+      `gen-agent add tool`, `gen-agent add mcp` and `gen-agent update`, which keep the user's changes
 
 ## V5 — `production` profile
 
