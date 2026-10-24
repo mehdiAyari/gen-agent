@@ -1,4 +1,4 @@
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
 import { buildModel, unsupportedFeatures, validateAgentYaml, type Diagnostic, type Provider } from '@gen-agent/core';
@@ -33,7 +33,24 @@ export async function generateCommand(options: GenerateOptions, out: Output): Pr
     return 1;
   }
   const specDirectory = dirname(resolve(options.cwd, options.from));
-  return generateFromSource(source, options.from, { cwd: options.cwd, output: options.output, specDirectory }, out);
+  return generateFromSource(
+    source,
+    options.from,
+    { cwd: options.cwd, output: options.output, specDirectory },
+    out,
+    (directory) => {
+      // agent.yaml and its specs go with the project: gen-agent add and update work from there.
+      writeFileSync(join(directory, 'agent.yaml'), source);
+      for (const spec of specsOf(source)) {
+        if (spec.startsWith('/') || spec.split('/').includes('..')) {
+          out.warn(`${spec} stays outside the project: gen-agent update will look for it relative to ${directory}`);
+          continue;
+        }
+        mkdirSync(dirname(join(directory, spec)), { recursive: true });
+        copyFileSync(resolve(specDirectory, spec), join(directory, spec));
+      }
+    },
+  );
 }
 
 export interface NewAnswers {
@@ -146,4 +163,10 @@ function isEmptyOrMissing(directory: string): boolean {
   } catch {
     return true;
   }
+}
+
+/** Paths of the OpenAPI specs a valid agent.yaml refers to. */
+function specsOf(source: string): string[] {
+  const result = validateAgentYaml(source);
+  return result.ok ? (result.config.agent.openapi ?? []).map((entry) => entry.spec) : [];
 }

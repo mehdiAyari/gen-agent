@@ -93,6 +93,26 @@ describe('gen-agent generate --from', () => {
     expect(out.text()).toMatch(/export MISTRAL_API_KEY=\.\.\.\n {2}docker compose up --build/);
   });
 
+  it('keeps agent.yaml and its specs in the project, so that gen-agent add and update work there', async () => {
+    mkdirSync(join(cwd, 'specs'));
+    writeFileSync(
+      join(cwd, 'specs/ping.json'),
+      JSON.stringify({
+        openapi: '3.0.3',
+        info: { title: 'Ping', version: '1' },
+        servers: [{ url: 'https://ping.example.org' }],
+        paths: { '/ping': { get: { operationId: 'ping', summary: 'Ping' } } },
+      }),
+    );
+    writeFileSync(join(cwd, 'agent.yaml'), `${agentYaml}  openapi:\n    - spec: specs/ping.json\n`);
+
+    expect(await generateCommand({ from: 'agent.yaml', cwd }, out)).toBe(0);
+    expect(readFileSync(join(cwd, 'weather-bot/agent.yaml'), 'utf8')).toBe(
+      readFileSync(join(cwd, 'agent.yaml'), 'utf8'),
+    );
+    expect(existsSync(join(cwd, 'weather-bot/specs/ping.json'))).toBe(true);
+  });
+
   it('writes to --output when given', async () => {
     writeFileSync(join(cwd, 'agent.yaml'), agentYaml);
 

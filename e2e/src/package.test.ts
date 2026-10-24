@@ -41,6 +41,32 @@ it('the packed gen-agent package installs alone and generates a project', () => 
   );
 });
 
+it('adds a tool and an MCP server to the generated project, which still passes mvnw verify', () => {
+  const project = join(work, 'packed-bot');
+  const run = (...args: string[]): string => execFileSync(bin, args, { cwd: project, encoding: 'utf8' });
+
+  run(
+    'add',
+    'tool',
+    'weather',
+    '--url',
+    'https://api.open-meteo.com/v1/forecast',
+    '--description',
+    'Weather forecast',
+    '--param',
+    'latitude:number:required',
+    'longitude:number:required',
+  );
+  run('add', 'mcp', 'time', '--package', 'mcp-server-time', '--version', '2026.10.19', '--runtime', 'python');
+
+  expect(existsSync(join(project, 'src/main/java/com/example/packedbot/generated/tool/WeatherTool.java'))).toBe(true);
+  // The tests of the project do not start MCP servers: it builds and passes offline.
+  execFileSync(join(project, 'mvnw'), ['--batch-mode', '--no-transfer-progress', 'verify'], {
+    cwd: project,
+    stdio: 'pipe',
+  });
+});
+
 it('gen-agent mcp serves coding assistants over stdio', async () => {
   const workspace = join(work, 'assistant-workspace');
   mkdirSync(workspace);

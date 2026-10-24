@@ -4,6 +4,7 @@ import { intro, log, outro } from '@clack/prompts';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { Command, Option } from 'commander';
 
+import { addMcpCommand, addToolCommand, updateCommand, type AddMcpOptions, type AddToolOptions } from './add.js';
 import { generateCommand, newCommand, type Output } from './commands.js';
 import { importOpenApiCommand, type ImportOpenApiOptions } from './import-openapi.js';
 import { askNewAnswers } from './prompts.js';
@@ -76,6 +77,90 @@ program
     if (options.expand === true) command.expand = true;
     if (options.baseUrl !== undefined) command.baseUrl = options.baseUrl;
     process.exitCode = await importOpenApiCommand(command, terminal);
+  });
+
+const add = program.command('add').description('add to a generated project, keeping your changes');
+
+add
+  .command('tool')
+  .description('add a tool to the agent, then update the project')
+  .argument('<name>', 'tool name, in kebab-case')
+  .addOption(new Option('--type <type>', 'what the tool calls').choices(['http', 'java']).default('http'))
+  .option('--url <url>', 'URL of an HTTP tool; path parameters written {name}')
+  .option('--method <method>', 'method of an HTTP tool (default GET)')
+  .option('--description <text>', 'what the tool does: the model reads it to decide when to call it')
+  .option('--param <spec...>', 'parameter as name:type[:required], e.g. orderId:string:required')
+  .option('--dir <dir>', 'project directory', '.')
+  .action(
+    async (
+      name: string,
+      options: {
+        type: 'http' | 'java';
+        url?: string;
+        method?: string;
+        description?: string;
+        param?: string[];
+        dir: string;
+      },
+    ) => {
+      const command: AddToolOptions = { name, type: options.type, dir: options.dir, cwd: process.cwd() };
+      if (options.url !== undefined) command.url = options.url;
+      if (options.method !== undefined) command.method = options.method;
+      if (options.description !== undefined) command.description = options.description;
+      if (options.param !== undefined) command.params = options.param;
+      process.exitCode = await addToolCommand(command, terminal);
+    },
+  );
+
+add
+  .command('mcp')
+  .description('add an MCP server to the agent, then update the project')
+  .argument('<name>', 'server name, in kebab-case')
+  .requiredOption('--package <package>', 'npm or PyPI package of the server')
+  .requiredOption('--version <version>', 'exact version of the package')
+  .addOption(new Option('--runtime <runtime>', 'how the server runs').choices(['node', 'python']).default('node'))
+  .addOption(
+    new Option('--sandbox <sandbox>', 'in a throwaway Docker container, or on the machine')
+      .choices(['docker', 'none'])
+      .default('docker'),
+  )
+  .option('--arg <arg...>', 'argument of the server')
+  .option('--env <name...>', 'name of an environment variable the server gets')
+  .option('--dir <dir>', 'project directory', '.')
+  .action(
+    async (
+      name: string,
+      options: {
+        package: string;
+        version: string;
+        runtime: 'node' | 'python';
+        sandbox: 'docker' | 'none';
+        arg?: string[];
+        env?: string[];
+        dir: string;
+      },
+    ) => {
+      const command: AddMcpOptions = {
+        name,
+        package: options.package,
+        version: options.version,
+        runtime: options.runtime,
+        sandbox: options.sandbox,
+        dir: options.dir,
+        cwd: process.cwd(),
+      };
+      if (options.arg !== undefined) command.args = options.arg;
+      if (options.env !== undefined) command.env = options.env;
+      process.exitCode = await addMcpCommand(command, terminal);
+    },
+  );
+
+program
+  .command('update')
+  .description('generate the project again from its agent.yaml, keeping your changes')
+  .option('--dir <dir>', 'project directory', '.')
+  .action(async (options: { dir: string }) => {
+    process.exitCode = await updateCommand({ dir: options.dir, cwd: process.cwd() }, terminal);
   });
 
 program
