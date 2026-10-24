@@ -1,5 +1,6 @@
-# Production profile (V5a): personal data masked and kept 30 days, PII-free logs, erasure endpoints, semantic cache
-# in pgvector; an HTTP tool that gets personal data back in its arguments.
+# Production profile: personal data masked and kept 30 days, PII-free logs, erasure endpoints, semantic cache in
+# pgvector (V5a); guardrails and limits (V5b1); rules routing, a fallback on Ollama, summaries (V5b2); an HTTP tool that
+# gets personal data back in its arguments.
 agent:
   name: vault-desk
   description: Answers bank customers about their transfers
@@ -7,7 +8,11 @@ agent:
   interface: [rest, chat-ui]
   model:
     provider: mistral
-    name: mistral-small-latest
+    name: mistral-medium-latest
+    routing: { strategy: rules, simple: mistral-small-latest, complex: mistral-medium-latest }
+    fallback: { provider: ollama, name: qwen2.5:3b }
+  memory:
+    summarize: true
   tools:
     - name: transfer-status
       type: http

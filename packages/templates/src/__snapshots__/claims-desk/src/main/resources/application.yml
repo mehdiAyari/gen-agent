@@ -1,0 +1,90 @@
+spring:
+  application:
+    name: claims-desk
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Only tokens of this issuer are accepted; its keys are found through its OIDC discovery document.
+          issuer-uri: ${OIDC_ISSUER_URI}
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY}
+      chat:
+        model: claude-sonnet-5
+      # Failed calls are retried twice, with a growing delay, before the circuit breaker counts a failure.
+      max-retries: 2
+    tools:
+      limits:
+        # Tool calls the model may make to answer one message; beyond, the request stops with 422.
+        max-total-tool-calls: 8
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        # Open after half of the last 10 calls failed (5 at least), then try again after 30 seconds.
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2
+
+agent:
+  system-prompt: classpath:prompts/system.md
+  # Sent when no model can answer.
+  fallback-answer: "The assistant is unavailable right now. Please try again in a few minutes."
+  fallback:
+    model: gpt-5-mini
+    api-key: ${OPENAI_API_KEY}
+  routing:
+    # Simple messages go to the first model, the others to the second.
+    simple: claude-haiku-4-5
+    complex: claude-sonnet-5
+  # The longest a request may take, model calls and tools included; beyond, 504.
+  timeout: 60s
+  guard:
+    # Sent instead of an answer to a message that tries to take over the agent, or that would leak its instructions.
+    refusal: "I can't help with that request."
+  memory:
+    window: 20
+  limits:
+    requests: 30
+    requests-period: 1m
+    tokens: 100000
+    tokens-period: 1d
+  cache:
+    # How long a first answer is reused for the same question of the same user.
+    ttl: 1h
+  privacy:
+    # How long the personal data behind the tokens of a conversation is kept.
+    ttl: 30d
+
+management:
+  server:
+    # Health and metrics on their own port, kept off the public one.
+    port: ${MANAGEMENT_PORT:8081}
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      otlp:
+        # Sent to an OpenTelemetry collector when OTLP_ENABLED is true: docker compose starts one, with Grafana.
+        enabled: ${OTLP_ENABLED:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTLP_ENABLED:false}
+        url: ${OTLP_ENDPOINT:http://localhost:4318}/v1/metrics

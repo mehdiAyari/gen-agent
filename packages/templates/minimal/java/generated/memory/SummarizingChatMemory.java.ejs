@@ -1,0 +1,81 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.memory;
+
+<%- imports %>
+
+/**
+ * Keeps the last messages of each conversation as they are and the older ones as a summary written by the model, so
+ * that a long conversation keeps its facts without sending them all again. When the model cannot summarize, the oldest
+ * messages are dropped instead.
+ */
+public class SummarizingChatMemory implements <%= type('org.springframework.ai.chat.memory.ChatMemory') %> {
+
+    private static final <%= type('org.slf4j.Logger') %> log = <%= type('org.slf4j.LoggerFactory') %>.getLogger(SummarizingChatMemory.class);
+
+    private static final String SUMMARY = "Summary of the earlier conversation: ";
+
+    private static final String INSTRUCTIONS = """
+            Summarize this conversation in a few sentences for the assistant who will continue it. Keep names, facts, \
+            numbers, decisions and open questions; keep tokens such as [EMAIL_1] exactly as they are.
+
+            %s""";
+
+    private final <%= type('org.springframework.ai.chat.memory.ChatMemoryRepository') %> repository;
+
+    private final <%= type('org.springframework.ai.chat.model.ChatModel') %> chatModel;
+
+    private final int window;
+<%_ if (routing) { _%>
+
+    private final String model;
+<%_ } _%>
+
+    public SummarizingChatMemory(<%- ['ChatMemoryRepository repository', 'ChatModel chatModel', 'int window', ...(routing ? ['String model'] : [])].join(', ') %>) {
+        this.repository = repository;
+        this.chatModel = chatModel;
+        this.window = window;
+<%_ if (routing) { _%>
+        this.model = model;
+<%_ } _%>
+    }
+
+    @Override
+    public void add(String conversationId, <%= type('java.util.List') %><<%= type('org.springframework.ai.chat.messages.Message') %>> messages) {
+        List<Message> all = new <%= type('java.util.ArrayList') %><>(repository.findByConversationId(conversationId));
+        all.addAll(messages);
+        if (all.size() > window) {
+            // Half of the window stays word for word; the rest, an earlier summary included, becomes one summary.
+            int kept = window / 2;
+            List<Message> older = all.subList(0, all.size() - kept);
+            List<Message> recent = all.subList(all.size() - kept, all.size());
+            all = <%= type('java.util.stream.Stream') %>.concat(summaryOf(older).stream(), recent.stream()).toList();
+        }
+        repository.saveAll(conversationId, all);
+    }
+
+    @Override
+    public List<Message> get(String conversationId) {
+        return repository.findByConversationId(conversationId);
+    }
+
+    @Override
+    public void clear(String conversationId) {
+        repository.deleteByConversationId(conversationId);
+    }
+
+    private <%= type('java.util.Optional') %><Message> summaryOf(List<Message> messages) {
+        String transcript = messages.stream()
+                .map(message -> message.getMessageType().getValue() + ": " + message.getText())
+                .collect(<%= type('java.util.stream.Collectors') %>.joining("\n"));
+        try {
+            String summary = chatModel.call(new <%= type('org.springframework.ai.chat.prompt.Prompt') %>(INSTRUCTIONS.formatted(transcript)<%- routing ? ', chatModel.getOptions().mutate().model(model).build()' : '' %>))
+                    .getResult()
+                    .getOutput()
+                    .getText();
+            return summary == null ? Optional.empty() : Optional.of(new <%= type('org.springframework.ai.chat.messages.SystemMessage') %>(SUMMARY + summary));
+        } catch (RuntimeException failure) {
+            log.warn("Could not summarize the conversation, its oldest messages are dropped: {}", failure.toString());
+            return Optional.empty();
+        }
+    }
+}

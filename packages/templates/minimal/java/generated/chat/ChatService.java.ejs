@@ -47,6 +47,14 @@ class ChatService {
 
     private final <%= type(`${project.generatedPackage}.guard.Guardrails`) %> guardrails;
 <%_ } _%>
+<%_ if (routing) { _%>
+
+    private final ModelRouter modelRouter;
+<%_ } _%>
+<%_ if (features.resilience) { _%>
+
+    private final String fallbackAnswer;
+<%_ } _%>
 
     ChatService(<%- [
       'ChatClient chatClient',
@@ -58,6 +66,8 @@ class ChatService {
       ...(features.pii ? ['PersonalData personalData'] : []),
       ...(features.erasure || features.retention ? ['Conversations conversations'] : []),
       ...(features.injectionDetection || features.outputGuard ? ['Guardrails guardrails'] : []),
+      ...(routing ? ['ModelRouter modelRouter'] : []),
+      ...(features.resilience ? [`${type(`${project.generatedPackage}.AgentProperties`)} properties`] : []),
     ].join(', ') %>) {
         this.chatClient = chatClient;
 <%_ if (features.oidc) { _%>
@@ -84,12 +94,19 @@ class ChatService {
 <%_ if (features.injectionDetection || features.outputGuard) { _%>
         this.guardrails = guardrails;
 <%_ } _%>
+<%_ if (routing) { _%>
+        this.modelRouter = modelRouter;
+<%_ } _%>
+<%_ if (features.resilience) { _%>
+        this.fallbackAnswer = properties.fallbackAnswer();
+<%_ } _%>
     }
 
-<%_ const askModel = (message, key) => limits.tokens
+<%_ const routed = (message) => routing ? `\n                .options(${type('org.springframework.ai.chat.prompt.ChatOptions')}.builder().model(modelRouter.modelFor(${message})))` : '';
+const askModel = (message, key) => limits.tokens
   ? `${type('org.springframework.ai.chat.model.ChatResponse')} response = chatClient
                 .prompt()
-                .user(${message})
+                .user(${message})${routed(message)}
                 .advisors(advisor -> advisor.param(${type('org.springframework.ai.chat.memory.ChatMemory')}.CONVERSATION_ID, ${key}))
                 .call()
                 .chatResponse();
@@ -97,10 +114,19 @@ class ChatService {
         String answer = response.getResult().getOutput().getText();`
   : `String answer = chatClient
                 .prompt()
-                .user(${message})
+                .user(${message})${routed(message)}
                 .advisors(advisor -> advisor.param(${type('org.springframework.ai.chat.memory.ChatMemory')}.CONVERSATION_ID, ${key}))
                 .call()
                 .content();`;
+const askOrFallBack = (message, key) => features.resilience
+  ? `String answer;
+        try {
+            ${askModel(message, key).replace('String answer = ', 'answer = ').replaceAll('\n', '\n    ')}
+        } catch (${type(`${project.generatedPackage}.resilience.ModelUnavailableException`)} unavailable) {
+            // No model could answer: the user gets the fallback answer, which nothing keeps.
+            return new ChatMessageResponse(conversationId, fallbackAnswer);
+        }`
+  : askModel(message, key);
 const checkAnswer = features.outputGuard ? `
         // Checked before anything else sees it: the caches, the user.
         answer = guardrails.check(answer);` : ''; _%>
@@ -147,7 +173,7 @@ const checkAnswer = features.outputGuard ? `
 <%_   if (features.guardTools) { _%>
         toolGuard.start(<%= features.pii ? 'memoryKey' : '' %>);
 <%_   } _%>
-        <%- askModel('message', 'memoryKey') %><%- checkAnswer %>
+        <%- askOrFallBack('message', 'memoryKey') %><%- checkAnswer %>
 <%_   if (features.cache) { _%>
 <%_     const reasons = [...(features.trackToolCalls ? ['!toolGuard.toolCalled()'] : []), ...(features.pii ? ['!PersonalData.containsTokens(message)', '!PersonalData.containsTokens(answer)'] : [])]; _%>
 <%_     if (reasons.length > 0) { _%>
@@ -188,7 +214,7 @@ const checkAnswer = features.outputGuard ? `
 <%_   if (features.guardTools) { _%>
         toolGuard.start(<%= features.pii ? 'conversationId' : '' %>);
 <%_   } _%>
-        <%- askModel('message', 'conversationId') %><%- checkAnswer %>
+        <%- askOrFallBack('message', 'conversationId') %><%- checkAnswer %>
 <%_   if (features.pii) { _%>
         return new ChatMessageResponse(conversationId, personalData.restore(conversationId, answer));
 <%_   } else { _%>

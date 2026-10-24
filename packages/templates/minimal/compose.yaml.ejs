@@ -25,6 +25,10 @@ services:
       # Ollama runs on the host: ollama pull <%= provider.model %>
       SPRING_AI_OLLAMA_BASE_URL: http://host.docker.internal:11434
 <%_ } _%>
+<%_ if (fallback?.provider === 'ollama' && !fallback.sameProvider) { _%>
+      # The fallback model runs on the host too: ollama pull <%= fallback.model %>
+      AGENT_FALLBACK_BASE_URL: http://host.docker.internal:11434
+<%_ } _%>
 <%_ if (features.otel) { _%>
       OTLP_ENABLED: "true"
       OTLP_ENDPOINT: http://lgtm:4318
@@ -37,7 +41,7 @@ services:
 <%_ for (const secret of secrets) { _%>
       <%= secret %>: ${<%= secret %>:?export <%= secret %> before docker compose up}
 <%_ } _%>
-<%_ if (provider.id === 'ollama') { _%>
+<%_ if (provider.id === 'ollama' || fallback?.provider === 'ollama') { _%>
     extra_hosts:
       - "host.docker.internal:host-gateway"
 <%_ } _%>

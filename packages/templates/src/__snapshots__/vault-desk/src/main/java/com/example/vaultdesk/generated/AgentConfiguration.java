@@ -2,7 +2,9 @@
 package com.example.vaultdesk.generated;
 
 import com.example.vaultdesk.generated.guard.Guardrails;
+import com.example.vaultdesk.generated.memory.SummarizingChatMemory;
 import com.example.vaultdesk.generated.privacy.PersonalData;
+import com.example.vaultdesk.generated.resilience.ResilientModelAdvisor;
 import com.example.vaultdesk.generated.tool.ToolGuard;
 import com.example.vaultdesk.generated.tool.TransferStatusTool;
 import com.example.vaultdesk.generated.tool.TransferStatusToolProperties;
@@ -14,7 +16,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -29,12 +31,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 class AgentConfiguration {
 
     @Bean
-    ChatMemory chatMemory(ChatMemoryRepository repository, AgentProperties properties) {
-        // The repository is Spring AI's JDBC one: conversations survive restarts.
-        return MessageWindowChatMemory.builder()
-            .chatMemoryRepository(repository)
-            .maxMessages(properties.memory().window())
-            .build();
+    ChatMemory chatMemory(ChatMemoryRepository repository, ChatModel chatModel, AgentProperties properties) {
+        // Older messages are summarized by the model of simple messages instead of being forgotten.
+        return new SummarizingChatMemory(
+            repository,
+            chatModel,
+            properties.memory().window(),
+            properties.routing().simple()
+        );
     }
 
     @Bean
@@ -44,7 +48,8 @@ class AgentConfiguration {
         AgentProperties properties,
         TransferStatusTool transferStatusTool,
         ToolGuard toolGuard,
-        Guardrails guardrails
+        Guardrails guardrails,
+        ResilientModelAdvisor resilientModelAdvisor
     ) throws IOException {
         // What the model must know about the guards of the agent comes after the system prompt.
         return builder
@@ -54,7 +59,7 @@ class AgentConfiguration {
                     ToolGuard.PROMPT_NOTE +
                     guardrails.promptNote()
             )
-            .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+            .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build(), resilientModelAdvisor)
             .defaultToolCallbacks(
                 toolGuard.guard(
                     Stream.of(Arrays.stream(ToolCallbacks.from(transferStatusTool)))

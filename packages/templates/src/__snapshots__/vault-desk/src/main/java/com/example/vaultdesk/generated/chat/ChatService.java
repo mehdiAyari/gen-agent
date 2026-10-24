@@ -1,12 +1,14 @@
 // Managed by gen-agent: changes here are overwritten.
 package com.example.vaultdesk.generated.chat;
 
+import com.example.vaultdesk.generated.AgentProperties;
 import com.example.vaultdesk.generated.cache.ReplyCache;
 import com.example.vaultdesk.generated.cache.SemanticCache;
 import com.example.vaultdesk.generated.guard.Guardrails;
 import com.example.vaultdesk.generated.limits.UsageLimits;
 import com.example.vaultdesk.generated.privacy.Conversations;
 import com.example.vaultdesk.generated.privacy.PersonalData;
+import com.example.vaultdesk.generated.resilience.ModelUnavailableException;
 import com.example.vaultdesk.generated.tool.ToolGuard;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -17,6 +19,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.stereotype.Service;
 
 /**
@@ -44,6 +47,10 @@ class ChatService {
 
     private final Guardrails guardrails;
 
+    private final ModelRouter modelRouter;
+
+    private final String fallbackAnswer;
+
     ChatService(
         ChatClient chatClient,
         ChatMemory chatMemory,
@@ -53,7 +60,9 @@ class ChatService {
         SemanticCache semanticCache,
         PersonalData personalData,
         Conversations conversations,
-        Guardrails guardrails
+        Guardrails guardrails,
+        ModelRouter modelRouter,
+        AgentProperties properties
     ) {
         this.chatClient = chatClient;
         this.chatMemory = chatMemory;
@@ -64,6 +73,8 @@ class ChatService {
         this.personalData = personalData;
         this.conversations = conversations;
         this.guardrails = guardrails;
+        this.modelRouter = modelRouter;
+        this.fallbackAnswer = properties.fallbackAnswer();
     }
 
     ChatMessageResponse reply(ChatMessageRequest request, String userId) {
@@ -95,14 +106,21 @@ class ChatService {
             }
         }
         toolGuard.start(memoryKey);
-        ChatResponse response = chatClient
-            .prompt()
-            .user(message)
-            .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
-            .call()
-            .chatResponse();
-        usageLimits.recordTokens(userId, response.getMetadata().getUsage().getTotalTokens());
-        String answer = response.getResult().getOutput().getText();
+        String answer;
+        try {
+            ChatResponse response = chatClient
+                .prompt()
+                .user(message)
+                .options(ChatOptions.builder().model(modelRouter.modelFor(message)))
+                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
+                .call()
+                .chatResponse();
+            usageLimits.recordTokens(userId, response.getMetadata().getUsage().getTotalTokens());
+            answer = response.getResult().getOutput().getText();
+        } catch (ModelUnavailableException unavailable) {
+            // No model could answer: the user gets the fallback answer, which nothing keeps.
+            return new ChatMessageResponse(conversationId, fallbackAnswer);
+        }
         // Checked before anything else sees it: the caches, the user.
         answer = guardrails.check(answer);
         // Never reused: an answer built from a tool depends on live data, and one about personal data is about someone.

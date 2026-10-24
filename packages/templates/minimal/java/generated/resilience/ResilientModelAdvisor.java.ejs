@@ -1,0 +1,91 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.resilience;
+
+<%- imports %>
+
+/**
+<%_ if (fallback) { _%>
+ * Calls the model through a circuit breaker. When it fails, or its breaker is open after repeated failures, the
+ * fallback model answers instead, through its own breaker; when both are down, {@link ModelUnavailableException}
+ * tells the agent to send its fallback answer.
+<%_ } else { _%>
+ * Calls the model through a circuit breaker: once it fails repeatedly, requests stop waiting on it for a while, and
+ * {@link ModelUnavailableException} tells the agent to send its fallback answer.
+<%_ } _%>
+ *
+ * <p>The innermost advisor: every call to the model, each round of tool calls included, goes through here.
+ */
+public class ResilientModelAdvisor implements <%= type('org.springframework.ai.chat.client.advisor.api.CallAdvisor') %> {
+<%_ if (fallback) { _%>
+
+    private static final <%= type('org.slf4j.Logger') %> log = <%= type('org.slf4j.LoggerFactory') %>.getLogger(ResilientModelAdvisor.class);
+<%_ } _%>
+
+    private final <%= type('io.github.resilience4j.circuitbreaker.CircuitBreaker') %> breaker;
+<%_ if (fallback) { _%>
+
+    private final <%= type('org.springframework.ai.chat.model.ChatModel') %> fallbackModel;
+
+    private final String fallbackName;
+
+    private final CircuitBreaker fallbackBreaker;
+
+    public ResilientModelAdvisor(<%= type('io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry') %> breakers, ChatModel fallbackModel, String fallbackName) {
+        this.breaker = breakers.circuitBreaker("chat-model");
+        this.fallbackModel = fallbackModel;
+        this.fallbackName = fallbackName;
+        this.fallbackBreaker = breakers.circuitBreaker("fallback-chat-model");
+    }
+<%_ } else { _%>
+
+    public ResilientModelAdvisor(<%= type('io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry') %> breakers) {
+        this.breaker = breakers.circuitBreaker("chat-model");
+    }
+<%_ } _%>
+
+    @Override
+    public <%= type('org.springframework.ai.chat.client.ChatClientResponse') %> adviseCall(<%= type('org.springframework.ai.chat.client.ChatClientRequest') %> request, <%= type('org.springframework.ai.chat.client.advisor.api.CallAdvisorChain') %> chain) {
+        try {
+            return breaker.executeSupplier(() -> chain.nextCall(request));
+        } catch (RuntimeException failure) {
+            if (Thread.currentThread().isInterrupted()) {
+                // The request ran out of time: nothing else is tried.
+                throw failure;
+            }
+<%_ if (fallback) { _%>
+            log.warn("The model failed, {} answers instead: {}", fallbackName, failure.toString());
+            try {
+                <%= type('org.springframework.ai.chat.model.ChatResponse') %> response = fallbackBreaker.executeSupplier(() -> fallbackModel.call(forFallback(request.prompt())));
+                return ChatClientResponse.builder().chatResponse(response).context(request.context()).build();
+            } catch (RuntimeException fallbackFailure) {
+                fallbackFailure.addSuppressed(failure);
+                throw new ModelUnavailableException(fallbackFailure);
+            }
+<%_ } else { _%>
+            throw new ModelUnavailableException(failure);
+<%_ } _%>
+        }
+    }
+<%_ if (fallback) { _%>
+
+    /** The prompt with the options of the fallback model and the tools of the first one: each provider reads only its own options. */
+    private <%= type('org.springframework.ai.chat.prompt.Prompt') %> forFallback(Prompt prompt) {
+        <%= type('org.springframework.ai.chat.prompt.ChatOptions') %>.Builder<?> options = fallbackModel.getOptions().mutate().model(fallbackName);
+        if (options instanceof <%= type('org.springframework.ai.model.tool.ToolCallingChatOptions') %>.Builder<?> tools && prompt.getOptions() instanceof ToolCallingChatOptions first) {
+            tools.toolCallbacks(first.getToolCallbacks()).toolContext(first.getToolContext());
+        }
+        return prompt.mutate().chatOptions(options.build()).build();
+    }
+<%_ } _%>
+
+    @Override
+    public String getName() {
+        return "resilient-model";
+    }
+
+    @Override
+    public int getOrder() {
+        // Right before the call to the model.
+        return <%= type('org.springframework.core.Ordered') %>.LOWEST_PRECEDENCE - 1;
+    }
+}

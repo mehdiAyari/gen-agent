@@ -10,6 +10,9 @@ import org.springframework.core.io.Resource;
  *
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
+ * @param fallbackAnswer the answer sent when no model can answer
+ * @param fallback the model that answers when the first one fails
+ * @param routing the models of simple and complex messages
  * @param timeout the longest a request may take
  * @param guard what the guardrails answer
  * @param limits what each user may use
@@ -20,6 +23,9 @@ import org.springframework.core.io.Resource;
 public record AgentProperties(
     Resource systemPrompt,
     Memory memory,
+    String fallbackAnswer,
+    Fallback fallback,
+    Routing routing,
     Duration timeout,
     Guard guard,
     Limits limits,
@@ -53,6 +59,18 @@ public record AgentProperties(
          */
         public record Semantic(double threshold, int dimensions) {}
     }
+
+    /**
+     * @param model name of the fallback model
+     * @param baseUrl where Ollama answers
+     */
+    public record Fallback(String model, String baseUrl) {}
+
+    /**
+     * @param simple model of simple messages
+     * @param complex model of the others
+     */
+    public record Routing(String simple, String complex) {}
 
     /**
      * @param refusal the answer sent instead of one the guardrails refuse

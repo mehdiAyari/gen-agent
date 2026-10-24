@@ -1,0 +1,14 @@
+# Production profile on Anthropic: the simple model tells which model answers (classifier routing), OpenAI answers
+# when Anthropic cannot, summaries of long conversations kept in memory.
+agent:
+  name: claims-desk
+  description: Helps policyholders follow their insurance claims
+  profile: production
+  model:
+    provider: anthropic
+    name: claude-sonnet-5
+    routing: { strategy: classifier, simple: claude-haiku-4-5, complex: claude-sonnet-5 }
+    fallback: { provider: openai, name: gpt-5-mini }
+  memory:
+    type: in-memory
+    summarize: true

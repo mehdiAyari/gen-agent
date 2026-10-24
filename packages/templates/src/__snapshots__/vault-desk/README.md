@@ -12,6 +12,8 @@ Docker Compose starts the agent with Postgres, Redis and Keycloak:
 ```bash
 export MISTRAL_API_KEY=...   # never commit it
 export BANK_API_TOKEN=...   # never commit it
+OLLAMA_HOST=0.0.0.0 ollama serve &   # Ollama runs on this machine, reachable from the containers
+ollama pull qwen2.5:3b
 docker compose up --build
 ```
 
@@ -75,6 +77,20 @@ of their token (the `admin` / `admin` user of the Keycloak started by Compose).
 Roles are read from the `realm_access.roles` claim (`OIDC_ROLES_CLAIM`).
 
 Conversations unused for 30d are purged every hour (`agent.memory.retention`), with their personal data.
+
+## Resilience and cost
+
+A failed call to the model is retried twice with a growing delay (`spring.ai.retry`). After repeated
+failures a circuit breaker opens for 30 seconds (`resilience4j.circuitbreaker`): requests stop waiting on a model that is
+down. Meanwhile, and whenever a call fails, `qwen2.5:3b` (ollama) answers instead, through its own breaker.
+When no model can answer, users get the fallback answer of `agent.fallback-answer`, never an error page.
+
+Simple messages go to `mistral-small-latest`, the others to `mistral-medium-latest` (`agent.routing`):
+long messages, code, several questions or a request to explain, compare or plan (in English or French) are complex.
+The model of each call is in its trace.
+
+Beyond 20 messages, the older ones of a conversation are summarized by the model (`mistral-small-latest`) and kept as one
+message, so that a long conversation keeps its facts without sending them all again.
 
 ## Guardrails
 

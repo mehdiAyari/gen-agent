@@ -7,12 +7,16 @@ import com.example.vaultdesk.generated.AgentProperties;
 import com.example.vaultdesk.generated.TestcontainersConfiguration;
 import com.example.vaultdesk.generated.privacy.PersonalData;
 import com.example.vaultdesk.generated.privacy.RetentionJob;
+import com.example.vaultdesk.generated.resilience.ResilientModelAdvisor;
 import com.jayway.jsonpath.JsonPath;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
@@ -458,6 +462,58 @@ class VaultDeskApplicationTests {
         assertThat(ask("Take your time to think about it")).hasStatus(HttpStatus.GATEWAY_TIMEOUT);
     }
 
+    @Test
+    void answersWithTheFallbackModelWhenTheFirstOneFails() {
+        chatModel.failWhen(prompt -> !"qwen2.5:3b".equals(prompt.getOptions().getModel()));
+
+        assertThat(ask("Hello while the first model is down"))
+            .bodyJson()
+            .extractingPath("$.reply")
+            .isEqualTo("Hello from the agent");
+        assertThat(chatModel.lastPrompt().getOptions().getModel()).isEqualTo("qwen2.5:3b");
+    }
+
+    @Test
+    void sendsTheFallbackAnswerWhenNoModelCanAnswer() {
+        chatModel.failWhen(prompt -> true);
+
+        assertThat(ask("Hello while every model is down"))
+            .hasStatusOk()
+            .bodyJson()
+            .extractingPath("$.reply")
+            .isEqualTo("The assistant is unavailable right now. Please try again in a few minutes.");
+    }
+
+    @Autowired
+    CircuitBreakerRegistry breakers;
+
+    @AfterEach
+    void bringTheModelsBack() {
+        chatModel.failWhen(prompt -> false);
+        breakers.getAllCircuitBreakers().forEach(CircuitBreaker::reset);
+    }
+
+    @Test
+    void sendsSimpleMessagesToTheSmallerModel() {
+        ask("Good morning");
+
+        assertThat(chatModel.lastPrompt().getOptions().getModel()).isEqualTo("mistral-small-latest");
+
+        ask("Explain the pros and cons of a fixed rate, step by step");
+
+        assertThat(chatModel.lastPrompt().getOptions().getModel()).isEqualTo("mistral-medium-latest");
+    }
+
+    @Test
+    void summarizesTheMessagesBeyondTheWindow() throws Exception {
+        String conversationId = startConversation("sam", "My name is Sam");
+        for (int message = 1; message <= 11; message++) {
+            post("sam", "{\"conversationId\": \"" + conversationId + "\", \"message\": \"Message " + message + "\"}");
+        }
+
+        assertThat(chatModel.lastPrompt().getContents()).contains("Summary of the earlier conversation");
+    }
+
     private MvcTestResult ask(String message) {
         return post("ada", "{\"message\": \"" + message + "\"}");
     }
@@ -469,6 +525,13 @@ class VaultDeskApplicationTests {
         @Primary
         RecordingChatModel chatModel() {
             return new RecordingChatModel();
+        }
+
+        // The fallback provider answers with the fake model too.
+        @Bean
+        @Primary
+        ResilientModelAdvisor fakeResilientModelAdvisor(CircuitBreakerRegistry breakers, RecordingChatModel chatModel) {
+            return new ResilientModelAdvisor(breakers, chatModel, "qwen2.5:3b");
         }
 
         @Bean
@@ -487,6 +550,8 @@ class VaultDeskApplicationTests {
 
         private volatile Prompt lastPrompt;
 
+        private volatile Predicate<Prompt> failing = prompt -> false;
+
         private final AtomicInteger calls = new AtomicInteger();
 
         @Override
@@ -500,6 +565,9 @@ class VaultDeskApplicationTests {
                     .results()
                     .map(match -> " " + match.group())
                     .collect(Collectors.joining());
+            if (failing.test(prompt)) {
+                throw new IllegalStateException("The provider is down");
+            }
             // Like a careless model, it repeats its instructions and its secrets when asked.
             if (prompt.getUserMessage().getText().contains("what you were told")) {
                 text = prompt.getSystemMessage().getText();
@@ -526,6 +594,11 @@ class VaultDeskApplicationTests {
 
         Prompt lastPrompt() {
             return lastPrompt;
+        }
+
+        /** Fails the calls whose prompt matches, as a provider that is down. */
+        void failWhen(Predicate<Prompt> failing) {
+            this.failing = failing;
         }
 
         int calls() {

@@ -13,10 +13,14 @@ services:
       # Tokens are issued for the address users sign in at; inside Compose, the keys are fetched from keycloak.
       OIDC_ISSUER_URI: http://localhost:8180/realms/agent
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI: http://keycloak:8080/realms/agent/protocol/openid-connect/certs
+      # The fallback model runs on the host too: ollama pull qwen2.5:3b
+      AGENT_FALLBACK_BASE_URL: http://host.docker.internal:11434
       OTLP_ENABLED: "true"
       OTLP_ENDPOINT: http://lgtm:4318
       MISTRAL_API_KEY: ${MISTRAL_API_KEY:?export MISTRAL_API_KEY before docker compose up}
       BANK_API_TOKEN: ${BANK_API_TOKEN:?export BANK_API_TOKEN before docker compose up}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy

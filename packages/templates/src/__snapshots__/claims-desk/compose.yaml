@@ -1,0 +1,44 @@
+# The agent and the services it needs, for a local run: docker compose up --build
+# Sign in as demo / demo through Keycloak (http://localhost:8180, admin / admin): see README.md.
+services:
+  agent:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      REDIS_URL: redis://redis:6379
+      # Tokens are issued for the address users sign in at; inside Compose, the keys are fetched from keycloak.
+      OIDC_ISSUER_URI: http://localhost:8180/realms/agent
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI: http://keycloak:8080/realms/agent/protocol/openid-connect/certs
+      OTLP_ENABLED: "true"
+      OTLP_ENDPOINT: http://lgtm:4318
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?export ANTHROPIC_API_KEY before docker compose up}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?export OPENAI_API_KEY before docker compose up}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:8.10.2-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: start-dev --import-realm
+    ports:
+      - "8180:8080"
+    environment:
+      KC_HOSTNAME: http://localhost:8180
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
+
+  # Grafana with Tempo (traces), Prometheus (metrics) and Loki: http://localhost:3000
+  lgtm:
+    image: grafana/otel-lgtm:0.38.0
+    ports:
+      - "3000:3000"

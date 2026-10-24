@@ -8,6 +8,15 @@ package <%= project.generatedPackage %>;
  *
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
+<%_ if (features.resilience) { _%>
+ * @param fallbackAnswer the answer sent when no model can answer
+<%_ } _%>
+<%_ if (fallback) { _%>
+ * @param fallback the model that answers when the first one fails
+<%_ } _%>
+<%_ if (routing) { _%>
+ * @param routing the models of simple and complex messages
+<%_ } _%>
 <%_ if (features.requestTimeout) { _%>
  * @param timeout the longest a request may take
 <%_ } _%>
@@ -28,6 +37,9 @@ package <%= project.generatedPackage %>;
 public record AgentProperties(<%- [
   `${type('org.springframework.core.io.Resource')} systemPrompt`,
   'Memory memory',
+  ...(features.resilience ? ['String fallbackAnswer'] : []),
+  ...(fallback ? ['Fallback fallback'] : []),
+  ...(routing ? ['Routing routing'] : []),
   ...(features.requestTimeout ? [`${type('java.time.Duration')} timeout`] : []),
   ...(features.injectionDetection || features.outputGuard ? ['Guard guard'] : []),
   ...(features.limits ? ['Limits limits'] : []),
@@ -85,6 +97,27 @@ public record AgentProperties(<%- [
 <%_   } else { _%>
     public record Cache(<%= type('java.time.Duration') %> ttl) {}
 <%_   } _%>
+<%_ } _%>
+<%_ if (fallback) { _%>
+
+    /**
+     * @param model name of the fallback model
+<%_   if (fallback.apiKeyEnv) { _%>
+     * @param apiKey API key of its provider
+<%_   } _%>
+<%_   if (fallback.provider === 'ollama' && !fallback.sameProvider) { _%>
+     * @param baseUrl where Ollama answers
+<%_   } _%>
+     */
+    public record Fallback(<%- ['String model', ...(fallback.apiKeyEnv ? ['String apiKey'] : []), ...(fallback.provider === 'ollama' && !fallback.sameProvider ? ['String baseUrl'] : [])].join(', ') %>) {}
+<%_ } _%>
+<%_ if (routing) { _%>
+
+    /**
+     * @param simple model of simple messages
+     * @param complex model of the others
+     */
+    public record Routing(String simple, String complex) {}
 <%_ } _%>
 <%_ if (features.injectionDetection || features.outputGuard) { _%>
 

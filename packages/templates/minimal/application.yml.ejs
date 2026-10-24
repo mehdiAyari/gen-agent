@@ -37,6 +37,19 @@ spring:
       embedding:
         model: <%= embedding.model %>
 <%_ } _%>
+<%_ if (features.resilience && provider.retries === 'sdk') { _%>
+      # Failed calls are retried twice, with a growing delay, before the circuit breaker counts a failure.
+      max-retries: 2
+<%_ } _%>
+<%_ if (features.resilience && provider.retries === 'spring') { _%>
+    retry:
+      # Failed calls are retried twice, 1 then 2 seconds apart, before the circuit breaker counts a failure.
+      max-attempts: 3
+      backoff:
+        initial-interval: 1s
+        multiplier: 2
+        max-interval: 4s
+<%_ } _%>
 <%_ if (features.mcp) { _%>
     mcp:
       client:
@@ -72,8 +85,41 @@ spring:
             initialize-schema: always
 <%_ } _%>
 
+<%_ if (features.resilience) { _%>
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        # Open after half of the last 10 calls failed (5 at least), then try again after 30 seconds.
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2
+
+<%_ } _%>
 agent:
   system-prompt: classpath:<%= prompt.resource %>
+<%_ if (features.resilience) { _%>
+  # Sent when no model can answer.
+  fallback-answer: "The assistant is unavailable right now. Please try again in a few minutes."
+<%_ } _%>
+<%_ if (fallback) { _%>
+  fallback:
+    model: <%= yamlString(fallback.model) %>
+<%_   if (fallback.apiKeyEnv) { _%>
+    api-key: ${<%= fallback.apiKeyEnv %>}
+<%_   } _%>
+<%_   if (fallback.provider === 'ollama' && !fallback.sameProvider) { _%>
+    base-url: ${AGENT_FALLBACK_BASE_URL:http://localhost:11434}
+<%_   } _%>
+<%_ } _%>
+<%_ if (routing) { _%>
+  routing:
+    # Simple messages go to the first model, the others to the second.
+    simple: <%= yamlString(routing.simple) %>
+    complex: <%= yamlString(routing.complex) %>
+<%_ } _%>
 <%_ if (features.requestTimeout) { _%>
   # The longest a request may take, model calls and tools included; beyond, 504.
   timeout: <%= loop.timeout %>

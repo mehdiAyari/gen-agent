@@ -172,6 +172,24 @@ export const minimalEntries: TemplateEntry[] = [
     when: (m) => m.features.cache,
     output: (m) => main(m, 'generated/cache/ReplyCache.java'),
   },
+  ...['ResilientModelAdvisor', 'ModelUnavailableException', 'ResilienceConfiguration'].map((name): TemplateEntry => ({
+    template: `java/generated/resilience/${name}.java.ejs`,
+    owner: 'generated',
+    when: (m) => m.features.resilience,
+    output: (m) => main(m, `generated/resilience/${name}.java`),
+  })),
+  {
+    template: 'java/generated/chat/ModelRouter.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.routing,
+    output: (m) => main(m, 'generated/chat/ModelRouter.java'),
+  },
+  {
+    template: 'java/generated/memory/SummarizingChatMemory.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.summarize,
+    output: (m) => main(m, 'generated/memory/SummarizingChatMemory.java'),
+  },
   {
     template: 'java/generated/guard/PromptInjection.java.ejs',
     owner: 'generated',

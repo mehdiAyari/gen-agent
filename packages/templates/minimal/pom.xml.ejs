@@ -45,6 +45,20 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId><%= provider.starter %></artifactId>
         </dependency>
+<%_ if (fallback && !fallback.sameProvider) { _%>
+        <dependency>
+            <!-- The model of the fallback provider, without its auto-configuration: one ChatModel bean only. -->
+            <groupId>org.springframework.ai</groupId>
+            <artifactId><%= fallback.module %></artifactId>
+        </dependency>
+<%_ } _%>
+<%_ if (features.resilience) { _%>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot4</artifactId>
+            <version><%= versions.resilience4j %></version>
+        </dependency>
+<%_ } _%>
 <%_ if (features.jdbcMemory) { _%>
         <dependency>
             <groupId>org.springframework.ai</groupId>

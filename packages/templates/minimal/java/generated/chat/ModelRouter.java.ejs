@@ -1,0 +1,71 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.chat;
+
+<%- imports %>
+
+/**
+<%_ if (routing.strategy === 'rules') { _%>
+ * Chooses the model of each message: the simple one unless the message is long, holds code, asks several questions or
+ * asks for reasoning (explain, compare, analyse… in English or French), which go to the complex one.
+<%_ } else { _%>
+ * Chooses the model of each message: the simple model first tells whether the message is simple or complex. When it
+ * cannot tell, the complex model answers.
+<%_ } _%>
+ */
+@<%= type('org.springframework.stereotype.Component') %>
+class ModelRouter {
+<%_ if (routing.strategy === 'rules') { _%>
+
+    private static final int LONG_MESSAGE = 400;
+
+    private static final <%= type('java.util.regex.Pattern') %> CODE = Pattern.compile("```|\\b(?:class|def|function|SELECT|import)\\b|[{};]\\s*$", Pattern.MULTILINE);
+
+    private static final Pattern REASONING = Pattern.compile(
+            "\\b(?:explain|compare|analy[sz]e|why|plan|step by step|pros and cons|expliqu|compar|analys|pourquoi|etape par etape|avantages et inconvenients)",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+<%_ } else { _%>
+
+    private static final String QUESTION = """
+            Is the following request simple (a greeting, a short factual question, a lookup) or complex (reasoning, \
+            several steps, writing, code)? Answer with one word: simple or complex.
+
+            Request: %s""";
+
+    private final <%= type('org.springframework.ai.chat.model.ChatModel') %> chatModel;
+<%_ } _%>
+
+    private final String simple;
+
+    private final String complex;
+
+    ModelRouter(<%- [...(routing.strategy === 'classifier' ? ['ChatModel chatModel'] : []), `${type(`${project.generatedPackage}.AgentProperties`)} properties`].join(', ') %>) {
+<%_ if (routing.strategy === 'classifier') { _%>
+        this.chatModel = chatModel;
+<%_ } _%>
+        this.simple = properties.routing().simple();
+        this.complex = properties.routing().complex();
+    }
+
+    String modelFor(String message) {
+<%_ if (routing.strategy === 'rules') { _%>
+        String plain = <%= type('java.text.Normalizer') %>.normalize(message, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        boolean complexMessage = message.length() > LONG_MESSAGE
+                || CODE.matcher(message).find()
+                || message.chars().filter(c -> c == '?').count() > 1
+                || REASONING.matcher(plain).find();
+        return complexMessage ? complex : simple;
+<%_ } else { _%>
+        try {
+            String verdict = chatModel.call(new <%= type('org.springframework.ai.chat.prompt.Prompt') %>(
+                            QUESTION.formatted(message), chatModel.getOptions().mutate().model(simple).build()))
+                    .getResult()
+                    .getOutput()
+                    .getText();
+            return verdict != null && verdict.strip().toLowerCase(<%= type('java.util.Locale') %>.ROOT).startsWith("simple") ? simple : complex;
+        } catch (RuntimeException failure) {
+            // Unsure: the complex model answers.
+            return complex;
+        }
+<%_ } _%>
+    }
+}

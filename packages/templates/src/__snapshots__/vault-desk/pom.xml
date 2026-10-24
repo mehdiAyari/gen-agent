@@ -40,6 +40,16 @@
             <artifactId>spring-ai-starter-model-mistral-ai</artifactId>
         </dependency>
         <dependency>
+            <!-- The model of the fallback provider, without its auto-configuration: one ChatModel bean only. -->
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-ollama</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot4</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-chat-memory-repository-jdbc</artifactId>
         </dependency>

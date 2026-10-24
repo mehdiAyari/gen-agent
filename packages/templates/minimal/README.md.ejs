@@ -17,12 +17,11 @@ Docker Compose starts the agent<%= services.length > 0 ? ` with ${services.join(
 <%_   for (const secret of secrets) { _%>
 export <%= secret %>=...   # never commit it
 <%_   } _%>
-<%_   if (!provider.apiKeyEnv) { _%>
+<%_   if (ollamaModels.length > 0) { _%>
 OLLAMA_HOST=0.0.0.0 ollama serve &   # Ollama runs on this machine, reachable from the containers
-ollama pull <%= provider.model %>
-<%_     if (features.semanticCache) { _%>
-ollama pull <%= embedding.model %>   # the embedding model of the semantic cache
-<%_     } _%>
+<%_   } _%>
+<%_   for (const model of ollamaModels) { _%>
+ollama pull <%= model %>
 <%_   } _%>
 docker compose up --build
 ```
@@ -61,8 +60,8 @@ then `./mvnw spring-boot:run`.
 
 Java <%= agent.java %> is the only requirement: `./mvnw` downloads Maven (checked against its SHA-256) on first use.
 
-<%_   if (!provider.apiKeyEnv) { _%>
-Start [Ollama](https://ollama.com) and pull the model (`ollama pull <%= provider.model %>`<%= features.semanticCache ? ` and \`ollama pull ${embedding.model}\`` : '' %>), then:
+<%_   if (ollamaModels.length > 0) { _%>
+Start [Ollama](https://ollama.com) and pull <%= ollamaModels.length > 1 ? 'the models' : 'the model' %> (<%- ollamaModels.map((model) => `\`ollama pull ${model}\``).join(', ') %>), then:
 
 <%_   } _%>
 ```bash
@@ -149,6 +148,32 @@ Roles are read from the `realm_access.roles` claim (`OIDC_ROLES_CLAIM`).
 <%_   } _%>
 <%_   if (features.retention) { _%>
 Conversations unused for <%= retention %> are purged every hour (`agent.memory.retention`), with their personal data.
+
+<%_   } _%>
+<%_ } _%>
+<%_ if (features.resilience || routing || features.summarize) { _%>
+## Resilience and cost
+
+<%_   if (features.resilience) { _%>
+A failed call to the model is retried twice with a growing delay<%= provider.retries === 'sdk' ? ` (\`spring.ai.${provider.configKey}.max-retries\`)` : ' (`spring.ai.retry`)' %>. After repeated
+failures a circuit breaker opens for 30 seconds (`resilience4j.circuitbreaker`): requests stop waiting on a model that is
+down.<%= fallback ? ` Meanwhile, and whenever a call fails, \`${fallback.model}\`${fallback.sameProvider ? '' : ` (${fallback.provider})`} answers instead, through its own breaker.` : '' %>
+When no model can answer, users get the fallback answer of `agent.fallback-answer`, never an error page.
+
+<%_   } _%>
+<%_   if (routing) { _%>
+Simple messages go to `<%= routing.simple %>`, the others to `<%= routing.complex %>` (`agent.routing`):
+<%_     if (routing.strategy === 'rules') { _%>
+long messages, code, several questions or a request to explain, compare or plan (in English or French) are complex.
+<%_     } else { _%>
+`<%= routing.simple %>` itself tells first whether a message is simple; when it cannot tell, `<%= routing.complex %>` answers.
+<%_     } _%>
+The model of each call is in its trace.
+
+<%_   } _%>
+<%_   if (features.summarize) { _%>
+Beyond <%= memory.window %> messages, the older ones of a conversation are summarized by the model<%= routing ? ` (\`${routing.simple}\`)` : '' %> and kept as one
+message, so that a long conversation keeps its facts without sending them all again.
 
 <%_   } _%>
 <%_ } _%>

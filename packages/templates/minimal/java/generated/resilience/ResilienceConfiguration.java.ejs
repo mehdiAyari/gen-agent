@@ -1,0 +1,75 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.resilience;
+
+<%- imports %>
+
+<%_ if (fallback && !fallback.sameProvider) { _%>
+/**
+ * The circuit breakers come from {@code resilience4j} in application.yml. The fallback model is built here rather than
+ * by Spring AI, so that the agent keeps a single {@code ChatModel} bean.
+ */
+<%_ } else { _%>
+/** The circuit breakers come from {@code resilience4j} in application.yml. */
+<%_ } _%>
+@<%= type('org.springframework.context.annotation.Configuration') %>(proxyBeanMethods = false)
+class ResilienceConfiguration {
+
+    @<%= type('org.springframework.context.annotation.Bean') %>
+<%_ if (!fallback) { _%>
+    ResilientModelAdvisor resilientModelAdvisor(<%= type('io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry') %> breakers) {
+        return new ResilientModelAdvisor(breakers);
+    }
+<%_ } else if (fallback.sameProvider) { _%>
+    ResilientModelAdvisor resilientModelAdvisor(<%= type('io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry') %> breakers, <%= type('org.springframework.ai.chat.model.ChatModel') %> chatModel, <%= type(`${project.generatedPackage}.AgentProperties`) %> properties) {
+        // Another model of the same provider.
+        return new ResilientModelAdvisor(breakers, chatModel, properties.fallback().model());
+    }
+<%_ } else { _%>
+    ResilientModelAdvisor resilientModelAdvisor(
+            <%= type('io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry') %> breakers,
+            <%= type(`${project.generatedPackage}.AgentProperties`) %> properties,
+            <%= type('org.springframework.beans.factory.ObjectProvider') %><<%= type('io.micrometer.observation.ObservationRegistry') %>> observations) {
+        AgentProperties.Fallback fallback = properties.fallback();
+        ObservationRegistry observationRegistry = observations.getIfUnique(() -> ObservationRegistry.NOOP);
+<%_   if (fallback.provider === 'ollama') { _%>
+        <%= type('org.springframework.ai.chat.model.ChatModel') %> fallbackModel = <%= type('org.springframework.ai.ollama.OllamaChatModel') %>.builder()
+                .ollamaApi(<%= type('org.springframework.ai.ollama.api.OllamaApi') %>.builder().baseUrl(fallback.baseUrl()).build())
+                .options(<%= type('org.springframework.ai.ollama.api.OllamaChatOptions') %>.builder().model(fallback.model()).build())
+                .retryTemplate(retries())
+                .observationRegistry(observationRegistry)
+                .build();
+<%_   } else if (fallback.provider === 'mistral') { _%>
+        <%= type('org.springframework.ai.chat.model.ChatModel') %> fallbackModel = <%= type('org.springframework.ai.mistralai.MistralAiChatModel') %>.builder()
+                .mistralAiApi(<%= type('org.springframework.ai.mistralai.api.MistralAiApi') %>.builder().apiKey(fallback.apiKey()).build())
+                .options(<%= type('org.springframework.ai.mistralai.MistralAiChatOptions') %>.builder().model(fallback.model()).build())
+                .retryTemplate(retries())
+                .observationRegistry(observationRegistry)
+                .build();
+<%_   } else if (fallback.provider === 'openai') { _%>
+        <%= type('org.springframework.ai.chat.model.ChatModel') %> fallbackModel = <%= type('org.springframework.ai.openai.OpenAiChatModel') %>.builder()
+                .options(<%= type('org.springframework.ai.openai.OpenAiChatOptions') %>.builder().apiKey(fallback.apiKey()).model(fallback.model()).maxRetries(2).build())
+                .observationRegistry(observationRegistry)
+                .build();
+<%_   } else { _%>
+        <%= type('org.springframework.ai.chat.model.ChatModel') %> fallbackModel = <%= type('org.springframework.ai.anthropic.AnthropicChatModel') %>.builder()
+                .options(<%= type('org.springframework.ai.anthropic.AnthropicChatOptions') %>.builder().apiKey(fallback.apiKey()).model(fallback.model()).maxRetries(2).build())
+                .observationRegistry(observationRegistry)
+                .build();
+<%_   } _%>
+        return new ResilientModelAdvisor(breakers, fallbackModel, fallback.model());
+    }
+<%_   if (fallback.provider === 'ollama' || fallback.provider === 'mistral') { _%>
+
+    /** Two retries, one then two seconds apart: the fallback is the last resort, it must answer fast or not at all. */
+    private static <%= type('org.springframework.core.retry.RetryTemplate') %> retries() {
+        return new RetryTemplate(<%= type('org.springframework.core.retry.RetryPolicy') %>.builder()
+                .maxRetries(2)
+                .includes(<%= type('org.springframework.ai.retry.TransientAiException') %>.class)
+                .includes(<%= type('org.springframework.web.client.ResourceAccessException') %>.class)
+                .delay(<%= type('java.time.Duration') %>.ofSeconds(1))
+                .multiplier(2)
+                .build());
+    }
+<%_   } _%>
+<%_ } _%>
+}

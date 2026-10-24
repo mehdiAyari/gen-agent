@@ -73,6 +73,10 @@ class <%= project.applicationClass %>Tests {
     @Test
     void answersARepeatedFirstQuestionFromTheCacheOfItsUser() {
         int calls = chatModel.calls();
+<%_     if (routing?.strategy === 'classifier') { _%>
+        // Each answer of the model takes two calls: the classifier of the routing, then the answer.
+        int callsPerAnswer = 2;
+<%_     } _%>
 
         assertThat(post("carol", """
                 {"message": "What are your opening hours?"}
@@ -84,13 +88,13 @@ class <%= project.applicationClass %>Tests {
                 .bodyJson()
                 .extractingPath("$.reply")
                 .isEqualTo("Hello from the agent");
-        assertThat(chatModel.calls()).isEqualTo(calls + 1);
+        assertThat(chatModel.calls()).isEqualTo(calls + <%= routing?.strategy === 'classifier' ? 'callsPerAnswer' : '1' %>);
 
         // Another user never gets it.
         post("dave", """
                 {"message": "What are your opening hours?"}
                 """);
-        assertThat(chatModel.calls()).isEqualTo(calls + 2);
+        assertThat(chatModel.calls()).isEqualTo(calls + <%= routing?.strategy === 'classifier' ? '2 * callsPerAnswer' : '2' %>);
     }
 
 <%_   } _%>
@@ -382,7 +386,71 @@ class <%= project.applicationClass %>Tests {
         <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(ask("Take your time to think about it")).hasStatus(<%= type('org.springframework.http.HttpStatus') %>.GATEWAY_TIMEOUT);
     }
 <%_ } _%>
-<%_ if (features.injectionDetection || features.outputGuard || features.requestTimeout) { _%>
+<%_ if (features.resilience) { _%>
+<%_   if (fallback) { _%>
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void answersWithTheFallbackModelWhenTheFirstOneFails() {
+        chatModel.failWhen(prompt -> !<%- javaString(fallback.model) %>.equals(prompt.getOptions().getModel()));
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(ask("Hello while the first model is down")).bodyJson().extractingPath("$.reply").isEqualTo("Hello from the agent");
+        assertThat(chatModel.lastPrompt().getOptions().getModel()).isEqualTo(<%- javaString(fallback.model) %>);
+    }
+<%_   } _%>
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void sendsTheFallbackAnswerWhenNoModelCanAnswer() {
+        chatModel.failWhen(prompt -> true);
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(ask("Hello while every model is down"))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.reply")
+                .isEqualTo("The assistant is unavailable right now. Please try again in a few minutes.");
+    }
+
+    @<%= type('org.springframework.beans.factory.annotation.Autowired') %>
+    <%= type('io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry') %> breakers;
+
+    @<%= type('org.junit.jupiter.api.AfterEach') %>
+    void bringTheModelsBack() {
+        chatModel.failWhen(prompt -> false);
+        breakers.getAllCircuitBreakers().forEach(<%= type('io.github.resilience4j.circuitbreaker.CircuitBreaker') %>::reset);
+    }
+<%_ } _%>
+<%_ if (routing) { _%>
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void sendsSimpleMessagesToTheSmallerModel() {
+        ask("Good morning");
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(chatModel.lastPrompt().getOptions().getModel()).isEqualTo(<%- javaString(routing.simple) %>);
+<%_   if (routing.strategy === 'rules') { _%>
+
+        ask("Explain the pros and cons of a fixed rate, step by step");
+
+        assertThat(chatModel.lastPrompt().getOptions().getModel()).isEqualTo(<%- javaString(routing.complex) %>);
+<%_   } _%>
+    }
+<%_ } _%>
+<%_ if (features.summarize) { _%>
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void summarizesTheMessagesBeyondTheWindow() throws Exception {
+<%_   if (features.oidc) { _%>
+        String conversationId = startConversation("sam", "My name is Sam");
+<%_   } else { _%>
+        String conversationId = "summarized";
+        ask("My name is Sam");
+<%_   } _%>
+        for (int message = 1; message <= <%= Math.ceil(memory.window / 2) + 1 %>; message++) {
+            <%- features.oidc ? 'post("sam", ' : 'post(' %>"{\"conversationId\": \"" + conversationId + "\", \"message\": \"Message " + message + "\"}");
+        }
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(chatModel.lastPrompt().getContents()).contains("Summary of the earlier conversation");
+    }
+<%_ } _%>
+<%_ if (features.injectionDetection || features.outputGuard || features.requestTimeout || features.resilience || routing || features.summarize) { _%>
 
     private <%= type('org.springframework.test.web.servlet.assertj.MvcTestResult') %> ask(String message) {
         return <%- features.oidc ? 'post("ada", ' : 'post(' %>"{\"message\": \"" + message + "\"}");
@@ -397,6 +465,15 @@ class <%= project.applicationClass %>Tests {
         RecordingChatModel chatModel() {
             return new RecordingChatModel();
         }
+<%_ if (fallback && !fallback.sameProvider) { _%>
+
+        // The fallback provider answers with the fake model too.
+        @Bean
+        @Primary
+        <%= type(`${project.generatedPackage}.resilience.ResilientModelAdvisor`) %> fakeResilientModelAdvisor(<%= type('io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry') %> breakers, RecordingChatModel chatModel) {
+            return new ResilientModelAdvisor(breakers, chatModel, <%- javaString(fallback.model) %>);
+        }
+<%_ } _%>
 <%_ if (features.semanticCache) { _%>
 
         @Bean
@@ -417,6 +494,10 @@ class <%= project.applicationClass %>Tests {
 <%_ } _%>
 
         private volatile <%= type('org.springframework.ai.chat.prompt.Prompt') %> lastPrompt;
+<%_ if (features.resilience) { _%>
+
+        private volatile <%= type('java.util.function.Predicate') %><Prompt> failing = prompt -> false;
+<%_ } _%>
 <%_ if (features.cache) { _%>
 
         private final <%= type('java.util.concurrent.atomic.AtomicInteger') %> calls = new AtomicInteger();
@@ -434,6 +515,16 @@ class <%= project.applicationClass %>Tests {
                     .collect(<%= type('java.util.stream.Collectors') %>.joining());
 <%_ } else { _%>
             String text = "Hello from the agent";
+<%_ } _%>
+<%_ if (features.resilience) { _%>
+            if (failing.test(prompt)) {
+                throw new IllegalStateException("The provider is down");
+            }
+<%_ } _%>
+<%_ if (routing && routing.strategy === 'classifier') { _%>
+            if (prompt.getUserMessage().getText().contains("simple or complex")) {
+                text = "simple";
+            }
 <%_ } _%>
 <%_ if (features.outputGuard) { _%>
             // Like a careless model, it repeats its instructions and its secrets when asked.
@@ -471,6 +562,13 @@ class <%= project.applicationClass %>Tests {
         Prompt lastPrompt() {
             return lastPrompt;
         }
+<%_ if (features.resilience) { _%>
+
+        /** Fails the calls whose prompt matches, as a provider that is down. */
+        void failWhen(Predicate<Prompt> failing) {
+            this.failing = failing;
+        }
+<%_ } _%>
 <%_ if (features.cache) { _%>
 
         int calls() {

@@ -21,7 +21,13 @@ package <%= project.generatedPackage %>;
 class AgentConfiguration {
 
     @<%= type('org.springframework.context.annotation.Bean') %>
-<%_ if (features.jdbcMemory) { _%>
+<%_ if (features.summarize) { _%>
+    <%= type('org.springframework.ai.chat.memory.ChatMemory') %> chatMemory(<%- [...(features.jdbcMemory ? [`${type('org.springframework.ai.chat.memory.ChatMemoryRepository')} repository`] : []), `${type('org.springframework.ai.chat.model.ChatModel')} chatModel`, 'AgentProperties properties'].join(', ') %>) {
+        // Older messages are summarized by the model<%= routing ? ' of simple messages' : '' %> instead of being forgotten.
+        return new <%= type(`${project.generatedPackage}.memory.SummarizingChatMemory`) %>(
+                <%- [features.jdbcMemory ? 'repository' : `new ${type('org.springframework.ai.chat.memory.InMemoryChatMemoryRepository')}()`, 'chatModel', 'properties.memory().window()', ...(routing ? ['properties.routing().simple()'] : [])].join(', ') %>);
+    }
+<%_ } else if (features.jdbcMemory) { _%>
     <%= type('org.springframework.ai.chat.memory.ChatMemory') %> chatMemory(<%= type('org.springframework.ai.chat.memory.ChatMemoryRepository') %> repository, AgentProperties properties) {
         // The repository is Spring AI's JDBC one: conversations survive restarts.
         return <%= type('org.springframework.ai.chat.memory.MessageWindowChatMemory') %>.builder()
@@ -47,14 +53,19 @@ class AgentConfiguration {
             // The tools of the MCP servers of application.yml; none when spring.ai.mcp.client.enabled is false.
             <%= type('java.util.List') %><<%= type('org.springframework.ai.tool.ToolCallbackProvider') %>> mcpTools<%_ } _%><%_ if (features.guardTools) { _%>,
             <%= type(`${project.generatedPackage}.tool.ToolGuard`) %> toolGuard<%_ } _%><%_ if (features.outputGuard) { _%>,
-            <%= type(`${project.generatedPackage}.guard.Guardrails`) %> guardrails<%_ } _%>)<%= promptNotes.length > 0 ? ` throws ${type('java.io.IOException')}` : '' %> {
+            <%= type(`${project.generatedPackage}.guard.Guardrails`) %> guardrails<%_ } _%><%_ if (features.resilience) { _%>,
+            <%= type(`${project.generatedPackage}.resilience.ResilientModelAdvisor`) %> resilientModelAdvisor<%_ } _%>)<%= promptNotes.length > 0 ? ` throws ${type('java.io.IOException')}` : '' %> {
 <%_ if (promptNotes.length > 0) { _%>
         // What the model must know about the guards of the agent comes after the system prompt.
         return builder.defaultSystem(<%- [`properties.systemPrompt().getContentAsString(${type('java.nio.charset.StandardCharsets')}.UTF_8)`, ...promptNotes].join(' + ') %>)
 <%_ } else { _%>
         return builder.defaultSystem(properties.systemPrompt())
 <%_ } _%>
+<%_ if (features.resilience) { _%>
+                .defaultAdvisors(<%= type('org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor') %>.builder(chatMemory).build(), resilientModelAdvisor)
+<%_ } else { _%>
                 .defaultAdvisors(<%= type('org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor') %>.builder(chatMemory).build())
+<%_ } _%>
 <%_ if (features.guardTools) { _%>
                 .defaultToolCallbacks(toolGuard.guard(<%= type('java.util.stream.Stream') %>.of(
                                 <%- [
