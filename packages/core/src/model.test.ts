@@ -205,6 +205,7 @@ agent:
       prometheus: false,
       mcp: false,
       trackToolCalls: false,
+      chatUi: false,
     });
   });
 
@@ -287,6 +288,19 @@ agent:
     expect(secrets).toContain('GITHUB_TOKEN');
     // The tests start no MCP server: they would download packages and need the network.
     expect(testProperties).toContain('spring.ai.mcp.client.enabled=false');
+  });
+
+  it('serves a chat page when the interface asks for it', () => {
+    const withUi = parse(`
+agent:
+  name: support-desk
+  profile: standard
+  interface: [rest, chat-ui]
+  model: { provider: mistral, name: mistral-small-latest }
+`);
+
+    expect(buildModel(withUi).features.chatUi).toBe(true);
+    expect(unsupportedFeatures(withUi)).toEqual([]);
   });
 
   it('gives the tests an issuer they never call: requests carry their own token', () => {

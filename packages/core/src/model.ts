@@ -45,6 +45,8 @@ export interface GenerationModel {
     mcp: boolean;
     /** Tools report their calls, so that answers built from live data are not cached. */
     trackToolCalls: boolean;
+    /** A chat page served by the agent; with OIDC, users sign in from the browser. */
+    chatUi: boolean;
   };
   /** MCP servers the agent starts and whose tools it gives the model. */
   mcpServers: McpServer[];
@@ -301,6 +303,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       prometheus: agent.observability?.metrics === 'prometheus',
       mcp: mcpServers.length > 0,
       trackToolCalls: cache && (agent.tools.length > 0 || mcpServers.length > 0),
+      chatUi: agent.interface.includes('chat-ui'),
     },
     mcpServers,
     limits: { ...(requests === undefined ? {} : { requests }), ...(tokens === undefined ? {} : { tokens }) },
@@ -447,16 +450,12 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     agent.observability?.grafanaDashboard,
     'agent.observability.grafanaDashboard: the Grafana dashboard arrives in V5',
   );
-  add(agent.observability?.feedback, 'agent.observability.feedback: feedback buttons arrive with the chat UI (V4)');
+  add(agent.observability?.feedback, 'agent.observability.feedback: feedback buttons arrive in a later version');
   add(
     agent.gdpr?.erasureEndpoint ?? agent.gdpr?.logsWithoutPii,
     'agent.gdpr: the erasure endpoint and PII-free logs arrive in V5',
   );
   add(agent.evals, 'agent.evals: evaluations and red teaming arrive in V5');
-  add(
-    agent.interface.includes('chat-ui'),
-    'agent.interface: the chat UI arrives in V4 (V1 generates the REST endpoint)',
-  );
   add(
     agent.deploy?.includes('helm'),
     'agent.deploy: the Helm chart arrives in a later version (docker-compose is generated)',

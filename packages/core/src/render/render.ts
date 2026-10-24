@@ -3,6 +3,7 @@ import javaPlugin from 'prettier-plugin-java';
 import { format } from 'prettier/standalone';
 
 import type { GenerationModel, ModelTool } from '../model.js';
+import { sha256 } from './hash.js';
 import { JavaImports } from './java-imports.js';
 
 /** Who owns a generated file: see docs/adr/0001-separate-generated-and-user-code.md. */
@@ -186,11 +187,6 @@ async function manifestOf(
     files: entries,
   };
   return { path: MANIFEST_PATH, owner: 'generated', content: `${JSON.stringify(manifest, null, 2)}\n` };
-}
-
-async function sha256(content: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 /** A Java string literal, quotes included. */
