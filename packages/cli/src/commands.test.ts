@@ -93,6 +93,18 @@ describe('gen-agent generate --from', () => {
     expect(out.text()).toMatch(/export MISTRAL_API_KEY=\.\.\.\n {2}docker compose up --build/);
   });
 
+  it('pulls the embedding model of the semantic cache with Ollama', async () => {
+    writeFileSync(
+      join(cwd, 'agent.yaml'),
+      agentYaml
+        .replace('  tools:', '  profile: production\n  tools:')
+        .replace('provider: mistral\n    name: mistral-small-latest', 'provider: ollama\n    name: qwen2.5:3b'),
+    );
+
+    expect(await generateCommand({ from: 'agent.yaml', cwd }, out)).toBe(0);
+    expect(out.text()).toMatch(/ollama pull qwen2\.5:3b\n {2}ollama pull nomic-embed-text\n/);
+  });
+
   it('keeps agent.yaml and its specs in the project, so that gen-agent add and update work there', async () => {
     mkdirSync(join(cwd, 'specs'));
     writeFileSync(
@@ -133,12 +145,12 @@ describe('gen-agent generate --from', () => {
   });
 
   it('refuses what this version cannot generate yet, with the version that brings it', async () => {
-    writeFileSync(join(cwd, 'agent.yaml'), agentYaml.replace('  tools:', '  profile: production\n  tools:'));
+    writeFileSync(join(cwd, 'agent.yaml'), agentYaml.replace('  tools:', '  rag: { enabled: true }\n  tools:'));
 
     const code = await generateCommand({ from: 'agent.yaml', cwd }, out);
 
     expect(code).toBe(1);
-    expect(out.text()).toMatch(/agent.profile: "production" arrives in V5/);
+    expect(out.text()).toMatch(/agent.rag: RAG arrives in V5c/);
     expect(existsSync(join(cwd, 'weather-bot'))).toBe(false);
   });
 
