@@ -106,6 +106,17 @@ describe('validateAgentYaml', () => {
       });
     });
 
+    it('guards a production agent, with its own limits kept', () => {
+      const result = validateAgentYaml(
+        withAgent('profile: production\nsecurity:\n  outputGuard: false\nlimits:\n  timeout: 30s\n'),
+      );
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.config.agent.security).toMatchObject({ injectionDetection: true, outputGuard: false });
+      expect(result.config.agent.limits).toEqual({ maxIterations: 8, timeout: '30s' });
+    });
+
     it('keeps no retention for conversations held in memory in the production profile', () => {
       const result = validateAgentYaml(withAgent('profile: production\nmemory:\n  type: in-memory\n'));
 

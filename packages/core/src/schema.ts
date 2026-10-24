@@ -214,6 +214,8 @@ const agent = z.strictObject({
       tokenBudget: rate.optional(),
       piiMasking: z.boolean().optional(),
       injectionDetection: z.boolean().optional(),
+      /** Answers checked before they leave: system prompt leaks refused, secrets masked. */
+      outputGuard: z.boolean().optional(),
     })
     .optional(),
   cache: z
@@ -265,7 +267,12 @@ const agent = z.strictObject({
 export const STANDARD_LIMITS = { rateLimit: '30/min', tokenBudget: '100000/day' } as const;
 
 /** What production adds to standard (V5a): personal data protected, kept 30 days, a semantic cache per user. */
-export const PRODUCTION_DEFAULTS = { retention: '30d', semanticThreshold: 0.95 } as const;
+export const PRODUCTION_DEFAULTS = {
+  retention: '30d',
+  semanticThreshold: 0.95,
+  maxIterations: 8,
+  timeout: '60s',
+} as const;
 
 /** Providers with an embedding model, which the semantic cache needs. */
 export const EMBEDDING_PROVIDERS: readonly Provider[] = ['openai', 'mistral', 'ollama'];
@@ -298,7 +305,21 @@ const equipped = agent.transform((definition) => {
     ...definition,
     // Only conversations kept in Postgres are purged.
     memory: production && memory.type === 'jdbc' ? { retention: PRODUCTION_DEFAULTS.retention, ...memory } : memory,
-    security: { ...(production ? { piiMasking: true } : {}), ...definition.security, auth, ...limits },
+    security: {
+      ...(production ? { piiMasking: true, injectionDetection: true, outputGuard: true } : {}),
+      ...definition.security,
+      auth,
+      ...limits,
+    },
+    ...(production
+      ? {
+          limits: {
+            maxIterations: PRODUCTION_DEFAULTS.maxIterations,
+            timeout: PRODUCTION_DEFAULTS.timeout,
+            ...definition.limits,
+          },
+        }
+      : {}),
     // Answers are cached per user: only when users sign in.
     ...(definition.cache === undefined && signedIn ? { cache: { exact: 'redis' as const, ...semantic } } : {}),
     ...(production

@@ -213,6 +213,9 @@ agent:
       retention: false,
       semanticCache: false,
       vectorStore: false,
+      injectionDetection: false,
+      outputGuard: false,
+      requestTimeout: false,
     });
   });
 
@@ -334,6 +337,48 @@ agent:
         parse('agent:\n  name: vault\n  profile: production\n  model: { provider: mistral, name: m }\n'),
       ),
     ).toEqual([]);
+  });
+
+  it('guards the input, the tools and the output of a production agent', () => {
+    const production = buildModel(
+      parse(`
+agent:
+  name: vault
+  profile: production
+  model: { provider: mistral, name: mistral-small-latest }
+  tools:
+    - { name: rates, type: http, url: https://bank.example.org/rates }
+    - { name: transfer, type: http, method: POST, url: https://bank.example.org/transfers }
+    - { name: notes, type: java }
+`),
+    );
+
+    expect(production.features).toMatchObject({
+      injectionDetection: true,
+      outputGuard: true,
+      guardTools: true,
+      requestTimeout: true,
+    });
+    expect(production.loop).toEqual({ maxIterations: 8, timeout: '60s' });
+    // Once a tool result held instructions, only the tools that read data stay callable.
+    expect(production.readOnlyTools).toEqual(['rates']);
+    expect(production.secretPatterns).toContain('AKIA[0-9A-Z]{16}');
+  });
+
+  it('limits the tool calls of an agent that only asks for it', () => {
+    const limited = buildModel(
+      parse(`
+agent:
+  name: desk
+  model: { provider: ollama, name: m }
+  tools: [{ name: clock, type: java }]
+  limits: { maxIterations: 3 }
+`),
+    );
+
+    // Spring AI counts the tool calls itself.
+    expect(limited.features).toMatchObject({ guardTools: false, requestTimeout: false, injectionDetection: false });
+    expect(limited.loop).toEqual({ maxIterations: 3, timeout: undefined });
   });
 
   it('gives the tests an issuer they never call: requests carry their own token', () => {

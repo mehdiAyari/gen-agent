@@ -23,7 +23,7 @@ export interface RuleIssue {
 const SIDE_EFFECT_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 /** Well-known API key formats. A match means a secret was pasted where only `${ENV_VAR}` references are allowed. */
-const SECRET_PATTERNS: RegExp[] = [
+export const SECRET_PATTERNS: RegExp[] = [
   /sk-(?:proj-|ant-)?[A-Za-z0-9_-]{16,}/, // OpenAI, Anthropic
   /AKIA[0-9A-Z]{16}/, // AWS access key
   /gh[pousr]_[A-Za-z0-9]{30,}/, // GitHub tokens

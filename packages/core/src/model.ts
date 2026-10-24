@@ -9,6 +9,7 @@ import {
   type Tool,
   type ToolParamType,
 } from './schema.js';
+import { SECRET_PATTERNS } from './rules.js';
 
 /** Everything templates need, already derived: they only read this model, they never compute names. */
 export interface GenerationModel {
@@ -61,7 +62,19 @@ export interface GenerationModel {
     semanticCache: boolean;
     /** pgvector: Postgres runs with the vector extension. */
     vectorStore: boolean;
+    /** User messages and tool results checked for prompt injection; tool results marked as untrusted data. */
+    injectionDetection: boolean;
+    /** Answers checked before they leave: system prompt leaks refused, secrets masked. */
+    outputGuard: boolean;
+    /** The whole request bounded by `loop.timeout`. */
+    requestTimeout: boolean;
   };
+  /** Bounds of one request: tool calls and duration (Spring duration). */
+  loop: { maxIterations: number | undefined; timeout: string | undefined };
+  /** Methods of the tools that only read data: still callable once a tool result held instructions. */
+  readOnlyTools: string[];
+  /** Java regular expressions of well-known API keys, masked in answers. */
+  secretPatterns: string[];
   /** Spring duration after which unused conversations are purged. */
   retention: string | undefined;
   semanticCache: { threshold: number } | undefined;
@@ -308,6 +321,7 @@ export function buildModel(file: AgentFile): GenerationModel {
   const pii = agent.security?.piiMasking === true;
   const mcpServers = (agent.mcp ?? []).map(mcpServerOf);
   const hasTools = agent.tools.length > 0 || mcpServers.length > 0;
+  const injectionDetection = agent.security?.injectionDetection === true;
 
   return {
     agent,
@@ -334,7 +348,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       prometheus: agent.observability?.metrics === 'prometheus',
       mcp: mcpServers.length > 0,
       trackToolCalls: cache && hasTools,
-      guardTools: (cache || pii) && hasTools,
+      guardTools: (cache || pii || injectionDetection) && hasTools,
       chatUi: agent.interface.includes('chat-ui'),
       pii,
       logsWithoutPii: agent.gdpr?.logsWithoutPii === true,
@@ -342,7 +356,13 @@ export function buildModel(file: AgentFile): GenerationModel {
       retention: agent.memory.retention !== undefined,
       semanticCache: semantic !== undefined,
       vectorStore: semantic !== undefined,
+      injectionDetection,
+      outputGuard: agent.security?.outputGuard === true,
+      requestTimeout: agent.limits?.timeout !== undefined,
     },
+    loop: { maxIterations: agent.limits?.maxIterations, timeout: agent.limits?.timeout },
+    readOnlyTools: tools.flatMap((tool) => (tool.kind === 'http' && tool.method === 'GET' ? [tool.methodName] : [])),
+    secretPatterns: SECRET_PATTERNS.map((pattern) => pattern.source),
     retention: agent.memory.retention,
     semanticCache: semantic === undefined ? undefined : { threshold: semantic.threshold },
     embedding: semantic === undefined ? undefined : EMBEDDINGS[agent.model.provider],
@@ -369,6 +389,8 @@ export function buildModel(file: AgentFile): GenerationModel {
       ...(providerSettings.apiKeyEnv === undefined ? [] : [`${providerSettings.propertyPrefix}.api-key=test-key`]),
       ...(oidc ? ['spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org'] : []),
       ...(mcpServers.length > 0 ? ['spring.ai.mcp.client.enabled=false'] : []),
+      // A short timeout, so that the test of a request that takes too long runs quickly.
+      ...(agent.limits?.timeout === undefined ? [] : ['agent.timeout=3s']),
       ...tools.flatMap((tool) =>
         tool.kind === 'http' && tool.auth !== undefined ? [`agent.tools.${tool.name}.token=test-token`] : [],
       ),
@@ -478,11 +500,6 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
   );
   add(agent.rag, 'agent.rag: RAG arrives in V5c');
-  add(
-    agent.security?.injectionDetection,
-    'agent.security.injectionDetection: prompt injection detection arrives in V5b',
-  );
-  add(agent.limits, 'agent.limits: iteration and timeout limits arrive in V5b');
   add(
     agent.observability?.grafanaDashboard,
     'agent.observability.grafanaDashboard: the Grafana dashboard arrives in V5d',
