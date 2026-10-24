@@ -1,6 +1,8 @@
 // Managed by gen-agent: changes here are overwritten.
 package <%= project.generatedPackage %>.chat;
 
+<%- imports %>
+
 /**
  * The agent's reply.
  *
@@ -9,14 +11,24 @@ package <%= project.generatedPackage %>.chat;
 <%_ if (prompt.aiDisclosure) { _%>
  * @param aiGenerated always {@code true}: tells clients the reply comes from an AI, as the EU AI Act requires
 <%_ } _%>
+<%_ if (features.approval) { _%>
+ * @param approvals the tool calls of this reply that wait for the user's approval
+<%_ } _%>
  */
-<%_ if (prompt.aiDisclosure) { _%>
-record ChatMessageResponse(String conversationId, String reply, boolean aiGenerated) {
+<%_ const fields = ['String conversationId', 'String reply', ...(prompt.aiDisclosure ? ['boolean aiGenerated'] : []), ...(features.approval ? [`${type('java.util.List')}<${type(`${project.generatedPackage}.approval.PendingApproval`)}> approvals`] : [])]; _%>
+<%_ if (fields.length === 2) { _%>
+record ChatMessageResponse(String conversationId, String reply) {}
+<%_ } else { _%>
+record ChatMessageResponse(<%- fields.join(', ') %>) {
 
     ChatMessageResponse(String conversationId, String reply) {
-        this(conversationId, reply, true);
+        this(<%- ['conversationId', 'reply', ...(prompt.aiDisclosure ? ['true'] : []), ...(features.approval ? ['List.of()'] : [])].join(', ') %>);
     }
+<%_   if (features.approval && prompt.aiDisclosure) { _%>
+
+    ChatMessageResponse(String conversationId, String reply, List<PendingApproval> approvals) {
+        this(conversationId, reply, true, approvals);
+    }
+<%_   } _%>
 }
-<%_ } else { _%>
-record ChatMessageResponse(String conversationId, String reply) {}
 <%_ } _%>

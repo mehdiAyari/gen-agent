@@ -55,6 +55,24 @@ class ChatExceptionHandler extends <%= type('org.springframework.web.servlet.mvc
     }
 
 <%_ } _%>
+<%_ if (features.approval) { _%>
+    @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>
+    <%= type('org.springframework.http.ProblemDetail') %> handleApprovalUnavailable(<%= type(`${project.generatedPackage}.approval.ApprovalUnavailableException`) %> exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(exception.status(), exception.getMessage());
+        problem.setTitle("Approval unavailable");
+        return problem;
+    }
+
+<%_ } _%>
+<%_ if (features.killSwitches) { _%>
+    @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>
+    <%= type('org.springframework.http.ProblemDetail') %> handleSwitchedOff(<%= type(`${project.generatedPackage}.switches.AgentSwitchedOffException`) %> exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(<%= type('org.springframework.http.HttpStatus') %>.SERVICE_UNAVAILABLE, exception.getMessage());
+        problem.setTitle("Switched off");
+        return problem;
+    }
+
+<%_ } _%>
     @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>(Exception.class)
     <%= type('org.springframework.http.ProblemDetail') %> handleUnexpected(Exception exception) {
         log.error("The agent could not answer", exception);

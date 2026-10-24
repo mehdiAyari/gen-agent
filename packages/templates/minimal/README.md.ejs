@@ -151,6 +151,24 @@ Conversations unused for <%= retention %> are purged every hour (`agent.memory.r
 
 <%_   } _%>
 <%_ } _%>
+<%_ if (features.approval || features.killSwitches) { _%>
+## Human control
+
+<%_   if (features.approval) { _%>
+Calls to <%- approvalTools.map((tool) => `\`${tool.name}\``).join(', ') %> wait for the approval of the user who asked: the reply lists them in
+`approvals`, `GET /api/approvals` lists those still waiting, and `POST /api/approvals/{id}` with `{"approved": true}`
+or `false` makes the call or not, tells the model and returns its next answer. A call nobody approves expires
+(`approval.expiresAfter` in agent.yaml), and only the user who asked can decide.<%= features.chatUi ? ' The chat page shows Approve and Deny buttons.' : '' %>
+
+<%_   } _%>
+<%_   if (features.killSwitches) { _%>
+Users with the `agent-admin` role switch the agent or one of its tools off at once, for every instance:
+`PUT /api/admin/switches/agent` or `PUT /api/admin/switches/tools/{name}` with `{"on": false}`;
+`GET /api/admin/switches` shows what is on. Switched off, the agent answers 503; a tool tells the model it is
+unavailable.
+
+<%_   } _%>
+<%_ } _%>
 <%_ if (features.resilience || routing || features.summarize) { _%>
 ## Resilience and cost
 

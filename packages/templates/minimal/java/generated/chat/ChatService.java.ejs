@@ -51,6 +51,14 @@ class ChatService {
 
     private final ModelRouter modelRouter;
 <%_ } _%>
+<%_ if (features.approval) { _%>
+
+    private final <%= type(`${project.generatedPackage}.approval.Approvals`) %> approvals;
+<%_ } _%>
+<%_ if (features.killSwitches) { _%>
+
+    private final <%= type(`${project.generatedPackage}.switches.KillSwitches`) %> killSwitches;
+<%_ } _%>
 <%_ if (features.resilience) { _%>
 
     private final String fallbackAnswer;
@@ -67,6 +75,8 @@ class ChatService {
       ...(features.erasure || features.retention ? ['Conversations conversations'] : []),
       ...(features.injectionDetection || features.outputGuard ? ['Guardrails guardrails'] : []),
       ...(routing ? ['ModelRouter modelRouter'] : []),
+      ...(features.approval ? ['Approvals approvals'] : []),
+      ...(features.killSwitches ? ['KillSwitches killSwitches'] : []),
       ...(features.resilience ? [`${type(`${project.generatedPackage}.AgentProperties`)} properties`] : []),
     ].join(', ') %>) {
         this.chatClient = chatClient;
@@ -96,6 +106,12 @@ class ChatService {
 <%_ } _%>
 <%_ if (routing) { _%>
         this.modelRouter = modelRouter;
+<%_ } _%>
+<%_ if (features.approval) { _%>
+        this.approvals = approvals;
+<%_ } _%>
+<%_ if (features.killSwitches) { _%>
+        this.killSwitches = killSwitches;
 <%_ } _%>
 <%_ if (features.resilience) { _%>
         this.fallbackAnswer = properties.fallbackAnswer();
@@ -132,6 +148,11 @@ const checkAnswer = features.outputGuard ? `
         answer = guardrails.check(answer);` : ''; _%>
 <%_ if (features.oidc) { _%>
     ChatMessageResponse reply(ChatMessageRequest request, String userId) {
+<%_   if (features.killSwitches) { _%>
+        if (killSwitches.agentOff()) {
+            throw new <%= type(`${project.generatedPackage}.switches.AgentSwitchedOffException`) %>();
+        }
+<%_   } _%>
 <%_   if (features.limits) { _%>
         usageLimits.checkRequest(userId);
 <%_   } _%>
@@ -171,27 +192,61 @@ const checkAnswer = features.outputGuard ? `
         }
 <%_   } _%>
 <%_   if (features.guardTools) { _%>
-        toolGuard.start(<%= features.pii ? 'memoryKey' : '' %>);
+        toolGuard.start(<%- [...(features.pii || features.approval ? ['memoryKey'] : []), ...(features.approval ? ['userId', 'conversationId'] : [])].join(', ') %>);
 <%_   } _%>
         <%- askOrFallBack('message', 'memoryKey') %><%- checkAnswer %>
 <%_   if (features.cache) { _%>
 <%_     const reasons = [...(features.trackToolCalls ? ['!toolGuard.toolCalled()'] : []), ...(features.pii ? ['!PersonalData.containsTokens(message)', '!PersonalData.containsTokens(answer)'] : [])]; _%>
-<%_     if (reasons.length > 0) { _%>
-        // Never reused: an answer built from a tool depends on live data, and one about personal data is about someone.
-<%_     } _%>
-        if (<%- ['firstMessage', ...reasons].join(' && ') %>) {
+        // Never reused: an empty answer<%= features.trackToolCalls ? ', one built from a tool, which depends on live data' : '' %><%= features.pii ? ', one about personal data' : '' %>.
+        if (<%- ['firstMessage', '!answer.isBlank()', ...reasons].join(' && ') %>) {
             replyCache.put(userId, message, answer);
 <%_     if (features.semanticCache) { _%>
             semanticCache.put(userId, message, answer);
 <%_     } _%>
         }
 <%_   } _%>
-<%_   if (features.pii) { _%>
-        return new ChatMessageResponse(conversationId, personalData.restore(memoryKey, answer));
-<%_   } else { _%>
-        return new ChatMessageResponse(conversationId, answer);
-<%_   } _%>
+<%_   const finalReply = features.pii ? 'personalData.restore(memoryKey, answer)' : 'answer'; _%>
+<%_   const waiting = features.pii ? 'waiting(memoryKey)' : 'toolGuard.pendingApprovals()'; _%>
+        return new ChatMessageResponse(<%- ['conversationId', finalReply, ...(features.approval ? [waiting] : [])].join(', ') %>);
     }
+<%_   if (features.approval) { _%>
+
+    <%= type('java.util.List') %><<%= type(`${project.generatedPackage}.approval.PendingApproval`) %>> pendingApprovals(String userId) {
+        return approvals.pendingOf(userId<%= features.pii ? ', personalData::restore' : '' %>);
+    }
+
+    /** Makes the call the user approved, or not, tells the model, and returns its next answer. */
+    ChatMessageResponse decide(<%= type('java.util.UUID') %> approvalId, boolean approved, String userId) {
+<%_     if (features.killSwitches) { _%>
+        if (killSwitches.agentOff()) {
+            throw new AgentSwitchedOffException();
+        }
+<%_     } _%>
+<%_     if (features.limits) { _%>
+        usageLimits.checkRequest(userId);
+<%_     } _%>
+        Approvals.Approval approval = approvals.decide(approvalId, userId, approved);
+        String memoryKey = approval.conversationKey();
+        String conversationId = approval.conversationId();
+        toolGuard.start(memoryKey, userId, conversationId);
+        // Told to the model as a message of the conversation, so that it goes on from there.
+        String message = approved
+                ? "The user approved the call to " + approval.tool() + ": it is done, do not make it again. It returned:\n"
+                        + toolGuard.callApproved(approval.tool(), approval.arguments())
+                : "The user denied the call to " + approval.tool() + ": it was not made. Do not make it again unless they ask.";
+        <%- askOrFallBack('message', 'memoryKey') %><%- checkAnswer %>
+        return new ChatMessageResponse(conversationId, <%- finalReply %>, <%- waiting %>);
+    }
+<%_     if (features.pii) { _%>
+
+    /** The calls of this answer that wait for the user, with the personal data they hold. */
+    private List<PendingApproval> waiting(String memoryKey) {
+        return toolGuard.pendingApprovals().stream()
+                .map(approval -> new PendingApproval(approval.id(), approval.tool(), personalData.restore(memoryKey, approval.arguments()), approval.expiresAt()))
+                .toList();
+    }
+<%_     } _%>
+<%_   } _%>
 <%_ } else { _%>
     ChatMessageResponse reply(ChatMessageRequest request) {
         String conversationId = request.conversationId() != null

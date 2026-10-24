@@ -47,6 +47,8 @@ public class SecurityConfiguration {
                     .permitAll()
                     .requestMatchers(HttpMethod.DELETE, "/api/users/**")
                     .hasRole("agent-admin")
+                    .requestMatchers("/api/admin/**")
+                    .hasRole("agent-admin")
                     .anyRequest()
                     .authenticated()
             )

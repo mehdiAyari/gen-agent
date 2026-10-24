@@ -29,6 +29,10 @@ public class DataEraser {
 
     private final <%= type(`${project.generatedPackage}.limits.UsageLimits`) %> usageLimits;
 <%_ } _%>
+<%_ if (features.approval) { _%>
+
+    private final <%= type(`${project.generatedPackage}.approval.Approvals`) %> approvals;
+<%_ } _%>
 
     DataEraser(<%- [
       'Conversations conversations',
@@ -37,6 +41,7 @@ public class DataEraser {
       ...(features.cache ? ['ReplyCache replyCache'] : []),
       ...(features.semanticCache ? ['SemanticCache semanticCache'] : []),
       ...(features.limits ? ['UsageLimits usageLimits'] : []),
+      ...(features.approval ? ['Approvals approvals'] : []),
     ].join(', ') %>) {
         this.conversations = conversations;
         this.chatMemory = chatMemory;
@@ -52,6 +57,9 @@ public class DataEraser {
 <%_ if (features.limits) { _%>
         this.usageLimits = usageLimits;
 <%_ } _%>
+<%_ if (features.approval) { _%>
+        this.approvals = approvals;
+<%_ } _%>
     }
 
     /** Returns the number of conversations erased. */
@@ -66,6 +74,9 @@ public class DataEraser {
 <%_ } _%>
 <%_ if (features.limits) { _%>
         usageLimits.forget(userId);
+<%_ } _%>
+<%_ if (features.approval) { _%>
+        approvals.forget(userId);
 <%_ } _%>
         return keys.size();
     }

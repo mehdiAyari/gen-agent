@@ -7,6 +7,8 @@ import com.example.claimsdesk.generated.guard.Guardrails;
 import com.example.claimsdesk.generated.limits.UsageLimits;
 import com.example.claimsdesk.generated.privacy.PersonalData;
 import com.example.claimsdesk.generated.resilience.ModelUnavailableException;
+import com.example.claimsdesk.generated.switches.AgentSwitchedOffException;
+import com.example.claimsdesk.generated.switches.KillSwitches;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +42,8 @@ class ChatService {
 
     private final ModelRouter modelRouter;
 
+    private final KillSwitches killSwitches;
+
     private final String fallbackAnswer;
 
     ChatService(
@@ -50,6 +54,7 @@ class ChatService {
         PersonalData personalData,
         Guardrails guardrails,
         ModelRouter modelRouter,
+        KillSwitches killSwitches,
         AgentProperties properties
     ) {
         this.chatClient = chatClient;
@@ -59,10 +64,14 @@ class ChatService {
         this.personalData = personalData;
         this.guardrails = guardrails;
         this.modelRouter = modelRouter;
+        this.killSwitches = killSwitches;
         this.fallbackAnswer = properties.fallbackAnswer();
     }
 
     ChatMessageResponse reply(ChatMessageRequest request, String userId) {
+        if (killSwitches.agentOff()) {
+            throw new AgentSwitchedOffException();
+        }
         usageLimits.checkRequest(userId);
         String conversationId =
             request.conversationId() != null ? request.conversationId() : UUID.randomUUID().toString();
@@ -106,8 +115,13 @@ class ChatService {
         }
         // Checked before anything else sees it: the caches, the user.
         answer = guardrails.check(answer);
-        // Never reused: an answer built from a tool depends on live data, and one about personal data is about someone.
-        if (firstMessage && !PersonalData.containsTokens(message) && !PersonalData.containsTokens(answer)) {
+        // Never reused: an empty answer, one about personal data.
+        if (
+            firstMessage &&
+            !answer.isBlank() &&
+            !PersonalData.containsTokens(message) &&
+            !PersonalData.containsTokens(answer)
+        ) {
             replyCache.put(userId, message, answer);
         }
         return new ChatMessageResponse(conversationId, personalData.restore(memoryKey, answer));

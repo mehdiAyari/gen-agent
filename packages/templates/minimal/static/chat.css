@@ -164,3 +164,19 @@ button:disabled {
     scroll-behavior: auto !important;
   }
 }
+
+#messages .approval {
+  align-self: stretch;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+#messages .approval p {
+  margin: 0 0 0.5rem;
+}
+
+#messages .approval div {
+  display: flex;
+  gap: 0.5rem;
+}

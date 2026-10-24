@@ -4,7 +4,8 @@ package <%= project.generatedPackage %>.tool;
 <%- imports %>
 
 /**
- * Every tool of the model, generated or from an MCP server, goes through here.<%= features.trackToolCalls ? ' An answer built from a tool depends\n * on live data: the cache does not keep it.' : '' %><%= features.pii ? ' Tools get the real personal data behind the tokens the model\n * saw, and their results reach the model masked.' : '' %><%= features.injectionDetection ? ' Tool results reach the model marked as untrusted data;\n * once one holds instructions, only the tools that read data stay callable for the rest of the request.' : '' %> Tools run on the thread of the request, whose state is kept here.
+ * Every tool of the model, generated or from an MCP server, goes through here.<%= features.trackToolCalls ? ' An answer built from a tool depends\n * on live data: the cache does not keep it.' : '' %><%= features.pii ? ' Tools get the real personal data behind the tokens the model\n * saw, and their results reach the model masked.' : '' %><%= features.injectionDetection ? ' Tool results reach the model marked as untrusted data;\n * once one holds instructions, only the tools that read data stay callable for the rest of the request.' : '' %><%= features.approval ? ' Sensitive calls\n * wait for the approval of the user who asked.' : '' %><%= features.killSwitches ? ' A tool switched off by an administrator is never called.' : '' %>
+ * Tools run on the thread of the request, whose state is kept here.
  */
 @<%= type('org.springframework.stereotype.Component') %>
 public class ToolGuard {
@@ -19,9 +20,28 @@ public class ToolGuard {
     /** Tools that only read data: still callable after a result that held instructions. */
     private static final <%= type('java.util.Set') %><String> READ_ONLY = Set.of(<%- readOnlyTools.map((name) => `"${name}"`).join(', ') %>);
 <%_ } _%>
-<%_ if (features.pii) { _%>
+<%_ if (features.approval) { _%>
+
+    /** Tools whose calls wait for the approval of the user, and for how long. */
+    private static final <%= type('java.util.Map') %><String, <%= type('java.time.Duration') %>> APPROVAL = Map.of(<%- approvalTools.map((tool) => { const [, amount, unit] = /^(\d+)([smhd])$/.exec(tool.expiresAfter); return `"${tool.name}", Duration.of${{ s: 'Seconds', m: 'Minutes', h: 'Hours', d: 'Days' }[unit]}(${amount})`; }).join(', ') %>);
+<%_ } _%>
+<%_ if (features.approval || features.killSwitches) { _%>
+
+    private final Map<String, <%= type('org.springframework.ai.tool.ToolCallback') %>> tools = new <%= type('java.util.concurrent.ConcurrentHashMap') %><>();
+<%_ } _%>
+<%_ if (features.pii || features.approval) { _%>
 
     private final ThreadLocal<String> conversation = new ThreadLocal<>();
+<%_ } _%>
+<%_ if (features.approval) { _%>
+
+    private final ThreadLocal<String> user = new ThreadLocal<>();
+
+    private final ThreadLocal<String> conversationId = new ThreadLocal<>();
+
+    private final ThreadLocal<<%= type('java.util.List') %><<%= type(`${project.generatedPackage}.approval.PendingApproval`) %>>> pending = ThreadLocal.withInitial(<%= type('java.util.ArrayList') %>::new);
+
+    private final ThreadLocal<Boolean> approved = ThreadLocal.withInitial(() -> false);
 <%_ } _%>
 <%_ if (features.trackToolCalls) { _%>
 
@@ -34,16 +54,34 @@ public class ToolGuard {
 <%_ if (features.pii) { _%>
 
     private final <%= type(`${project.generatedPackage}.privacy.PersonalData`) %> personalData;
+<%_ } _%>
+<%_ if (features.approval) { _%>
 
-    ToolGuard(PersonalData personalData) {
-        this.personalData = personalData;
+    private final <%= type(`${project.generatedPackage}.approval.Approvals`) %> approvals;
+<%_ } _%>
+<%_ if (features.killSwitches) { _%>
+
+    private final <%= type(`${project.generatedPackage}.switches.KillSwitches`) %> killSwitches;
+<%_ } _%>
+<%_ const guardDependencies = [...(features.pii ? ['PersonalData personalData'] : []), ...(features.approval ? ['Approvals approvals'] : []), ...(features.killSwitches ? ['KillSwitches killSwitches'] : [])]; _%>
+<%_ if (guardDependencies.length > 0) { _%>
+
+    ToolGuard(<%- guardDependencies.join(', ') %>) {
+<%_   for (const dependency of guardDependencies) { const name = dependency.split(' ')[1]; _%>
+        this.<%= name %> = <%= name %>;
+<%_   } _%>
     }
 <%_ } _%>
 
-    /** Before asking the model<%= features.pii ? ', with the conversation whose tokens the tools may see' : '' %>. */
-    public void start(<%= features.pii ? 'String conversationKey' : '' %>) {
-<%_ if (features.pii) { _%>
+    /** Before asking the model<%= features.pii ? ', with the conversation whose tokens the tools may see' : features.approval ? ', with the conversation calls may wait in' : '' %>. */
+    public void start(<%- [...(features.pii || features.approval ? ['String conversationKey'] : []), ...(features.approval ? ['String userId', 'String conversationId'] : [])].join(', ') %>) {
+<%_ if (features.pii || features.approval) { _%>
         conversation.set(conversationKey);
+<%_ } _%>
+<%_ if (features.approval) { _%>
+        user.set(userId);
+        this.conversationId.set(conversationId);
+        pending.set(new ArrayList<>());
 <%_ } _%>
 <%_ if (features.trackToolCalls) { _%>
         called.set(false);
@@ -59,7 +97,43 @@ public class ToolGuard {
     }
 <%_ } _%>
 
+<%_ if (features.approval) { _%>
+
+    /** The calls of this request that wait for the approval of the user. */
+    public List<PendingApproval> pendingApprovals() {
+        return List.copyOf(pending.get());
+    }
+
+    /** Makes a call the user approved, through the other guards. */
+    public String callApproved(String tool, String input) {
+        ToolCallback callback = tools.get(tool);
+        if (callback == null) {
+            return "The tool " + tool + " no longer exists: the call was not made.";
+        }
+        approved.set(true);
+        try {
+            return call(tool, input, callback::call);
+        } catch (RuntimeException failure) {
+            return "The call failed: " + failure.getMessage();
+        } finally {
+            approved.set(false);
+        }
+    }
+<%_ } _%>
+<%_ if (features.killSwitches) { _%>
+
+    /** The names of the tools for the model, generated or from an MCP server. */
+    public <%= type('java.util.Set') %><String> toolNames() {
+        return Set.copyOf(tools.keySet());
+    }
+<%_ } _%>
+
     public <%= type('org.springframework.ai.tool.ToolCallback') %>[] guard(ToolCallback[] callbacks) {
+<%_ if (features.approval || features.killSwitches) { _%>
+        for (ToolCallback callback : callbacks) {
+            tools.put(callback.getToolDefinition().name(), callback);
+        }
+<%_ } _%>
         return <%= type('java.util.Arrays') %>.stream(callbacks)
                 .map(callback -> new GuardedToolCallback(callback, this))
                 .toArray(ToolCallback[]::new);
@@ -69,9 +143,22 @@ public class ToolGuard {
 <%_ if (features.trackToolCalls) { _%>
         called.set(true);
 <%_ } _%>
+<%_ if (features.killSwitches) { _%>
+        if (killSwitches.toolOff(tool)) {
+            return "The tool " + tool + " is switched off: tell the user it is unavailable for now.";
+        }
+<%_ } _%>
 <%_ if (features.injectionDetection) { _%>
         if (tainted.get() && !READ_ONLY.contains(tool)) {
             return "Refused: an earlier tool result held instructions, so tools that change data are off for this request.";
+        }
+<%_ } _%>
+<%_ if (features.approval) { _%>
+        Duration expiresAfter = APPROVAL.get(tool);
+        if (expiresAfter != null && !approved.get()) {
+            PendingApproval approval = approvals.request(user.get(), conversation.get(), conversationId.get(), tool, input, expiresAfter);
+            pending.get().add(approval);
+            return "This call waits for the approval of the user until " + approval.expiresAt() + ": tell them it is not done yet.";
         }
 <%_ } _%>
         String result = delegate.apply(<%= features.pii ? 'personalData.restore(conversation.get(), input)' : 'input' %>);

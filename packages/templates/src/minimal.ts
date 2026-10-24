@@ -111,6 +111,30 @@ export const minimalEntries: TemplateEntry[] = [
     when: (m) => m.features.erasure || m.features.retention,
     output: () => 'src/main/resources/db/migration/V1__agent_conversation.sql',
   },
+  {
+    template: 'resources/db/V2__agent_approval.sql.ejs',
+    owner: 'generated',
+    when: (m) => m.features.approval,
+    output: () => 'src/main/resources/db/migration/V2__agent_approval.sql',
+  },
+  ...['PendingApproval', 'Approvals', 'ApprovalUnavailableException'].map((name): TemplateEntry => ({
+    template: `java/generated/approval/${name}.java.ejs`,
+    owner: 'generated',
+    when: (m) => m.features.approval,
+    output: (m) => main(m, `generated/approval/${name}.java`),
+  })),
+  {
+    template: 'java/generated/chat/ApprovalController.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.approval,
+    output: (m) => main(m, 'generated/chat/ApprovalController.java'),
+  },
+  ...['KillSwitches', 'AgentSwitchedOffException', 'KillSwitchController'].map((name): TemplateEntry => ({
+    template: `java/generated/switches/${name}.java.ejs`,
+    owner: 'generated',
+    when: (m) => m.features.killSwitches,
+    output: (m) => main(m, `generated/switches/${name}.java`),
+  })),
   ...['PersonalDataPatterns', 'PersonalData'].map((name): TemplateEntry => ({
     template: `java/generated/privacy/${name}.java.ejs`,
     owner: 'generated',

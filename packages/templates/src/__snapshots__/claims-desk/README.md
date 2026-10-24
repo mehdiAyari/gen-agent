@@ -56,6 +56,13 @@ addresses are not detected: keep them out of the system prompt, or mask them in 
 
 The logs mask the same values, in messages and in stack traces; each line carries the correlation id of its request.
 
+## Human control
+
+Users with the `agent-admin` role switch the agent or one of its tools off at once, for every instance:
+`PUT /api/admin/switches/agent` or `PUT /api/admin/switches/tools/{name}` with `{"on": false}`;
+`GET /api/admin/switches` shows what is on. Switched off, the agent answers 503; a tool tells the model it is
+unavailable.
+
 ## Resilience and cost
 
 A failed call to the model is retried twice with a growing delay (`spring.ai.anthropic.max-retries`). After repeated

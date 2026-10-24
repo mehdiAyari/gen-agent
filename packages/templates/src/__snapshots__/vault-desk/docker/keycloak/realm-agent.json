@@ -18,7 +18,7 @@
     }
   ],
   "roles": {
-    "realm": [{ "name": "agent-admin", "description": "May erase the data of any user" }]
+    "realm": [{ "name": "agent-admin", "description": "May erase the data of any user and switch the agent and its tools off" }]
   },
   "users": [
     {

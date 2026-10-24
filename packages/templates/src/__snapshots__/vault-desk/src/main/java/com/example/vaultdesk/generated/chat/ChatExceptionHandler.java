@@ -1,8 +1,10 @@
 // Managed by gen-agent: changes here are overwritten.
 package com.example.vaultdesk.generated.chat;
 
+import com.example.vaultdesk.generated.approval.ApprovalUnavailableException;
 import com.example.vaultdesk.generated.guard.RequestTimeoutException;
 import com.example.vaultdesk.generated.limits.LimitExceededException;
+import com.example.vaultdesk.generated.switches.AgentSwitchedOffException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.tool.ToolCallLimitExceededException;
@@ -61,6 +63,23 @@ class ChatExceptionHandler extends ResponseEntityExceptionHandler {
             "The agent needed more than " + exception.getLimit() + " tool calls to answer. Ask something narrower."
         );
         problem.setTitle("Too many tool calls");
+        return problem;
+    }
+
+    @ExceptionHandler
+    ProblemDetail handleApprovalUnavailable(ApprovalUnavailableException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(exception.status(), exception.getMessage());
+        problem.setTitle("Approval unavailable");
+        return problem;
+    }
+
+    @ExceptionHandler
+    ProblemDetail handleSwitchedOff(AgentSwitchedOffException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            exception.getMessage()
+        );
+        problem.setTitle("Switched off");
         return problem;
     }
 

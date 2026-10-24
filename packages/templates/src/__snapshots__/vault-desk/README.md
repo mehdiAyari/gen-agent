@@ -78,6 +78,18 @@ Roles are read from the `realm_access.roles` claim (`OIDC_ROLES_CLAIM`).
 
 Conversations unused for 30d are purged every hour (`agent.memory.retention`), with their personal data.
 
+## Human control
+
+Calls to `blockCard` wait for the approval of the user who asked: the reply lists them in
+`approvals`, `GET /api/approvals` lists those still waiting, and `POST /api/approvals/{id}` with `{"approved": true}`
+or `false` makes the call or not, tells the model and returns its next answer. A call nobody approves expires
+(`approval.expiresAfter` in agent.yaml), and only the user who asked can decide. The chat page shows Approve and Deny buttons.
+
+Users with the `agent-admin` role switch the agent or one of its tools off at once, for every instance:
+`PUT /api/admin/switches/agent` or `PUT /api/admin/switches/tools/{name}` with `{"on": false}`;
+`GET /api/admin/switches` shows what is on. Switched off, the agent answers 503; a tool tells the model it is
+unavailable.
+
 ## Resilience and cost
 
 A failed call to the model is retried twice with a growing delay (`spring.ai.retry`). After repeated
@@ -129,6 +141,7 @@ Docker must run: the tests start Postgres and Redis in containers (Testcontainer
 | Path | Owner |
 | --- | --- |
 | `src/main/resources/prompts/system.md` | yours: the system prompt |
+| `src/main/java/com/example/vaultdesk/tool/` | yours: the logic of your Java tools |
 | `src/main/java/com/example/vaultdesk/generated/` | gen-agent: overwritten on regeneration, do not edit |
 | `pom.xml`, `application.yml` | shared: gen-agent will merge its changes with yours |
 
@@ -137,3 +150,4 @@ Docker must run: the tests start Postgres and Redis in containers (Testcontainer
 | Tool | Kind | Implementation |
 | --- | --- | --- |
 | `transfer-status` | HTTP `GET` | `agent.tools.transfer-status.url` in `application.yml` |
+| `block-card` | Java | `tool/DefaultBlockCardHandler.java` |

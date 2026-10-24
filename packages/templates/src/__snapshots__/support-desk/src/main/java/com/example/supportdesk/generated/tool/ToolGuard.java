@@ -8,7 +8,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Every tool of the model, generated or from an MCP server, goes through here. An answer built from a tool depends
- * on live data: the cache does not keep it. Tools run on the thread of the request, whose state is kept here.
+ * on live data: the cache does not keep it.
+ * Tools run on the thread of the request, whose state is kept here.
  */
 @Component
 public class ToolGuard {

@@ -1,6 +1,6 @@
 # Production profile: personal data masked and kept 30 days, PII-free logs, erasure endpoints, semantic cache in
 # pgvector (V5a); guardrails and limits (V5b1); rules routing, a fallback on Ollama, summaries (V5b2); an HTTP tool that
-# gets personal data back in its arguments.
+# gets personal data back in its arguments; a Java tool that waits for the approval of the user, kill switches (V5b3).
 agent:
   name: vault-desk
   description: Answers bank customers about their transfers
@@ -21,3 +21,7 @@ agent:
       auth: { type: bearer, env: BANK_API_TOKEN }
       params:
         - { name: iban, type: string, required: true }
+    - name: block-card
+      type: java
+      description: Blocks the payment card of the customer
+      approval: { required: true, expiresAfter: 1h }

@@ -39,8 +39,10 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
  * Starts the whole application with a fake model: checks the wiring (system prompt, memory, tools) and the REST
@@ -273,6 +275,52 @@ class ClaimsDeskApplicationTests {
     @AfterEach
     void reportFewTokensAgain() {
         chatModel.reportTokens(RecordingChatModel.TOKENS_PER_REPLY);
+    }
+
+    @Test
+    void letsAnAdministratorSwitchTheAgentOff() {
+        assertThat(switchAgent("mallory", false)).hasStatus(HttpStatus.FORBIDDEN);
+        assertThat(switchAgent("root", false)).hasStatus(HttpStatus.NO_CONTENT);
+        try {
+            assertThat(
+                post(
+                    "ada",
+                    """
+                    {"message": "Are you there?"}
+                    """
+                )
+            ).hasStatus(HttpStatus.SERVICE_UNAVAILABLE);
+            assertThat(mockMvc.get().uri("/api/admin/switches").with(admin()))
+                .bodyJson()
+                .extractingPath("$.agent")
+                .isEqualTo(false);
+        } finally {
+            assertThat(switchAgent("root", true)).hasStatus(HttpStatus.NO_CONTENT);
+        }
+        assertThat(
+            post(
+                "ada",
+                """
+                {"message": "Are you there now?"}
+                """
+            )
+        ).hasStatusOk();
+    }
+
+    private MvcTestResult switchAgent(String userId, boolean on) {
+        return mockMvc
+            .put()
+            .uri("/api/admin/switches/agent")
+            .with(userId.equals("root") ? admin() : jwt().jwt(token -> token.subject(userId)))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"on\": " + on + "}")
+            .exchange();
+    }
+
+    private static RequestPostProcessor admin() {
+        return jwt()
+            .jwt(token -> token.subject("root"))
+            .authorities(new SimpleGrantedAuthority("ROLE_agent-admin"));
     }
 
     private MvcTestResult post(String userId, String body) {

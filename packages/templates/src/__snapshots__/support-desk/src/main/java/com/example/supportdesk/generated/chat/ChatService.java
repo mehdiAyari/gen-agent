@@ -77,8 +77,8 @@ class ChatService {
             .chatResponse();
         usageLimits.recordTokens(userId, response.getMetadata().getUsage().getTotalTokens());
         String answer = response.getResult().getOutput().getText();
-        // Never reused: an answer built from a tool depends on live data, and one about personal data is about someone.
-        if (firstMessage && !toolGuard.toolCalled()) {
+        // Never reused: an empty answer, one built from a tool, which depends on live data.
+        if (firstMessage && !answer.isBlank() && !toolGuard.toolCalled()) {
             replyCache.put(userId, message, answer);
         }
         return new ChatMessageResponse(conversationId, answer);

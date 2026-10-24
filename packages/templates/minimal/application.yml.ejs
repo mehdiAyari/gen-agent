@@ -129,9 +129,9 @@ agent:
     # Sent instead of an answer to a message that tries to take over the agent, or that would leak its instructions.
     refusal: "I can't help with that request."
 <%_ } _%>
-<%_ if (features.erasure) { _%>
+<%_ if (features.adminRole) { _%>
   security:
-    # Where the roles are in the tokens of the provider: agent-admin may erase any user's data.
+    # Where the roles are in the tokens of the provider: agent-admin is the administrator of the agent.
     roles-claim: ${OIDC_ROLES_CLAIM:realm_access.roles}
 <%_ } _%>
 <%_ if (features.chatUi && features.oidc) { _%>

@@ -11,6 +11,9 @@
       "standardFlowEnabled": false
     }
   ],
+  "roles": {
+    "realm": [{ "name": "agent-admin", "description": "May switch the agent and its tools off" }]
+  },
   "users": [
     {
       "username": "demo",
@@ -20,5 +23,15 @@
       "lastName": "User",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "demo", "temporary": false }]
+    },
+    {
+      "username": "admin",
+      "email": "admin@example.org",
+      "emailVerified": true,
+      "firstName": "Agent",
+      "lastName": "Admin",
+      "enabled": true,
+      "realmRoles": ["agent-admin"],
+      "credentials": [{ "type": "password", "value": "admin", "temporary": false }]
     }  ]
 }

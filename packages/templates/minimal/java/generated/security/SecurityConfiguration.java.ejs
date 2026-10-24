@@ -20,7 +20,7 @@ public class SecurityConfiguration {
     <%= type('org.springframework.security.web.SecurityFilterChain') %> securityFilterChain(<%- [
       `${type('org.springframework.security.config.annotation.web.builders.HttpSecurity')} http`,
       ...(features.chatUi ? [`${value('spring.security.oauth2.resourceserver.jwt.issuer-uri')} String issuer`] : []),
-      ...(features.erasure ? [`${value('agent.security.roles-claim')} String rolesClaim`] : []),
+      ...(features.adminRole ? [`${value('agent.security.roles-claim')} String rolesClaim`] : []),
     ].join(', ') %>) throws Exception {
 <%_ if (features.chatUi) { _%>
         <%= type('java.net.URI') %> provider = URI.create(issuer);
@@ -33,10 +33,12 @@ public class SecurityConfiguration {
                         .requestMatchers(CHAT_PAGE)
                         .permitAll()<%_ } _%><%_ if (features.erasure) { _%>
                         .requestMatchers(<%= type('org.springframework.http.HttpMethod') %>.DELETE, "/api/users/**")
+                        .hasRole("agent-admin")<%_ } _%><%_ if (features.killSwitches) { _%>
+                        .requestMatchers("/api/admin/**")
                         .hasRole("agent-admin")<%_ } _%>
                         .anyRequest()
                         .authenticated())
-                <%_ if (features.erasure) { _%>
+                <%_ if (features.adminRole) { _%>
                 .oauth2ResourceServer(server -> server.jwt(jwt -> jwt.jwtAuthenticationConverter(withRoles(rolesClaim))))
 <%_ } else { _%>
                 .oauth2ResourceServer(server -> server.jwt(<%= type('org.springframework.security.config.Customizer') %>.withDefaults()))
@@ -48,7 +50,7 @@ public class SecurityConfiguration {
                                 + "; frame-ancestors 'none'; form-action 'self' " + providerOrigin)))<%_ } _%>
                 .build();
     }
-<%_ if (features.erasure) { _%>
+<%_ if (features.adminRole) { _%>
 
     /**
      * Roles from the claim at {@code rolesClaim}, a path such as realm_access.roles (Keycloak) or roles (Entra ID),

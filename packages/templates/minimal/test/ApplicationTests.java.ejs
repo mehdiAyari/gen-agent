@@ -274,6 +274,96 @@ class <%= project.applicationClass %>Tests {
     }
 <%_   } _%>
 
+<%_   if (features.approval) { _%>
+    @<%= type('org.springframework.beans.factory.annotation.Autowired') %>
+    <%= type(`${project.generatedPackage}.approval.Approvals`) %> approvals;
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void waitsForTheApprovalOfTheUserWhoAsked() throws Exception {
+        String conversationId = startConversation("olga", "Please do it");
+        String memoryKey = <%= type('java.util.UUID') %>.nameUUIDFromBytes(("olga:" + conversationId).getBytes(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8)).toString();
+        <%= type(`${project.generatedPackage}.approval.PendingApproval`) %> pending = approvals.request("olga", memoryKey, conversationId, <%- javaString(approvalTools[0].name) %>, "{}", <%= type('java.time.Duration') %>.ofHours(1));
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(mockMvc.get().uri("/api/approvals").with(jwt().jwt(token -> token.subject("olga"))))
+                .bodyJson()
+                .extractingPath("$[0].id")
+                .isEqualTo(pending.id().toString());
+        assertThat(mockMvc.get().uri("/api/approvals").with(jwt().jwt(token -> token.subject("mallory"))))
+                .bodyJson()
+                .isEqualTo("[]");
+        // Only the user who asked decides: for anyone else, the request does not exist.
+        assertThat(decide("mallory", pending, false)).hasStatus(HttpStatus.NOT_FOUND);
+
+        assertThat(decide("olga", pending, false)).hasStatusOk().bodyJson().extractingPath("$.conversationId").isEqualTo(conversationId);
+        assertThat(chatModel.lastPrompt().getContents()).contains("The user denied the call");
+        assertThat(decide("olga", pending, true)).hasStatus(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void refusesAnApprovalThatCameTooLate() throws Exception {
+        String conversationId = startConversation("pia", "Please do it");
+        PendingApproval late = approvals.request("pia", UUID.nameUUIDFromBytes(("pia:" + conversationId).getBytes(StandardCharsets.UTF_8)).toString(), conversationId, <%- javaString(approvalTools[0].name) %>, "{}", Duration.ofSeconds(-1));
+
+        assertThat(decide("pia", late, true)).hasStatus(HttpStatus.GONE);
+    }
+
+    private <%= type('org.springframework.test.web.servlet.assertj.MvcTestResult') %> decide(String userId, PendingApproval approval, boolean approved) {
+        return mockMvc.post()
+                .uri("/api/approvals/{id}", approval.id())
+                .with(jwt().jwt(token -> token.subject(userId)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"approved\": " + approved + "}")
+                .exchange();
+    }
+
+<%_   } _%>
+<%_   if (features.killSwitches) { _%>
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void letsAnAdministratorSwitchTheAgentOff() {
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(switchAgent("mallory", false)).hasStatus(HttpStatus.FORBIDDEN);
+        assertThat(switchAgent("root", false)).hasStatus(HttpStatus.NO_CONTENT);
+        try {
+            assertThat(post("ada", """
+                    {"message": "Are you there?"}
+                    """)).hasStatus(HttpStatus.SERVICE_UNAVAILABLE);
+            assertThat(mockMvc.get().uri("/api/admin/switches").with(admin())).bodyJson().extractingPath("$.agent").isEqualTo(false);
+        } finally {
+            assertThat(switchAgent("root", true)).hasStatus(HttpStatus.NO_CONTENT);
+        }
+        assertThat(post("ada", """
+                {"message": "Are you there now?"}
+                """)).hasStatusOk();
+    }
+<%_     if (toolNames.length > 0) { _%>
+
+    @Test
+    void letsAnAdministratorSwitchAToolOff() {
+        String tool = "/api/admin/switches/tools/<%= toolNames[0] %>";
+
+        assertThat(mockMvc.put().uri(tool).with(admin()).contentType(MediaType.APPLICATION_JSON).content("{\"on\": false}"))
+                .hasStatus(HttpStatus.NO_CONTENT);
+        assertThat(mockMvc.get().uri("/api/admin/switches").with(admin())).bodyJson().extractingPath("$.tools.<%= toolNames[0] %>").isEqualTo(false);
+        assertThat(mockMvc.put().uri(tool).with(admin()).contentType(MediaType.APPLICATION_JSON).content("{\"on\": true}"))
+                .hasStatus(HttpStatus.NO_CONTENT);
+        assertThat(mockMvc.put().uri("/api/admin/switches/tools/nothing").with(admin()).contentType(MediaType.APPLICATION_JSON).content("{\"on\": false}"))
+                .hasStatus(HttpStatus.NOT_FOUND);
+    }
+<%_     } _%>
+
+    private <%= type('org.springframework.test.web.servlet.assertj.MvcTestResult') %> switchAgent(String userId, boolean on) {
+        return mockMvc.put()
+                .uri("/api/admin/switches/agent")
+                .with(userId.equals("root") ? admin() : jwt().jwt(token -> token.subject(userId)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"on\": " + on + "}")
+                .exchange();
+    }
+
+    private static <%= type('org.springframework.test.web.servlet.request.RequestPostProcessor') %> admin() {
+        return jwt().jwt(token -> token.subject("root")).authorities(new <%= type('org.springframework.security.core.authority.SimpleGrantedAuthority') %>("ROLE_agent-admin"));
+    }
+
+<%_   } _%>
     private <%= type('org.springframework.test.web.servlet.assertj.MvcTestResult') %> post(String userId, String body) {
         return mockMvc.post()
                 .uri("/api/chat")

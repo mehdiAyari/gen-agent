@@ -5,16 +5,20 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 
 import com.example.vaultdesk.generated.AgentProperties;
 import com.example.vaultdesk.generated.TestcontainersConfiguration;
+import com.example.vaultdesk.generated.approval.Approvals;
+import com.example.vaultdesk.generated.approval.PendingApproval;
 import com.example.vaultdesk.generated.privacy.PersonalData;
 import com.example.vaultdesk.generated.privacy.RetentionJob;
 import com.example.vaultdesk.generated.resilience.ResilientModelAdvisor;
 import com.jayway.jsonpath.JsonPath;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -51,6 +55,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
  * Starts the whole application with a fake model: checks the wiring (system prompt, memory, tools) and the REST
@@ -401,6 +406,148 @@ class VaultDeskApplicationTests {
     @AfterEach
     void reportFewTokensAgain() {
         chatModel.reportTokens(RecordingChatModel.TOKENS_PER_REPLY);
+    }
+
+    @Autowired
+    Approvals approvals;
+
+    @Test
+    void waitsForTheApprovalOfTheUserWhoAsked() throws Exception {
+        String conversationId = startConversation("olga", "Please do it");
+        String memoryKey = UUID.nameUUIDFromBytes(
+            ("olga:" + conversationId).getBytes(StandardCharsets.UTF_8)
+        ).toString();
+        PendingApproval pending = approvals.request(
+            "olga",
+            memoryKey,
+            conversationId,
+            "blockCard",
+            "{}",
+            Duration.ofHours(1)
+        );
+
+        assertThat(
+            mockMvc
+                .get()
+                .uri("/api/approvals")
+                .with(jwt().jwt(token -> token.subject("olga")))
+        )
+            .bodyJson()
+            .extractingPath("$[0].id")
+            .isEqualTo(pending.id().toString());
+        assertThat(
+            mockMvc
+                .get()
+                .uri("/api/approvals")
+                .with(jwt().jwt(token -> token.subject("mallory")))
+        )
+            .bodyJson()
+            .isEqualTo("[]");
+        // Only the user who asked decides: for anyone else, the request does not exist.
+        assertThat(decide("mallory", pending, false)).hasStatus(HttpStatus.NOT_FOUND);
+
+        assertThat(decide("olga", pending, false))
+            .hasStatusOk()
+            .bodyJson()
+            .extractingPath("$.conversationId")
+            .isEqualTo(conversationId);
+        assertThat(chatModel.lastPrompt().getContents()).contains("The user denied the call");
+        assertThat(decide("olga", pending, true)).hasStatus(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void refusesAnApprovalThatCameTooLate() throws Exception {
+        String conversationId = startConversation("pia", "Please do it");
+        PendingApproval late = approvals.request(
+            "pia",
+            UUID.nameUUIDFromBytes(("pia:" + conversationId).getBytes(StandardCharsets.UTF_8)).toString(),
+            conversationId,
+            "blockCard",
+            "{}",
+            Duration.ofSeconds(-1)
+        );
+
+        assertThat(decide("pia", late, true)).hasStatus(HttpStatus.GONE);
+    }
+
+    private MvcTestResult decide(String userId, PendingApproval approval, boolean approved) {
+        return mockMvc
+            .post()
+            .uri("/api/approvals/{id}", approval.id())
+            .with(jwt().jwt(token -> token.subject(userId)))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"approved\": " + approved + "}")
+            .exchange();
+    }
+
+    @Test
+    void letsAnAdministratorSwitchTheAgentOff() {
+        assertThat(switchAgent("mallory", false)).hasStatus(HttpStatus.FORBIDDEN);
+        assertThat(switchAgent("root", false)).hasStatus(HttpStatus.NO_CONTENT);
+        try {
+            assertThat(
+                post(
+                    "ada",
+                    """
+                    {"message": "Are you there?"}
+                    """
+                )
+            ).hasStatus(HttpStatus.SERVICE_UNAVAILABLE);
+            assertThat(mockMvc.get().uri("/api/admin/switches").with(admin()))
+                .bodyJson()
+                .extractingPath("$.agent")
+                .isEqualTo(false);
+        } finally {
+            assertThat(switchAgent("root", true)).hasStatus(HttpStatus.NO_CONTENT);
+        }
+        assertThat(
+            post(
+                "ada",
+                """
+                {"message": "Are you there now?"}
+                """
+            )
+        ).hasStatusOk();
+    }
+
+    @Test
+    void letsAnAdministratorSwitchAToolOff() {
+        String tool = "/api/admin/switches/tools/transferStatus";
+
+        assertThat(
+            mockMvc.put().uri(tool).with(admin()).contentType(MediaType.APPLICATION_JSON).content("{\"on\": false}")
+        ).hasStatus(HttpStatus.NO_CONTENT);
+        assertThat(mockMvc.get().uri("/api/admin/switches").with(admin()))
+            .bodyJson()
+            .extractingPath("$.tools.transferStatus")
+            .isEqualTo(false);
+        assertThat(
+            mockMvc.put().uri(tool).with(admin()).contentType(MediaType.APPLICATION_JSON).content("{\"on\": true}")
+        ).hasStatus(HttpStatus.NO_CONTENT);
+        assertThat(
+            mockMvc
+                .put()
+                .uri("/api/admin/switches/tools/nothing")
+                .with(admin())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"on\": false}")
+        ).hasStatus(HttpStatus.NOT_FOUND);
+    }
+
+    private MvcTestResult switchAgent(String userId, boolean on) {
+        return mockMvc
+            .put()
+            .uri("/api/admin/switches/agent")
+            .with(userId.equals("root") ? admin() : jwt().jwt(token -> token.subject(userId)))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"on\": " + on + "}")
+            .exchange();
+    }
+
+    private static RequestPostProcessor admin() {
+        return jwt()
+            .jwt(token -> token.subject("root"))
+            .authorities(new SimpleGrantedAuthority("ROLE_agent-admin"));
     }
 
     private MvcTestResult post(String userId, String body) {

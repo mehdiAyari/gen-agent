@@ -1,0 +1,46 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.chat;
+
+<%- imports %>
+
+/** The tool calls that wait for the approval of the signed-in user, and their decision on each. */
+@<%= type('org.springframework.web.bind.annotation.RestController') %>
+@<%= type('org.springframework.web.bind.annotation.RequestMapping') %>("/api/approvals")
+class ApprovalController {
+
+    record ApprovalDecision(@<%= type('jakarta.validation.constraints.NotNull') %> Boolean approved) {}
+
+    private final ChatService chatService;
+<%_ if (features.requestTimeout) { _%>
+
+    private final <%= type(`${project.generatedPackage}.guard.RequestTimeout`) %> requestTimeout;
+
+    ApprovalController(ChatService chatService, RequestTimeout requestTimeout) {
+        this.chatService = chatService;
+        this.requestTimeout = requestTimeout;
+    }
+<%_ } else { _%>
+
+    ApprovalController(ChatService chatService) {
+        this.chatService = chatService;
+    }
+<%_ } _%>
+
+    @<%= type('org.springframework.web.bind.annotation.GetMapping') %>
+    <%= type('java.util.List') %><<%= type(`${project.generatedPackage}.approval.PendingApproval`) %>> pending(@<%= type('org.springframework.security.core.annotation.AuthenticationPrincipal') %> <%= type('org.springframework.security.oauth2.jwt.Jwt') %> user) {
+        return chatService.pendingApprovals(user.getSubject());
+    }
+
+    /** Makes the call or not, tells the model, and returns its next answer. */
+    @<%= type('org.springframework.web.bind.annotation.PostMapping') %>("/{id}")
+    ChatMessageResponse decide(
+            @<%= type('org.springframework.web.bind.annotation.PathVariable') %> <%= type('java.util.UUID') %> id,
+            @<%= type('jakarta.validation.Valid') %> @<%= type('org.springframework.web.bind.annotation.RequestBody') %> ApprovalDecision decision,
+            @AuthenticationPrincipal Jwt user) {
+<%_ if (features.requestTimeout) { _%>
+        return requestTimeout.call(() -> chatService.decide(id, decision.approved(), user.getSubject()));
+<%_ } else { _%>
+        return chatService.decide(id, decision.approved(), user.getSubject());
+<%_ } _%>
+    }
+}

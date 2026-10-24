@@ -1,6 +1,7 @@
 // Managed by gen-agent: changes here are overwritten.
 package com.example.vaultdesk.generated.privacy;
 
+import com.example.vaultdesk.generated.approval.Approvals;
 import com.example.vaultdesk.generated.cache.ReplyCache;
 import com.example.vaultdesk.generated.cache.SemanticCache;
 import com.example.vaultdesk.generated.limits.UsageLimits;
@@ -27,13 +28,16 @@ public class DataEraser {
 
     private final UsageLimits usageLimits;
 
+    private final Approvals approvals;
+
     DataEraser(
         Conversations conversations,
         ChatMemory chatMemory,
         PersonalData personalData,
         ReplyCache replyCache,
         SemanticCache semanticCache,
-        UsageLimits usageLimits
+        UsageLimits usageLimits,
+        Approvals approvals
     ) {
         this.conversations = conversations;
         this.chatMemory = chatMemory;
@@ -41,6 +45,7 @@ public class DataEraser {
         this.replyCache = replyCache;
         this.semanticCache = semanticCache;
         this.usageLimits = usageLimits;
+        this.approvals = approvals;
     }
 
     /** Returns the number of conversations erased. */
@@ -50,6 +55,7 @@ public class DataEraser {
         replyCache.forget(userId);
         semanticCache.forget(userId);
         usageLimits.forget(userId);
+        approvals.forget(userId);
         return keys.size();
     }
 

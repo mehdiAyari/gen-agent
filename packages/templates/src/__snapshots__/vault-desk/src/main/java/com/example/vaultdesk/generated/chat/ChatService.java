@@ -2,6 +2,8 @@
 package com.example.vaultdesk.generated.chat;
 
 import com.example.vaultdesk.generated.AgentProperties;
+import com.example.vaultdesk.generated.approval.Approvals;
+import com.example.vaultdesk.generated.approval.PendingApproval;
 import com.example.vaultdesk.generated.cache.ReplyCache;
 import com.example.vaultdesk.generated.cache.SemanticCache;
 import com.example.vaultdesk.generated.guard.Guardrails;
@@ -9,6 +11,8 @@ import com.example.vaultdesk.generated.limits.UsageLimits;
 import com.example.vaultdesk.generated.privacy.Conversations;
 import com.example.vaultdesk.generated.privacy.PersonalData;
 import com.example.vaultdesk.generated.resilience.ModelUnavailableException;
+import com.example.vaultdesk.generated.switches.AgentSwitchedOffException;
+import com.example.vaultdesk.generated.switches.KillSwitches;
 import com.example.vaultdesk.generated.tool.ToolGuard;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -49,6 +53,10 @@ class ChatService {
 
     private final ModelRouter modelRouter;
 
+    private final Approvals approvals;
+
+    private final KillSwitches killSwitches;
+
     private final String fallbackAnswer;
 
     ChatService(
@@ -62,6 +70,8 @@ class ChatService {
         Conversations conversations,
         Guardrails guardrails,
         ModelRouter modelRouter,
+        Approvals approvals,
+        KillSwitches killSwitches,
         AgentProperties properties
     ) {
         this.chatClient = chatClient;
@@ -74,10 +84,15 @@ class ChatService {
         this.conversations = conversations;
         this.guardrails = guardrails;
         this.modelRouter = modelRouter;
+        this.approvals = approvals;
+        this.killSwitches = killSwitches;
         this.fallbackAnswer = properties.fallbackAnswer();
     }
 
     ChatMessageResponse reply(ChatMessageRequest request, String userId) {
+        if (killSwitches.agentOff()) {
+            throw new AgentSwitchedOffException();
+        }
         usageLimits.checkRequest(userId);
         String conversationId =
             request.conversationId() != null ? request.conversationId() : UUID.randomUUID().toString();
@@ -105,7 +120,7 @@ class ChatService {
                 return new ChatMessageResponse(conversationId, cached.get());
             }
         }
-        toolGuard.start(memoryKey);
+        toolGuard.start(memoryKey, userId, conversationId);
         String answer;
         try {
             ChatResponse response = chatClient
@@ -123,9 +138,10 @@ class ChatService {
         }
         // Checked before anything else sees it: the caches, the user.
         answer = guardrails.check(answer);
-        // Never reused: an answer built from a tool depends on live data, and one about personal data is about someone.
+        // Never reused: an empty answer, one built from a tool, which depends on live data, one about personal data.
         if (
             firstMessage &&
+            !answer.isBlank() &&
             !toolGuard.toolCalled() &&
             !PersonalData.containsTokens(message) &&
             !PersonalData.containsTokens(answer)
@@ -133,6 +149,65 @@ class ChatService {
             replyCache.put(userId, message, answer);
             semanticCache.put(userId, message, answer);
         }
-        return new ChatMessageResponse(conversationId, personalData.restore(memoryKey, answer));
+        return new ChatMessageResponse(conversationId, personalData.restore(memoryKey, answer), waiting(memoryKey));
+    }
+
+    List<PendingApproval> pendingApprovals(String userId) {
+        return approvals.pendingOf(userId, personalData::restore);
+    }
+
+    /** Makes the call the user approved, or not, tells the model, and returns its next answer. */
+    ChatMessageResponse decide(UUID approvalId, boolean approved, String userId) {
+        if (killSwitches.agentOff()) {
+            throw new AgentSwitchedOffException();
+        }
+        usageLimits.checkRequest(userId);
+        Approvals.Approval approval = approvals.decide(approvalId, userId, approved);
+        String memoryKey = approval.conversationKey();
+        String conversationId = approval.conversationId();
+        toolGuard.start(memoryKey, userId, conversationId);
+        // Told to the model as a message of the conversation, so that it goes on from there.
+        String message = approved
+            ? "The user approved the call to " +
+              approval.tool() +
+              ": it is done, do not make it again. It returned:\n" +
+              toolGuard.callApproved(approval.tool(), approval.arguments())
+            : "The user denied the call to " +
+              approval.tool() +
+              ": it was not made. Do not make it again unless they ask.";
+        String answer;
+        try {
+            ChatResponse response = chatClient
+                .prompt()
+                .user(message)
+                .options(ChatOptions.builder().model(modelRouter.modelFor(message)))
+                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
+                .call()
+                .chatResponse();
+            usageLimits.recordTokens(userId, response.getMetadata().getUsage().getTotalTokens());
+            answer = response.getResult().getOutput().getText();
+        } catch (ModelUnavailableException unavailable) {
+            // No model could answer: the user gets the fallback answer, which nothing keeps.
+            return new ChatMessageResponse(conversationId, fallbackAnswer);
+        }
+        // Checked before anything else sees it: the caches, the user.
+        answer = guardrails.check(answer);
+        return new ChatMessageResponse(conversationId, personalData.restore(memoryKey, answer), waiting(memoryKey));
+    }
+
+    /** The calls of this answer that wait for the user, with the personal data they hold. */
+    private List<PendingApproval> waiting(String memoryKey) {
+        return toolGuard
+            .pendingApprovals()
+            .stream()
+            .map(approval ->
+                new PendingApproval(
+                    approval.id(),
+                    approval.tool(),
+                    personalData.restore(memoryKey, approval.arguments()),
+                    approval.expiresAt()
+                )
+            )
+            .toList();
     }
 }

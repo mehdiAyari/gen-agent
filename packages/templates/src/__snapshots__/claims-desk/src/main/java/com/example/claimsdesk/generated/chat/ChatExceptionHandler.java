@@ -3,6 +3,7 @@ package com.example.claimsdesk.generated.chat;
 
 import com.example.claimsdesk.generated.guard.RequestTimeoutException;
 import com.example.claimsdesk.generated.limits.LimitExceededException;
+import com.example.claimsdesk.generated.switches.AgentSwitchedOffException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -50,6 +51,16 @@ class ChatExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail handleTimeout(RequestTimeoutException exception) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.GATEWAY_TIMEOUT, exception.getMessage());
         problem.setTitle("Too slow");
+        return problem;
+    }
+
+    @ExceptionHandler
+    ProblemDetail handleSwitchedOff(AgentSwitchedOffException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            exception.getMessage()
+        );
+        problem.setTitle("Switched off");
         return problem;
     }
 

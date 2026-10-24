@@ -5,6 +5,7 @@ import com.example.vaultdesk.generated.guard.Guardrails;
 import com.example.vaultdesk.generated.memory.SummarizingChatMemory;
 import com.example.vaultdesk.generated.privacy.PersonalData;
 import com.example.vaultdesk.generated.resilience.ResilientModelAdvisor;
+import com.example.vaultdesk.generated.tool.BlockCardTool;
 import com.example.vaultdesk.generated.tool.ToolGuard;
 import com.example.vaultdesk.generated.tool.TransferStatusTool;
 import com.example.vaultdesk.generated.tool.TransferStatusToolProperties;
@@ -47,6 +48,7 @@ class AgentConfiguration {
         ChatMemory chatMemory,
         AgentProperties properties,
         TransferStatusTool transferStatusTool,
+        BlockCardTool blockCardTool,
         ToolGuard toolGuard,
         Guardrails guardrails,
         ResilientModelAdvisor resilientModelAdvisor
@@ -62,7 +64,7 @@ class AgentConfiguration {
             .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build(), resilientModelAdvisor)
             .defaultToolCallbacks(
                 toolGuard.guard(
-                    Stream.of(Arrays.stream(ToolCallbacks.from(transferStatusTool)))
+                    Stream.of(Arrays.stream(ToolCallbacks.from(transferStatusTool, blockCardTool)))
                         .flatMap(tools -> tools)
                         .toArray(ToolCallback[]::new)
                 )

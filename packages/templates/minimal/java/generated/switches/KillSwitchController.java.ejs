@@ -1,0 +1,55 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.switches;
+
+<%- imports %>
+
+/** For the agent-admin role: which parts of the agent are on, and switching them off or on again. */
+@<%= type('org.springframework.web.bind.annotation.RestController') %>
+@<%= type('org.springframework.web.bind.annotation.RequestMapping') %>("/api/admin/switches")
+class KillSwitchController {
+
+    /**
+     * @param agent whether the agent answers
+     * @param tools whether each tool may be called, by its name for the model
+     */
+    record Switches(boolean agent, <%= type('java.util.Map') %><String, Boolean> tools) {}
+
+    record Switch(@<%= type('jakarta.validation.constraints.NotNull') %> Boolean on) {}
+
+    private final KillSwitches killSwitches;
+
+    private final <%= type('java.util.Set') %><String> tools;
+
+    KillSwitchController(KillSwitches killSwitches<%= features.guardTools ? `, ${type(`${project.generatedPackage}.tool.ToolGuard`)} toolGuard` : '' %>) {
+        this.killSwitches = killSwitches;
+<%_ if (features.guardTools) { _%>
+        this.tools = toolGuard.toolNames();
+<%_ } else { _%>
+        this.tools = Set.of();
+<%_ } _%>
+    }
+
+    @<%= type('org.springframework.web.bind.annotation.GetMapping') %>
+    Switches switches() {
+        Map<String, Boolean> state = new <%= type('java.util.TreeMap') %><>();
+        for (String tool : tools) {
+            state.put(tool, !killSwitches.toolOff(tool));
+        }
+        return new Switches(!killSwitches.agentOff(), state);
+    }
+
+    @<%= type('org.springframework.web.bind.annotation.PutMapping') %>("/agent")
+    @<%= type('org.springframework.web.bind.annotation.ResponseStatus') %>(<%= type('org.springframework.http.HttpStatus') %>.NO_CONTENT)
+    void switchAgent(@<%= type('jakarta.validation.Valid') %> @<%= type('org.springframework.web.bind.annotation.RequestBody') %> Switch request) {
+        killSwitches.switchAgent(request.on());
+    }
+
+    @PutMapping("/tools/{tool}")
+    <%= type('org.springframework.http.ResponseEntity') %><Void> switchTool(@<%= type('org.springframework.web.bind.annotation.PathVariable') %> String tool, @Valid @RequestBody Switch request) {
+        if (!tools.contains(tool)) {
+            return ResponseEntity.notFound().build();
+        }
+        killSwitches.switchTool(tool, request.on());
+        return ResponseEntity.noContent().build();
+    }
+}

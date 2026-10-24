@@ -1,0 +1,14 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.approval;
+
+<%- imports %>
+
+/**
+ * A tool call that waits for the approval of the user who asked.
+ *
+ * @param id what the user approves or denies, with POST /api/approvals/{id}
+ * @param tool the tool the model wants to call
+ * @param arguments what the model wants to call it with, as JSON
+ * @param expiresAt after this, the call can no longer be approved
+ */
+public record PendingApproval(<%= type('java.util.UUID') %> id, String tool, String arguments, <%= type('java.time.Instant') %> expiresAt) {}

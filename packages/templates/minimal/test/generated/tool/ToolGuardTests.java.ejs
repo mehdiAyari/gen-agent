@@ -3,23 +3,33 @@ package <%= project.generatedPackage %>.tool;
 
 <%- imports %>
 
+<%_ const startArgs = [...(features.pii || features.approval ? ['"conversation"'] : []), ...(features.approval ? ['"ada"', '"c1"'] : [])].join(', '); _%>
 class ToolGuardTests {
 <%_ if (features.pii) { _%>
 
     // Personal data is covered by the tests of the application: here the tools get the text as it is.
     private final <%= type(`${project.generatedPackage}.privacy.PersonalData`) %> personalData = <%= staticImport('org.mockito.Mockito.mock') %>(PersonalData.class);
+<%_ } _%>
+<%_ if (features.approval) { _%>
 
-    private final ToolGuard guard = new ToolGuard(personalData);
+    private final <%= type(`${project.generatedPackage}.approval.Approvals`) %> approvals = <%= staticImport('org.mockito.Mockito.mock') %>(Approvals.class);
+<%_ } _%>
+<%_ if (features.killSwitches) { _%>
+
+    private final <%= type(`${project.generatedPackage}.switches.KillSwitches`) %> killSwitches = <%= staticImport('org.mockito.Mockito.mock') %>(KillSwitches.class);
+<%_ } _%>
+
+    private final ToolGuard guard = new ToolGuard(<%- [...(features.pii ? ['personalData'] : []), ...(features.approval ? ['approvals'] : []), ...(features.killSwitches ? ['killSwitches'] : [])].join(', ') %>);
+<%_ if (features.pii || features.approval) { _%>
 
     @<%= type('org.junit.jupiter.api.BeforeEach') %>
-    void passTextThrough() {
+    void startARequest() {
+<%_   if (features.pii) { _%>
         <%= staticImport('org.mockito.Mockito.when') %>(personalData.restore(<%= staticImport('org.mockito.ArgumentMatchers.any') %>(), any())).thenAnswer(call -> call.getArgument(1));
         when(personalData.mask(any(), any())).thenAnswer(call -> call.getArgument(1));
-        guard.start("conversation");
+<%_   } _%>
+        guard.start(<%- startArgs %>);
     }
-<%_ } else { _%>
-
-    private final ToolGuard guard = new ToolGuard();
 <%_ } _%>
 
     private volatile String clockResult = "noon";
@@ -51,12 +61,44 @@ class ToolGuardTests {
     private ToolCallback guarded(ToolCallback callback) {
         return guard.guard(new ToolCallback[] {callback})[0];
     }
+<%_ if (features.approval) { _%>
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void keepsACallThatNeedsApprovalUntilTheUserApprovesIt() {
+<%_   const approvalTool = approvalTools[0].name; _%>
+        ToolCallback sensitive = tool(<%- javaString(approvalTool) %>, input -> {
+            changes.add(input);
+            return "done";
+        });
+        <%= type(`${project.generatedPackage}.approval.PendingApproval`) %> pending = new PendingApproval(<%= type('java.util.UUID') %>.randomUUID(), <%- javaString(approvalTool) %>, "{}", <%= type('java.time.Instant') %>.now());
+        <%= staticImport('org.mockito.Mockito.when') %>(approvals.request(<%= staticImport('org.mockito.ArgumentMatchers.eq') %>("ada"), eq("conversation"), eq("c1"), eq(<%- javaString(approvalTool) %>), eq("{}"), <%= staticImport('org.mockito.ArgumentMatchers.any') %>()))
+                .thenReturn(pending);
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(guarded(sensitive).call("{}")).contains("waits for the approval of the user");
+        assertThat(changes).isEmpty();
+        assertThat(guard.pendingApprovals()).containsExactly(pending);
+
+        assertThat(guard.callApproved(<%- javaString(approvalTool) %>, "{}")).contains("done");
+        assertThat(changes).containsExactly("{}");
+    }
+<%_ } _%>
+<%_ if (features.killSwitches) { _%>
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void neverCallsAToolThatIsSwitchedOff() {
+        <%= staticImport('org.mockito.Mockito.when') %>(killSwitches.toolOff("refund")).thenReturn(true);
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(guarded(refund).call("{}")).contains("switched off");
+        assertThat(changes).isEmpty();
+        assertThat(guard.toolNames()).contains("refund");
+    }
+<%_ } _%>
 <%_ if (features.trackToolCalls) { _%>
 
     @<%= type('org.junit.jupiter.api.Test') %>
     void tellsWhenTheModelCalledATool() {
         ToolCallback guarded = guarded(clock);
-        guard.start(<%= features.pii ? '"conversation"' : '' %>);
+        guard.start(<%- startArgs %>);
 
         <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(guard.toolCalled()).isFalse();
         assertThat(guarded.call("{}")).contains("noon");
@@ -66,7 +108,7 @@ class ToolGuardTests {
     @Test
     void forgetsTheCallsOfThePreviousRequest() {
         guarded(clock).call("{}");
-        guard.start(<%= features.pii ? '"conversation"' : '' %>);
+        guard.start(<%- startArgs %>);
 
         assertThat(guard.toolCalled()).isFalse();
     }
@@ -96,7 +138,7 @@ class ToolGuardTests {
         assertThat(guarded(clock).call("{}")).contains("noon");
 <%_   } _%>
         // The next request starts clean.
-        guard.start(<%= features.pii ? '"conversation"' : '' %>);
+        guard.start(<%- startArgs %>);
         assertThat(guarded(refund).call("{\"order\": 3}")).contains("refunded");
     }
 <%_ } _%>

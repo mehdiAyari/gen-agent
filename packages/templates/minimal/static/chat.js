@@ -129,35 +129,81 @@ function showSignedIn(signedIn) {
 
 // --- Conversation ---
 
-async function send(text) {
+const FAILURES = {
+  404: 'This conversation is gone: your next message starts a new one.',
+  409: 'This request was already answered.',
+  410: 'This request has expired: ask again.',
+  503: 'The agent is switched off for now. Try again later.',
+};
+
+/** Posts to the agent and returns its reply; undefined when the user must sign in again. */
+async function post(path, body) {
   const headers = { 'Content-Type': 'application/json' };
   if (oidc) {
     const token = await accessToken();
     if (token === undefined) return showSignedIn(false);
     headers.Authorization = `Bearer ${token}`;
   }
-  const response = await fetch('api/chat', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ message: text, ...(conversationId === null ? {} : { conversationId }) }),
-  });
+  const response = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
   if (response.status === 401) {
     sessionStorage.removeItem('tokens');
     showSignedIn(false);
     throw new Error('Your session has ended: sign in again.');
   }
-  if (response.status === 404) {
-    conversationId = null;
-    throw new Error('This conversation is gone: your next message starts a new one.');
-  }
+  if (response.status === 404 && path === 'api/chat') conversationId = null;
   if (response.status === 429) {
     const seconds = response.headers.get('Retry-After');
     throw new Error(`Limit reached: try again in ${seconds ?? 'a few'} seconds.`);
   }
-  if (!response.ok) throw new Error('The agent could not answer. Try again later.');
+  if (!response.ok) throw new Error(FAILURES[response.status] ?? 'The agent could not answer. Try again later.');
   const reply = await response.json();
   conversationId = reply.conversationId;
-  return reply.reply;
+  return reply;
+}
+
+/** Shows the reply in place of its pending item, then the tool calls that wait for the user's approval. */
+function showReply(pending, reply) {
+  if (reply === undefined) return pending.remove();
+  // A model may only ask for a tool, with nothing to say yet.
+  if (reply.reply.trim() === '' && (reply.approvals ?? []).length > 0) pending.remove();
+  else {
+    pending.textContent = reply.reply;
+    pending.className = 'agent';
+  }
+  for (const approval of reply.approvals ?? []) showApproval(approval);
+}
+
+function showApproval(approval) {
+  const item = show('approval', '');
+  const until = new Date(approval.expiresAt).toLocaleString();
+  const text = document.createElement('p');
+  text.textContent = `${approval.tool} waits for your approval, until ${until}: ${approval.arguments}`;
+  const actions = document.createElement('div');
+  for (const [label, approved] of [
+    ['Approve', true],
+    ['Deny', false],
+  ]) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.addEventListener('click', () => decide(item, approval.id, approved));
+    actions.append(button);
+  }
+  item.append(text, actions);
+}
+
+async function decide(item, id, approved) {
+  for (const button of item.querySelectorAll('button')) button.disabled = true;
+  error.hidden = true;
+  const pending = show('agent pending', '…');
+  try {
+    showReply(pending, await post(`api/approvals/${encodeURIComponent(id)}`, { approved }));
+    item.querySelector('div').replaceChildren(approved ? 'Approved' : 'Denied');
+  } catch (exception) {
+    pending.remove();
+    for (const button of item.querySelectorAll('button')) button.disabled = false;
+    fail(exception.message);
+  }
 }
 
 form.addEventListener('submit', async (event) => {
@@ -171,12 +217,10 @@ form.addEventListener('submit', async (event) => {
   const button = form.querySelector('button[type="submit"]');
   button.disabled = true;
   try {
-    const reply = await send(text);
-    if (reply === undefined) pending.remove();
-    else {
-      pending.textContent = reply;
-      pending.className = 'agent';
-    }
+    showReply(
+      pending,
+      await post('api/chat', { message: text, ...(conversationId === null ? {} : { conversationId }) }),
+    );
   } catch (exception) {
     pending.remove();
     fail(exception.message);
