@@ -206,7 +206,10 @@
       "cache": "Cache of first answers",
       "cacheHint": "The same question of the same user is answered from Redis, without the model. Never across users, never for answers built from a tool.",
       "observability": "Observability",
-      "observabilityHint": "OpenTelemetry traces and metrics (Grafana in Docker Compose) and a Prometheus endpoint."
+      "observabilityHint": "OpenTelemetry traces and metrics (Grafana in Docker Compose) and a Prometheus endpoint.",
+      "chatUi": "Chat page",
+      "chatUiHint": "A page to talk to the agent in a browser, served by the agent itself.",
+      "chatUiOidcHint": "A page to talk to the agent in a browser; users sign in with your identity provider."
     },
     "mcp": {
       "legend": "MCP servers",

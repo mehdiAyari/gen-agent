@@ -103,6 +103,15 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
           />
         ) : null}
         <SwitchField
+          path="chatUi"
+          label={t('chatUi')}
+          hint={form.auth === 'oidc' ? t('chatUiOidcHint') : t('chatUiHint')}
+          checked={form.chatUi}
+          onCheckedChange={(chatUi) => {
+            update({ chatUi });
+          }}
+        />
+        <SwitchField
           path="observability"
           label={t('observability')}
           hint={t('observabilityHint')}

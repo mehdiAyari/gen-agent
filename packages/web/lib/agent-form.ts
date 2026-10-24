@@ -80,6 +80,8 @@ export interface AgentForm {
   /** OpenTelemetry traces and metrics, and Prometheus metrics. */
   observability: boolean;
   mcp: McpForm[];
+  /** A chat page served by the agent, next to the REST endpoint. */
+  chatUi: boolean;
 }
 
 interface McpForm {
@@ -151,6 +153,7 @@ export function defaultForm(): AgentForm {
     profile: 'minimal',
     ...equipmentOf('minimal'),
     mcp: [],
+    chatUi: false,
   };
 }
 
@@ -237,6 +240,7 @@ export function formToYaml(form: AgentForm): string {
   }
 
   if (form.euOnly) agent.gdpr = { euOnly: true, ...(form.allowNonEuProviders ? { allowNonEuProviders: true } : {}) };
+  if (form.chatUi) agent.interface = ['rest', 'chat-ui'];
   if (form.dockerCompose !== equipment.dockerCompose) agent.deploy = form.dockerCompose ? ['docker-compose'] : [];
 
   const document = new Document({ agent });
@@ -304,6 +308,7 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     dockerCompose: agent.deploy?.includes('docker-compose') ?? false,
     cache: agent.cache?.exact === 'redis',
     observability: agent.observability?.otel === true || agent.observability?.metrics === 'prometheus',
+    chatUi: agent.interface.includes('chat-ui'),
     mcp: (agent.mcp ?? []).map((server) => ({
       name: server.name,
       package: server.package,

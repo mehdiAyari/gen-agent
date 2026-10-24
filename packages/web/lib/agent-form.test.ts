@@ -145,6 +145,14 @@ describe('the standard profile', () => {
     expect(formToYaml(result.form)).toBe(yaml);
   });
 
+  it('adds the chat page to the interface', () => {
+    const yaml = formToYaml({ ...defaultForm(), chatUi: true });
+
+    expect(yaml).toContain('interface:\n    - rest\n    - chat-ui\n');
+    const result = formFromYaml(yaml);
+    expect(result.ok && result.form.chatUi).toBe(true);
+  });
+
   it('maps the limit errors to their fields', () => {
     const form = { ...defaultForm(), rateLimit: '30/min' };
 
