@@ -15,10 +15,7 @@ public class OrderStatusTool {
 
     private final int maxResponseChars;
 
-    private final ToolCalls toolCalls;
-
-    OrderStatusTool(RestClient.Builder restClientBuilder, OrderStatusToolProperties properties, ToolCalls toolCalls) {
-        this.toolCalls = toolCalls;
+    OrderStatusTool(RestClient.Builder restClientBuilder, OrderStatusToolProperties properties) {
         this.restClient = restClientBuilder
             .baseUrl(properties.url())
             .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.token())
@@ -29,7 +26,6 @@ public class OrderStatusTool {
     @Tool(description = "Status and delivery date of a customer order")
     public String orderStatus(String orderId) {
         Objects.requireNonNull(orderId, "orderId is required");
-        toolCalls.record();
         String body = restClient
             .get()
             .uri(uri -> uri.build(orderId))

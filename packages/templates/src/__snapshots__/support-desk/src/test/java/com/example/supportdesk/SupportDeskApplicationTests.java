@@ -283,11 +283,12 @@ class SupportDeskApplicationTests {
         @Override
         public ChatResponse call(Prompt prompt) {
             this.lastPrompt = prompt;
+            String text = "Hello from the agent";
             calls.incrementAndGet();
             // Like a real model, it reports the tokens it used: the budget counts them.
             var usage = new DefaultUsage(0, Math.toIntExact(tokensPerReply));
             return new ChatResponse(
-                List.of(new Generation(new AssistantMessage("Hello from the agent"))),
+                List.of(new Generation(new AssistantMessage(text))),
                 ChatResponseMetadata.builder().usage(usage).build()
             );
         }

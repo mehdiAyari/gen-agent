@@ -44,6 +44,17 @@ public class UsageLimits {
         tokens(userId).consumeIgnoringRateLimits(tokens);
     }
 <%_ } _%>
+<%_ if (features.erasure) { _%>
+
+    public void forget(String userId) {
+<%_   if (limits.requests) { _%>
+        buckets.removeProxy("requests:" + userId);
+<%_   } _%>
+<%_   if (limits.tokens) { _%>
+        buckets.removeProxy("tokens:" + userId);
+<%_   } _%>
+    }
+<%_ } _%>
 <%_ if (limits.requests) { _%>
 
     private <%= type('io.github.bucket4j.Bucket') %> requests(String userId) {

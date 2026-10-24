@@ -1,0 +1,166 @@
+:root {
+  color-scheme: light dark;
+  --background: #f6f7f4;
+  --foreground: #17201b;
+  --muted: #55625a;
+  --border: #d9ded6;
+  --user: #e3ebdf;
+  --agent: #ffffff;
+  --accent: #357a28;
+  --accent-foreground: #ffffff;
+  --danger: #b4312a;
+  font-family: system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #14211a;
+    --foreground: #e8ede6;
+    --muted: #a3b2a8;
+    --border: #2c3e33;
+    --user: #263a2e;
+    --agent: #1a2a21;
+    --accent: #6fbf5a;
+    --accent-foreground: #0f1a13;
+    --danger: #e5675e;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  line-height: 1.5;
+}
+
+header,
+main {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.intro,
+.disclosure {
+  color: var(--muted);
+}
+
+#messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+#messages li {
+  max-width: 85%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#messages .user {
+  align-self: flex-end;
+  background: var(--user);
+}
+
+#messages .agent {
+  align-self: flex-start;
+  background: var(--agent);
+}
+
+#messages .pending {
+  color: var(--muted);
+}
+
+#error {
+  color: var(--danger);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+label {
+  font-weight: 600;
+}
+
+textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--agent);
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.actions .disclosure {
+  margin: 0 auto 0 0;
+  font-size: 0.875rem;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button[type='submit'],
+#sign-in-button {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}

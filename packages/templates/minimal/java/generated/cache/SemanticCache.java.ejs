@@ -1,0 +1,52 @@
+// Managed by gen-agent: changes here are overwritten. Set the threshold in application.yml.
+package <%= project.generatedPackage %>.cache;
+
+<%- imports %>
+
+/**
+ * Reuses the first answer of a conversation when the same user asks a question of the same meaning again: questions
+ * are compared by their embeddings in pgvector, above {@code agent.cache.semantic.threshold}. Entries are filtered by
+ * user, so that an answer never reaches anyone else.
+ */
+@<%= type('org.springframework.stereotype.Component') %>
+public class SemanticCache {
+
+    private final <%= type('org.springframework.ai.vectorstore.VectorStore') %> store;
+
+    private final double threshold;
+
+    SemanticCache(<%= type('org.springframework.ai.vectorstore.pgvector.PgVectorStore') %> semanticCacheStore, <%= type(`${project.generatedPackage}.AgentProperties`) %> properties) {
+        this.store = semanticCacheStore;
+        this.threshold = properties.cache().semantic().threshold();
+    }
+
+    public <%= type('java.util.Optional') %><String> find(String userId, String question) {
+        return store
+                .similaritySearch(<%= type('org.springframework.ai.vectorstore.SearchRequest') %>.builder()
+                        .query(question)
+                        .topK(1)
+                        .similarityThreshold(threshold)
+                        .filterExpression(ofUser(userId))
+                        .build())
+                .stream()
+                .findFirst()
+                .map(document -> (String) document.getMetadata().get("answer"));
+    }
+
+    public void put(String userId, String question, String answer) {
+        store.add(<%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.document.Document') %>(question, <%= type('java.util.Map') %>.of("user", user(userId), "answer", answer))));
+    }
+
+    public void forget(String userId) {
+        store.delete(ofUser(userId));
+    }
+
+    private static <%= type('org.springframework.ai.vectorstore.filter.Filter') %>.Expression ofUser(String userId) {
+        return new <%= type('org.springframework.ai.vectorstore.filter.FilterExpressionBuilder') %>().eq("user", user(userId)).build();
+    }
+
+    /** A hash, not the user id itself: the table holds no identifier. */
+    private static String user(String userId) {
+        return <%= type('java.util.UUID') %>.nameUUIDFromBytes(userId.getBytes(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8)).toString();
+    }
+}

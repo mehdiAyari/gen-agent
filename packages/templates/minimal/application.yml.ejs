@@ -33,6 +33,10 @@ spring:
 <%_ if (provider.maxTokens !== undefined) { _%>
         <%= provider.maxTokensProperty %>: <%= provider.maxTokens %>
 <%_ } _%>
+<%_ if (embedding) { _%>
+      embedding:
+        model: <%= embedding.model %>
+<%_ } _%>
 <%_ if (features.mcp) { _%>
     mcp:
       client:
@@ -64,6 +68,11 @@ spring:
 
 agent:
   system-prompt: classpath:<%= prompt.resource %>
+<%_ if (features.erasure) { _%>
+  security:
+    # Where the roles are in the tokens of the provider: agent-admin may erase any user's data.
+    roles-claim: ${OIDC_ROLES_CLAIM:realm_access.roles}
+<%_ } _%>
 <%_ if (features.chatUi && features.oidc) { _%>
   chat-ui:
     # Public client of the chat page at the OIDC provider: authorization code with PKCE, no secret.
@@ -71,6 +80,10 @@ agent:
 <%_ } _%>
   memory:
     window: <%= memory.window %>
+<%_ if (features.retention) { _%>
+    # Unused conversations are erased after this long (GDPR storage limitation).
+    retention: <%= retention %>
+<%_ } _%>
 <%_ if (features.limits) { _%>
   limits:
 <%_   if (limits.requests) { _%>
@@ -99,6 +112,17 @@ agent:
   cache:
     # How long a first answer is reused for the same question of the same user.
     ttl: 1h
+<%_   if (features.semanticCache) { _%>
+    semantic:
+      # Questions of the same user this similar (0 to 1) share their answer.
+      threshold: <%= semanticCache.threshold %>
+      dimensions: <%= embedding.dimensions %>
+<%_   } _%>
+<%_ } _%>
+<%_ if (features.pii) { _%>
+  privacy:
+    # How long the personal data behind the tokens of a conversation is kept.
+    ttl: <%= retention ?? '30d' %>
 <%_ } _%>
 <%_ if (features.otel || features.prometheus) { _%>
 

@@ -1,0 +1,28 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.privacy;
+
+<%- imports %>
+
+/** The right to erasure: users erase their own data; an administrator ({@code agent-admin} role) erases anyone's. */
+@<%= type('org.springframework.web.bind.annotation.RestController') %>
+class ErasureController {
+
+    private final DataEraser eraser;
+
+    ErasureController(DataEraser eraser) {
+        this.eraser = eraser;
+    }
+
+    @<%= type('org.springframework.web.bind.annotation.DeleteMapping') %>("/api/me")
+    <%= type('org.springframework.http.ResponseEntity') %><Void> eraseMe(@<%= type('org.springframework.security.core.annotation.AuthenticationPrincipal') %> <%= type('org.springframework.security.oauth2.jwt.Jwt') %> user) {
+        eraser.erase(user.getSubject());
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Only for the agent-admin role: see SecurityConfiguration. */
+    @DeleteMapping("/api/users/{userId}")
+    ResponseEntity<Void> eraseUser(@<%= type('org.springframework.web.bind.annotation.PathVariable') %> String userId) {
+        eraser.erase(userId);
+        return ResponseEntity.noContent().build();
+    }
+}

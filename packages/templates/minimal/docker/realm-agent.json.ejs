@@ -21,6 +21,11 @@
 <%_ } _%>
     }
   ],
+<%_ if (features.erasure) { _%>
+  "roles": {
+    "realm": [{ "name": "agent-admin", "description": "May erase the data of any user" }]
+  },
+<%_ } _%>
   "users": [
     {
       "username": "demo",
@@ -30,6 +35,16 @@
       "lastName": "User",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "demo", "temporary": false }]
-    }
+    }<%_ if (features.erasure) { _%>,
+    {
+      "username": "admin",
+      "email": "admin@example.org",
+      "emailVerified": true,
+      "firstName": "Agent",
+      "lastName": "Admin",
+      "enabled": true,
+      "realmRoles": ["agent-admin"],
+      "credentials": [{ "type": "password", "value": "admin", "temporary": false }]
+    }<%_ } _%>
   ]
 }

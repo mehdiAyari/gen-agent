@@ -1,0 +1,66 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.tool;
+
+<%- imports %>
+
+/**
+ * Every tool of the model, generated or from an MCP server, goes through here.<%= features.trackToolCalls ? ' An answer built from a tool depends\n * on live data: the cache does not keep it.' : '' %><%= features.pii ? ' Tools get the real personal data behind the tokens the model\n * saw, and their results reach the model masked.' : '' %> Tools run on the thread of the request, whose state is kept here.
+ */
+@<%= type('org.springframework.stereotype.Component') %>
+public class ToolGuard {
+<%_ if (features.pii) { _%>
+
+    private final ThreadLocal<String> conversation = new ThreadLocal<>();
+<%_ } _%>
+<%_ if (features.trackToolCalls) { _%>
+
+    private final ThreadLocal<Boolean> called = ThreadLocal.withInitial(() -> false);
+<%_ } _%>
+<%_ if (features.pii) { _%>
+
+    private final <%= type(`${project.generatedPackage}.privacy.PersonalData`) %> personalData;
+
+    ToolGuard(PersonalData personalData) {
+        this.personalData = personalData;
+    }
+<%_ } _%>
+
+    /** Before asking the model<%= features.pii ? ', with the conversation whose tokens the tools may see' : '' %>. */
+    public void start(<%= features.pii ? 'String conversationKey' : '' %>) {
+<%_ if (features.pii) { _%>
+        conversation.set(conversationKey);
+<%_ } _%>
+<%_ if (features.trackToolCalls) { _%>
+        called.set(false);
+<%_ } _%>
+    }
+<%_ if (features.trackToolCalls) { _%>
+
+    public boolean toolCalled() {
+        return called.get();
+    }
+<%_ } _%>
+
+    public <%= type('org.springframework.ai.tool.ToolCallback') %>[] guard(ToolCallback[] callbacks) {
+        return <%= type('java.util.Arrays') %>.stream(callbacks)
+                .map(callback -> new GuardedToolCallback(callback, this))
+                .toArray(ToolCallback[]::new);
+    }
+
+    String beforeCall(String input) {
+<%_ if (features.trackToolCalls) { _%>
+        called.set(true);
+<%_ } _%>
+<%_ if (features.pii) { _%>
+        return personalData.restore(conversation.get(), input);
+<%_ } else { _%>
+        return input;
+<%_ } _%>
+    }
+<%_ if (features.pii) { _%>
+
+    String afterCall(String result) {
+        return personalData.mask(conversation.get(), result);
+    }
+<%_ } _%>
+}

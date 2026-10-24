@@ -55,7 +55,7 @@ services:
 <%_ if (features.jdbcMemory) { _%>
 
   postgres:
-    image: <%= images.postgres %>
+    image: <%= features.vectorStore ? images.pgvector : images.postgres %>
     environment:
       POSTGRES_DB: agent
       POSTGRES_USER: agent

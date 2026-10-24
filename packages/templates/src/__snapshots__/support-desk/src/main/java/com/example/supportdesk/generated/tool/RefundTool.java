@@ -11,17 +11,13 @@ public class RefundTool {
 
     private final RefundHandler handler;
 
-    private final ToolCalls toolCalls;
-
-    RefundTool(RefundHandler handler, ToolCalls toolCalls) {
+    RefundTool(RefundHandler handler) {
         this.handler = handler;
-        this.toolCalls = toolCalls;
     }
 
     @Tool(description = "Refunds an order of the customer")
     public String refund(String orderId) {
         Objects.requireNonNull(orderId, "orderId is required");
-        toolCalls.record();
         return handler.refund(orderId);
     }
 }

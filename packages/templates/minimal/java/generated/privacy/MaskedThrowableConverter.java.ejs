@@ -1,0 +1,13 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.privacy;
+
+<%- imports %>
+
+/** The stack trace of a log line with its personal data masked: exception messages often quote their input. */
+public class MaskedThrowableConverter extends <%= type('org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter') %> {
+
+    @Override
+    public String convert(<%= type('ch.qos.logback.classic.spi.ILoggingEvent') %> event) {
+        return PersonalDataPatterns.maskForLogs(super.convert(event));
+    }
+}

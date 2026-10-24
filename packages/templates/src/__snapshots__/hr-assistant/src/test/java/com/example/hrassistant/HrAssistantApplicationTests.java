@@ -100,7 +100,8 @@ class HrAssistantApplicationTests {
         @Override
         public ChatResponse call(Prompt prompt) {
             this.lastPrompt = prompt;
-            return new ChatResponse(List.of(new Generation(new AssistantMessage("Hello from the agent"))));
+            String text = "Hello from the agent";
+            return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
         }
 
         Prompt lastPrompt() {

@@ -56,6 +56,22 @@
             <scope>runtime</scope>
         </dependency>
 <%_ } _%>
+<%_ if (features.erasure || features.retention) { _%>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+<%_ } _%>
+<%_ if (features.vectorStore) { _%>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-pgvector-store</artifactId>
+        </dependency>
+<%_ } _%>
 <%_ if (features.oidc) { _%>
         <dependency>
             <groupId>org.springframework.boot</groupId>

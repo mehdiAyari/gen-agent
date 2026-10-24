@@ -26,6 +26,5 @@
       "lastName": "User",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "demo", "temporary": false }]
-    }
-  ]
+    }  ]
 }

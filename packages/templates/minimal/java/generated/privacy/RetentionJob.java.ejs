@@ -1,0 +1,48 @@
+// Managed by gen-agent: changes here are overwritten. Set the retention in application.yml.
+package <%= project.generatedPackage %>.privacy;
+
+<%- imports %>
+
+/** Every hour, erases the conversations unused for longer than {@code agent.memory.retention}. */
+@<%= type('org.springframework.stereotype.Component') %>
+public class RetentionJob {
+
+    private static final <%= type('org.slf4j.Logger') %> log = <%= type('org.slf4j.LoggerFactory') %>.getLogger(RetentionJob.class);
+
+    private final Conversations conversations;
+<%_ if (features.erasure) { _%>
+
+    private final DataEraser eraser;
+<%_ } else { _%>
+
+    private final <%= type('org.springframework.ai.chat.memory.ChatMemory') %> chatMemory;
+<%_ } _%>
+
+    private final <%= type('java.time.Duration') %> retention;
+
+    RetentionJob(Conversations conversations, <%= features.erasure ? 'DataEraser eraser' : 'ChatMemory chatMemory' %>, <%= type(`${project.generatedPackage}.AgentProperties`) %> properties) {
+        this.conversations = conversations;
+<%_ if (features.erasure) { _%>
+        this.eraser = eraser;
+<%_ } else { _%>
+        this.chatMemory = chatMemory;
+<%_ } _%>
+        this.retention = properties.memory().retention();
+    }
+
+    @<%= type('org.springframework.scheduling.annotation.Scheduled') %>(cron = "0 0 * * * *")
+    public void purge() {
+        <%= type('java.util.List') %><String> expired = conversations.unusedSince(<%= type('java.time.Instant') %>.now().minus(retention));
+        for (String memoryKey : expired) {
+<%_ if (features.erasure) { _%>
+            eraser.eraseConversation(memoryKey);
+<%_ } else { _%>
+            chatMemory.clear(memoryKey);
+            conversations.delete(memoryKey);
+<%_ } _%>
+        }
+        if (!expired.isEmpty()) {
+            log.info("Purged {} conversations unused for {}", expired.size(), retention);
+        }
+    }
+}

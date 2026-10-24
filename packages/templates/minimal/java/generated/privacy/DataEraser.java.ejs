@@ -1,0 +1,80 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.privacy;
+
+<%- imports %>
+
+/**
+ * Erases what the agent keeps about a user: conversations<%= features.pii ? ', the personal data behind their tokens' : '' %><%= features.cache ? ', cached answers' : '' %><%= features.limits ? ' and usage counters' : '' %>
+ * (GDPR right to erasure).
+ */
+@<%= type('org.springframework.stereotype.Service') %>
+public class DataEraser {
+
+    private final Conversations conversations;
+
+    private final <%= type('org.springframework.ai.chat.memory.ChatMemory') %> chatMemory;
+<%_ if (features.pii) { _%>
+
+    private final PersonalData personalData;
+<%_ } _%>
+<%_ if (features.cache) { _%>
+
+    private final <%= type(`${project.generatedPackage}.cache.ReplyCache`) %> replyCache;
+<%_ } _%>
+<%_ if (features.semanticCache) { _%>
+
+    private final <%= type(`${project.generatedPackage}.cache.SemanticCache`) %> semanticCache;
+<%_ } _%>
+<%_ if (features.limits) { _%>
+
+    private final <%= type(`${project.generatedPackage}.limits.UsageLimits`) %> usageLimits;
+<%_ } _%>
+
+    DataEraser(<%- [
+      'Conversations conversations',
+      'ChatMemory chatMemory',
+      ...(features.pii ? ['PersonalData personalData'] : []),
+      ...(features.cache ? ['ReplyCache replyCache'] : []),
+      ...(features.semanticCache ? ['SemanticCache semanticCache'] : []),
+      ...(features.limits ? ['UsageLimits usageLimits'] : []),
+    ].join(', ') %>) {
+        this.conversations = conversations;
+        this.chatMemory = chatMemory;
+<%_ if (features.pii) { _%>
+        this.personalData = personalData;
+<%_ } _%>
+<%_ if (features.cache) { _%>
+        this.replyCache = replyCache;
+<%_ } _%>
+<%_ if (features.semanticCache) { _%>
+        this.semanticCache = semanticCache;
+<%_ } _%>
+<%_ if (features.limits) { _%>
+        this.usageLimits = usageLimits;
+<%_ } _%>
+    }
+
+    /** Returns the number of conversations erased. */
+    public int erase(String userId) {
+        <%= type('java.util.List') %><String> keys = conversations.of(userId);
+        keys.forEach(this::eraseConversation);
+<%_ if (features.cache) { _%>
+        replyCache.forget(userId);
+<%_ } _%>
+<%_ if (features.semanticCache) { _%>
+        semanticCache.forget(userId);
+<%_ } _%>
+<%_ if (features.limits) { _%>
+        usageLimits.forget(userId);
+<%_ } _%>
+        return keys.size();
+    }
+
+    public void eraseConversation(String memoryKey) {
+        chatMemory.clear(memoryKey);
+<%_ if (features.pii) { _%>
+        personalData.forget(memoryKey);
+<%_ } _%>
+        conversations.delete(memoryKey);
+    }
+}

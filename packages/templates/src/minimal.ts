@@ -100,6 +100,54 @@ export const minimalEntries: TemplateEntry[] = [
     output: (m) => main(m, 'generated/chat/UnknownConversationException.java'),
   },
   {
+    template: 'resources/logback-spring.xml.ejs',
+    owner: 'merged',
+    when: (m) => m.features.logsWithoutPii,
+    output: () => 'src/main/resources/logback-spring.xml',
+  },
+  {
+    template: 'resources/db/V1__agent_conversation.sql.ejs',
+    owner: 'generated',
+    when: (m) => m.features.erasure || m.features.retention,
+    output: () => 'src/main/resources/db/migration/V1__agent_conversation.sql',
+  },
+  ...['PersonalDataPatterns', 'PersonalData'].map((name): TemplateEntry => ({
+    template: `java/generated/privacy/${name}.java.ejs`,
+    owner: 'generated',
+    when: (m) => m.features.pii || (name === 'PersonalDataPatterns' && m.features.logsWithoutPii),
+    output: (m) => main(m, `generated/privacy/${name}.java`),
+  })),
+  ...['MaskedMessageConverter', 'MaskedThrowableConverter'].map((name): TemplateEntry => ({
+    template: `java/generated/privacy/${name}.java.ejs`,
+    owner: 'generated',
+    when: (m) => m.features.logsWithoutPii,
+    output: (m) => main(m, `generated/privacy/${name}.java`),
+  })),
+  {
+    template: 'java/generated/privacy/Conversations.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.erasure || m.features.retention,
+    output: (m) => main(m, 'generated/privacy/Conversations.java'),
+  },
+  ...['DataEraser', 'ErasureController'].map((name): TemplateEntry => ({
+    template: `java/generated/privacy/${name}.java.ejs`,
+    owner: 'generated',
+    when: (m) => m.features.erasure,
+    output: (m) => main(m, `generated/privacy/${name}.java`),
+  })),
+  {
+    template: 'java/generated/privacy/RetentionJob.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.retention,
+    output: (m) => main(m, 'generated/privacy/RetentionJob.java'),
+  },
+  ...['SemanticCache', 'SemanticCacheConfiguration'].map((name): TemplateEntry => ({
+    template: `java/generated/cache/${name}.java.ejs`,
+    owner: 'generated',
+    when: (m) => m.features.semanticCache,
+    output: (m) => main(m, `generated/cache/${name}.java`),
+  })),
+  {
     template: 'java/generated/ui/ChatUiController.java.ejs',
     owner: 'generated',
     when: (m) => m.features.chatUi,
@@ -124,18 +172,12 @@ export const minimalEntries: TemplateEntry[] = [
     when: (m) => m.features.cache,
     output: (m) => main(m, 'generated/cache/ReplyCache.java'),
   },
-  {
-    template: 'java/generated/tool/ToolCalls.java.ejs',
+  ...['ToolGuard', 'GuardedToolCallback'].map((name): TemplateEntry => ({
+    template: `java/generated/tool/${name}.java.ejs`,
     owner: 'generated',
-    when: (m) => m.features.trackToolCalls,
-    output: (m) => main(m, 'generated/tool/ToolCalls.java'),
-  },
-  {
-    template: 'java/generated/tool/RecordedToolCallback.java.ejs',
-    owner: 'generated',
-    when: (m) => m.features.trackToolCalls && m.features.mcp,
-    output: (m) => main(m, 'generated/tool/RecordedToolCallback.java'),
-  },
+    when: (m) => m.features.guardTools,
+    output: (m) => main(m, `generated/tool/${name}.java`),
+  })),
   {
     template: 'java/generated/tool/HttpTool.java.ejs',
     owner: 'generated',
@@ -206,6 +248,19 @@ export const minimalEntries: TemplateEntry[] = [
     owner: 'generated',
     when: (m) => m.features.httpTools,
     output: (m) => test(m, 'generated/tool/ToolResponsesTests.java'),
+  },
+  {
+    template: 'test/generated/privacy/PersonalDataPatternsTests.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.pii || m.features.logsWithoutPii,
+    output: (m) => test(m, 'generated/privacy/PersonalDataPatternsTests.java'),
+  },
+  {
+    template: 'test/generated/tool/ToolGuardTests.java.ejs',
+    owner: 'generated',
+    // With personal data masking, ToolGuard needs Redis: covered by the tests of the application.
+    when: (m) => m.features.guardTools && !m.features.pii,
+    output: (m) => test(m, 'generated/tool/ToolGuardTests.java'),
   },
   {
     template: 'test/generated/tool/JavaToolTests.java.ejs',

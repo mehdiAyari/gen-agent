@@ -54,7 +54,12 @@ public class ReplyCache {
     /** Questions that differ only by case or spacing share their answer. */
     private String key(String userId, String question) {
         String normalized = question.strip().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
-        return "reply:" + HexFormat.of().formatHex(sha256(userId + "\n" + context + "\n" + normalized));
+        return prefix(userId) + HexFormat.of().formatHex(sha256(context + "\n" + normalized));
+    }
+
+    /** Every answer of a user starts with it, without the user id itself. */
+    private static String prefix(String userId) {
+        return "reply:" + HexFormat.of().formatHex(sha256(userId)) + ":";
     }
 
     private static byte[] sha256(String text) {

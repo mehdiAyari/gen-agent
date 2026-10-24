@@ -19,12 +19,13 @@ class ChatService {
     ChatMessageResponse reply(ChatMessageRequest request) {
         String conversationId =
             request.conversationId() != null ? request.conversationId() : UUID.randomUUID().toString();
-        String reply = chatClient
+        String message = request.message();
+        String answer = chatClient
             .prompt()
-            .user(request.message())
+            .user(message)
             .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))
             .call()
             .content();
-        return new ChatMessageResponse(conversationId, reply);
+        return new ChatMessageResponse(conversationId, answer);
     }
 }

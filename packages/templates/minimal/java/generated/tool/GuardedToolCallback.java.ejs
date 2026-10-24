@@ -3,16 +3,16 @@ package <%= project.generatedPackage %>.tool;
 
 <%- imports %>
 
-/** A tool of an MCP server that reports its calls to {@link ToolCalls}. */
-class RecordedToolCallback implements <%= type('org.springframework.ai.tool.ToolCallback') %> {
+/** A tool of the model, called through {@link ToolGuard}. */
+class GuardedToolCallback implements <%= type('org.springframework.ai.tool.ToolCallback') %> {
 
     private final ToolCallback delegate;
 
-    private final ToolCalls toolCalls;
+    private final ToolGuard guard;
 
-    RecordedToolCallback(ToolCallback delegate, ToolCalls toolCalls) {
+    GuardedToolCallback(ToolCallback delegate, ToolGuard guard) {
         this.delegate = delegate;
-        this.toolCalls = toolCalls;
+        this.guard = guard;
     }
 
     @Override
@@ -27,13 +27,19 @@ class RecordedToolCallback implements <%= type('org.springframework.ai.tool.Tool
 
     @Override
     public String call(String toolInput) {
-        toolCalls.record();
-        return delegate.call(toolInput);
+<%_ if (features.pii) { _%>
+        return guard.afterCall(delegate.call(guard.beforeCall(toolInput)));
+<%_ } else { _%>
+        return delegate.call(guard.beforeCall(toolInput));
+<%_ } _%>
     }
 
     @Override
     public String call(String toolInput, <%= type('org.springframework.ai.chat.model.ToolContext') %> toolContext) {
-        toolCalls.record();
-        return delegate.call(toolInput, toolContext);
+<%_ if (features.pii) { _%>
+        return guard.afterCall(delegate.call(guard.beforeCall(toolInput), toolContext));
+<%_ } else { _%>
+        return delegate.call(guard.beforeCall(toolInput), toolContext);
+<%_ } _%>
     }
 }

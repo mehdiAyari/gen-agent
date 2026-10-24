@@ -1,0 +1,13 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.privacy;
+
+<%- imports %>
+
+/** The message of a log line with its personal data masked: see logback-spring.xml. */
+public class MaskedMessageConverter extends <%= type('ch.qos.logback.classic.pattern.MessageConverter') %> {
+
+    @Override
+    public String convert(<%= type('ch.qos.logback.classic.spi.ILoggingEvent') %> event) {
+        return PersonalDataPatterns.maskForLogs(super.convert(event));
+    }
+}

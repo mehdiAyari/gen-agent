@@ -10,6 +10,9 @@ package <%= project.generatedPackage %>;
 <%_ } else { _%>
 @<%= type('org.springframework.boot.context.properties.EnableConfigurationProperties') %>(AgentProperties.class)
 <%_ } _%>
+<%_ if (features.retention) { _%>
+@<%= type('org.springframework.scheduling.annotation.EnableScheduling') %>
+<%_ } _%>
 class AgentConfiguration {
 
     @<%= type('org.springframework.context.annotation.Bean') %>
@@ -37,19 +40,30 @@ class AgentConfiguration {
             AgentProperties properties<%_ for (const tool of tools) { _%>,
             <%= type(`${project.generatedPackage}.tool.${tool.className}`) %> <%= tool.methodName %>Tool<%_ } _%><%_ if (features.mcp) { _%>,
             // The tools of the MCP servers of application.yml; none when spring.ai.mcp.client.enabled is false.
-            <%= type('java.util.List') %><<%= type('org.springframework.ai.tool.ToolCallbackProvider') %>> mcpTools<%_ } _%><%_ if (features.trackToolCalls && features.mcp) { _%>,
-            <%= type(`${project.generatedPackage}.tool.ToolCalls`) %> toolCalls<%_ } _%>) {
+            <%= type('java.util.List') %><<%= type('org.springframework.ai.tool.ToolCallbackProvider') %>> mcpTools<%_ } _%><%_ if (features.guardTools) { _%>,
+            <%= type(`${project.generatedPackage}.tool.ToolGuard`) %> toolGuard<%_ } _%>)<%= features.pii ? ` throws ${type('java.io.IOException')}` : '' %> {
+<%_ if (features.pii) { _%>
+        // The model is told what the tokens of personal data are, after the system prompt.
+        return builder.defaultSystem(properties.systemPrompt().getContentAsString(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8) + <%= type(`${project.generatedPackage}.privacy.PersonalData`) %>.PROMPT_NOTE)
+<%_ } else { _%>
         return builder.defaultSystem(properties.systemPrompt())
-                .defaultAdvisors(<%= type('org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor') %>.builder(chatMemory).build())
-<%_ if (tools.length > 0) { _%>
-                .defaultTools(<%= tools.map((tool) => `${tool.methodName}Tool`).join(', ') %>)
 <%_ } _%>
-<%_ if (features.mcp && features.trackToolCalls) { _%>
-                .defaultToolCallbacks(toolCalls.recorded(mcpTools.stream()
-                        .flatMap(provider -> <%= type('java.util.Arrays') %>.stream(provider.getToolCallbacks()))
+                .defaultAdvisors(<%= type('org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor') %>.builder(chatMemory).build())
+<%_ if (features.guardTools) { _%>
+                .defaultToolCallbacks(toolGuard.guard(<%= type('java.util.stream.Stream') %>.of(
+                                <%- [
+                                  ...(tools.length > 0 ? [`${type('java.util.Arrays')}.stream(${type('org.springframework.ai.support.ToolCallbacks')}.from(${tools.map((tool) => `${tool.methodName}Tool`).join(', ')}))`] : []),
+                                  ...(features.mcp ? ['mcpTools.stream().flatMap(provider -> Arrays.stream(provider.getToolCallbacks()))'] : []),
+                                ].join(',\n') %>)
+                        .flatMap(tools -> tools)
                         .toArray(<%= type('org.springframework.ai.tool.ToolCallback') %>[]::new)))
-<%_ } else if (features.mcp) { _%>
+<%_ } else { _%>
+<%_   if (tools.length > 0) { _%>
+                .defaultTools(<%= tools.map((tool) => `${tool.methodName}Tool`).join(', ') %>)
+<%_   } _%>
+<%_   if (features.mcp) { _%>
                 .defaultToolCallbacks(mcpTools.toArray(ToolCallbackProvider[]::new))
+<%_   } _%>
 <%_ } _%>
                 .build();
     }

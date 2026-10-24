@@ -27,9 +27,21 @@ class ChatService {
 
     private final <%= type(`${project.generatedPackage}.cache.ReplyCache`) %> replyCache;
 <%_ } _%>
-<%_ if (features.trackToolCalls) { _%>
+<%_ if (features.guardTools) { _%>
 
-    private final <%= type(`${project.generatedPackage}.tool.ToolCalls`) %> toolCalls;
+    private final <%= type(`${project.generatedPackage}.tool.ToolGuard`) %> toolGuard;
+<%_ } _%>
+<%_ if (features.semanticCache) { _%>
+
+    private final <%= type(`${project.generatedPackage}.cache.SemanticCache`) %> semanticCache;
+<%_ } _%>
+<%_ if (features.pii) { _%>
+
+    private final <%= type(`${project.generatedPackage}.privacy.PersonalData`) %> personalData;
+<%_ } _%>
+<%_ if (features.erasure || features.retention) { _%>
+
+    private final <%= type(`${project.generatedPackage}.privacy.Conversations`) %> conversations;
 <%_ } _%>
 
     ChatService(<%- [
@@ -37,7 +49,10 @@ class ChatService {
       ...(features.oidc ? ['ChatMemory chatMemory'] : []),
       ...(features.limits ? ['UsageLimits usageLimits'] : []),
       ...(features.cache ? ['ReplyCache replyCache'] : []),
-      ...(features.trackToolCalls ? ['ToolCalls toolCalls'] : []),
+      ...(features.guardTools ? ['ToolGuard toolGuard'] : []),
+      ...(features.semanticCache ? ['SemanticCache semanticCache'] : []),
+      ...(features.pii ? ['PersonalData personalData'] : []),
+      ...(features.erasure || features.retention ? ['Conversations conversations'] : []),
     ].join(', ') %>) {
         this.chatClient = chatClient;
 <%_ if (features.oidc) { _%>
@@ -49,11 +64,35 @@ class ChatService {
 <%_ if (features.cache) { _%>
         this.replyCache = replyCache;
 <%_ } _%>
-<%_ if (features.trackToolCalls) { _%>
-        this.toolCalls = toolCalls;
+<%_ if (features.guardTools) { _%>
+        this.toolGuard = toolGuard;
+<%_ } _%>
+<%_ if (features.semanticCache) { _%>
+        this.semanticCache = semanticCache;
+<%_ } _%>
+<%_ if (features.pii) { _%>
+        this.personalData = personalData;
+<%_ } _%>
+<%_ if (features.erasure || features.retention) { _%>
+        this.conversations = conversations;
 <%_ } _%>
     }
 
+<%_ const askModel = (message, key) => limits.tokens
+  ? `${type('org.springframework.ai.chat.model.ChatResponse')} response = chatClient
+                .prompt()
+                .user(${message})
+                .advisors(advisor -> advisor.param(${type('org.springframework.ai.chat.memory.ChatMemory')}.CONVERSATION_ID, ${key}))
+                .call()
+                .chatResponse();
+        usageLimits.recordTokens(userId, response.getMetadata().getUsage().getTotalTokens());
+        String answer = response.getResult().getOutput().getText();`
+  : `String answer = chatClient
+                .prompt()
+                .user(${message})
+                .advisors(advisor -> advisor.param(${type('org.springframework.ai.chat.memory.ChatMemory')}.CONVERSATION_ID, ${key}))
+                .call()
+                .content();`; _%>
 <%_ if (features.oidc) { _%>
     ChatMessageResponse reply(ChatMessageRequest request, String userId) {
 <%_   if (features.limits) { _%>
@@ -68,61 +107,70 @@ class ChatService {
         if (request.conversationId() != null && chatMemory.get(memoryKey).isEmpty()) {
             throw new UnknownConversationException(conversationId);
         }
+<%_   if (features.pii) { _%>
+        // The model, the memory and the caches only ever see tokens in place of personal data.
+        String message = personalData.mask(memoryKey, request.message());
+<%_   } else { _%>
+        String message = request.message();
+<%_   } _%>
+<%_   if (features.erasure || features.retention) { _%>
+        conversations.touch(memoryKey, userId);
+<%_   } _%>
 <%_   if (features.cache) { _%>
         boolean firstMessage = request.conversationId() == null;
         if (firstMessage) {
-            <%= type('java.util.Optional') %><String> cached = replyCache.find(userId, request.message());
+            <%= type('java.util.Optional') %><String> cached = replyCache.find(userId, message)<%= features.semanticCache ? '.or(() -> semanticCache.find(userId, message))' : '' %>;
             if (cached.isPresent()) {
                 // Kept in the conversation as if the model had answered, so that it can go on from there.
-                chatMemory.add(memoryKey, <%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.chat.messages.UserMessage') %>(request.message()), new <%= type('org.springframework.ai.chat.messages.AssistantMessage') %>(cached.get())));
+                chatMemory.add(memoryKey, <%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.chat.messages.UserMessage') %>(message), new <%= type('org.springframework.ai.chat.messages.AssistantMessage') %>(cached.get())));
                 return new ChatMessageResponse(conversationId, cached.get());
             }
         }
 <%_   } _%>
-<%_   if (features.trackToolCalls) { _%>
-        toolCalls.start();
+<%_   if (features.guardTools) { _%>
+        toolGuard.start(<%= features.pii ? 'memoryKey' : '' %>);
 <%_   } _%>
-<%_   if (limits.tokens) { _%>
-        <%= type('org.springframework.ai.chat.model.ChatResponse') %> response = chatClient
-                .prompt()
-                .user(request.message())
-                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
-                .call()
-                .chatResponse();
-        usageLimits.recordTokens(userId, response.getMetadata().getUsage().getTotalTokens());
-        String reply = response.getResult().getOutput().getText();
+        <%- askModel('message', 'memoryKey') %>
+<%_   if (features.cache) { _%>
+<%_     const reasons = [...(features.trackToolCalls ? ['!toolGuard.toolCalled()'] : []), ...(features.pii ? ['!PersonalData.containsTokens(message)', '!PersonalData.containsTokens(answer)'] : [])]; _%>
+<%_     if (reasons.length > 0) { _%>
+        // Never reused: an answer built from a tool depends on live data, and one about personal data is about someone.
+<%_     } _%>
+        if (<%- ['firstMessage', ...reasons].join(' && ') %>) {
+            replyCache.put(userId, message, answer);
+<%_     if (features.semanticCache) { _%>
+            semanticCache.put(userId, message, answer);
+<%_     } _%>
+        }
+<%_   } _%>
+<%_   if (features.pii) { _%>
+        return new ChatMessageResponse(conversationId, personalData.restore(memoryKey, answer));
 <%_   } else { _%>
-        String reply = chatClient
-                .prompt()
-                .user(request.message())
-                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
-                .call()
-                .content();
+        return new ChatMessageResponse(conversationId, answer);
 <%_   } _%>
-<%_   if (features.cache && features.trackToolCalls) { _%>
-        // An answer built from a tool depends on live data: it is never reused.
-        if (firstMessage && !toolCalls.happened()) {
-            replyCache.put(userId, request.message(), reply);
-        }
-<%_   } else if (features.cache) { _%>
-        if (firstMessage) {
-            replyCache.put(userId, request.message(), reply);
-        }
-<%_   } _%>
-        return new ChatMessageResponse(conversationId, reply);
     }
 <%_ } else { _%>
     ChatMessageResponse reply(ChatMessageRequest request) {
         String conversationId = request.conversationId() != null
                 ? request.conversationId()
                 : <%= type('java.util.UUID') %>.randomUUID().toString();
-        String reply = chatClient
-                .prompt()
-                .user(request.message())
-                .advisors(advisor -> advisor.param(<%= type('org.springframework.ai.chat.memory.ChatMemory') %>.CONVERSATION_ID, conversationId))
-                .call()
-                .content();
-        return new ChatMessageResponse(conversationId, reply);
+<%_   if (features.pii) { _%>
+        String message = personalData.mask(conversationId, request.message());
+<%_   } else { _%>
+        String message = request.message();
+<%_   } _%>
+<%_   if (features.retention) { _%>
+        conversations.touch(conversationId, "");
+<%_   } _%>
+<%_   if (features.guardTools) { _%>
+        toolGuard.start(<%= features.pii ? 'conversationId' : '' %>);
+<%_   } _%>
+        <%- askModel('message', 'conversationId') %>
+<%_   if (features.pii) { _%>
+        return new ChatMessageResponse(conversationId, personalData.restore(conversationId, answer));
+<%_   } else { _%>
+        return new ChatMessageResponse(conversationId, answer);
+<%_   } _%>
     }
 <%_ } _%>
 }

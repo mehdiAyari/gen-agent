@@ -1,0 +1,21 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.cache;
+
+<%- imports %>
+
+@<%= type('org.springframework.context.annotation.Configuration') %>(proxyBeanMethods = false)
+class SemanticCacheConfiguration {
+
+    /** Its own table, agent_semantic_cache: the embeddings of the provider, compared by cosine distance. */
+    @<%= type('org.springframework.context.annotation.Bean') %>
+    <%= type('org.springframework.ai.vectorstore.pgvector.PgVectorStore') %> semanticCacheStore(
+            <%= type('org.springframework.jdbc.core.JdbcTemplate') %> jdbcTemplate, <%= type('org.springframework.ai.embedding.EmbeddingModel') %> embeddingModel, <%= type(`${project.generatedPackage}.AgentProperties`) %> properties) {
+        return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+                .vectorTableName("agent_semantic_cache")
+                .dimensions(properties.cache().semantic().dimensions())
+                .distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
+                .indexType(PgVectorStore.PgIndexType.HNSW)
+                .initializeSchema(true)
+                .build();
+    }
+}

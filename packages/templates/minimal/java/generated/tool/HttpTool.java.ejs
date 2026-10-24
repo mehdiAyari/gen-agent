@@ -10,16 +10,8 @@ public class <%= item.className %> {
     private final <%= type('org.springframework.web.client.RestClient') %> restClient;
 
     private final int maxResponseChars;
-<%_ if (features.trackToolCalls) { _%>
-
-    private final ToolCalls toolCalls;
-
-    <%= item.className %>(RestClient.Builder restClientBuilder, <%= item.className %>Properties properties, ToolCalls toolCalls) {
-        this.toolCalls = toolCalls;
-<%_ } else { _%>
 
     <%= item.className %>(RestClient.Builder restClientBuilder, <%= item.className %>Properties properties) {
-<%_ } _%>
 <%_ if (item.auth) { _%>
         this.restClient = restClientBuilder
                 .baseUrl(properties.url())
@@ -41,9 +33,6 @@ public class <%= item.className %> {
 
 <%- include('tool-method-signature', { tool: item }) %> {
 <%- include('required-arguments', { tool: item }) -%>
-<%_ if (features.trackToolCalls) { _%>
-        toolCalls.record();
-<%_ } _%>
         String body = restClient
                 .<%= item.clientMethod %>()
 <%_ if (item.queryParams.length > 0) { _%>

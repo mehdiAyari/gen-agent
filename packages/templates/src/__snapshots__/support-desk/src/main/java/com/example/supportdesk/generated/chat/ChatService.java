@@ -3,7 +3,7 @@ package com.example.supportdesk.generated.chat;
 
 import com.example.supportdesk.generated.cache.ReplyCache;
 import com.example.supportdesk.generated.limits.UsageLimits;
-import com.example.supportdesk.generated.tool.ToolCalls;
+import com.example.supportdesk.generated.tool.ToolGuard;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
@@ -30,20 +30,20 @@ class ChatService {
 
     private final ReplyCache replyCache;
 
-    private final ToolCalls toolCalls;
+    private final ToolGuard toolGuard;
 
     ChatService(
         ChatClient chatClient,
         ChatMemory chatMemory,
         UsageLimits usageLimits,
         ReplyCache replyCache,
-        ToolCalls toolCalls
+        ToolGuard toolGuard
     ) {
         this.chatClient = chatClient;
         this.chatMemory = chatMemory;
         this.usageLimits = usageLimits;
         this.replyCache = replyCache;
-        this.toolCalls = toolCalls;
+        this.toolGuard = toolGuard;
     }
 
     ChatMessageResponse reply(ChatMessageRequest request, String userId) {
@@ -58,31 +58,29 @@ class ChatService {
         if (request.conversationId() != null && chatMemory.get(memoryKey).isEmpty()) {
             throw new UnknownConversationException(conversationId);
         }
+        String message = request.message();
         boolean firstMessage = request.conversationId() == null;
         if (firstMessage) {
-            Optional<String> cached = replyCache.find(userId, request.message());
+            Optional<String> cached = replyCache.find(userId, message);
             if (cached.isPresent()) {
                 // Kept in the conversation as if the model had answered, so that it can go on from there.
-                chatMemory.add(
-                    memoryKey,
-                    List.of(new UserMessage(request.message()), new AssistantMessage(cached.get()))
-                );
+                chatMemory.add(memoryKey, List.of(new UserMessage(message), new AssistantMessage(cached.get())));
                 return new ChatMessageResponse(conversationId, cached.get());
             }
         }
-        toolCalls.start();
+        toolGuard.start();
         ChatResponse response = chatClient
             .prompt()
-            .user(request.message())
+            .user(message)
             .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
             .call()
             .chatResponse();
         usageLimits.recordTokens(userId, response.getMetadata().getUsage().getTotalTokens());
-        String reply = response.getResult().getOutput().getText();
-        // An answer built from a tool depends on live data: it is never reused.
-        if (firstMessage && !toolCalls.happened()) {
-            replyCache.put(userId, request.message(), reply);
+        String answer = response.getResult().getOutput().getText();
+        // Never reused: an answer built from a tool depends on live data, and one about personal data is about someone.
+        if (firstMessage && !toolGuard.toolCalled()) {
+            replyCache.put(userId, message, answer);
         }
-        return new ChatMessageResponse(conversationId, reply);
+        return new ChatMessageResponse(conversationId, answer);
     }
 }

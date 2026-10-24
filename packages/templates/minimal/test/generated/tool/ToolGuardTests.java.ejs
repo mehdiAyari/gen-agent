@@ -1,0 +1,40 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.tool;
+
+<%- imports %>
+
+class ToolGuardTests {
+
+    private final ToolGuard guard = new ToolGuard();
+
+    private final <%= type('org.springframework.ai.tool.ToolCallback') %> clock = new ToolCallback() {
+
+        @Override
+        public <%= type('org.springframework.ai.tool.definition.ToolDefinition') %> getToolDefinition() {
+            return ToolDefinition.builder().name("clock").description("Current time").inputSchema("{}").build();
+        }
+
+        @Override
+        public String call(String toolInput) {
+            return "noon";
+        }
+    };
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void tellsWhenTheModelCalledATool() {
+        ToolCallback guarded = guard.guard(new ToolCallback[] {clock})[0];
+        guard.start();
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(guard.toolCalled()).isFalse();
+        assertThat(guarded.call("{}")).isEqualTo("noon");
+        assertThat(guard.toolCalled()).isTrue();
+    }
+
+    @Test
+    void forgetsTheCallsOfThePreviousRequest() {
+        guard.guard(new ToolCallback[] {clock})[0].call("{}");
+        guard.start();
+
+        assertThat(guard.toolCalled()).isFalse();
+    }
+}

@@ -20,6 +20,9 @@ export <%= secret %>=...   # never commit it
 <%_   if (!provider.apiKeyEnv) { _%>
 OLLAMA_HOST=0.0.0.0 ollama serve &   # Ollama runs on this machine, reachable from the containers
 ollama pull <%= provider.model %>
+<%_     if (features.semanticCache) { _%>
+ollama pull <%= embedding.model %>   # the embedding model of the semantic cache
+<%_     } _%>
 <%_   } _%>
 docker compose up --build
 ```
@@ -59,7 +62,7 @@ then `./mvnw spring-boot:run`.
 Java <%= agent.java %> is the only requirement: `./mvnw` downloads Maven (checked against its SHA-256) on first use.
 
 <%_   if (!provider.apiKeyEnv) { _%>
-Start [Ollama](https://ollama.com) and pull the model (`ollama pull <%= provider.model %>`), then:
+Start [Ollama](https://ollama.com) and pull the model (`ollama pull <%= provider.model %>`<%= features.semanticCache ? ` and \`ollama pull ${embedding.model}\`` : '' %>), then:
 
 <%_   } _%>
 ```bash
@@ -114,7 +117,40 @@ It signs users in with the authorization code flow and PKCE, through the public 
 
 The first answer of a conversation is kept in Redis for an hour (`agent.cache.ttl`): the same user asking the same
 question again gets it without a call to the model. It is never shared between users<%= features.trackToolCalls ? ', and an answer that used a tool is never kept: it depends on live data' : '' %>.
+<%_   if (features.semanticCache) { _%>
 
+A question of the same meaning gets the same answer too: the questions are turned into vectors with
+`<%= embedding.model %>` and kept in Postgres (pgvector, table `agent_semantic_cache`). Two questions of the same user
+share their answer when their similarity is at least <%= semanticCache.threshold %> (`agent.cache.semantic.threshold`, from 0
+to 1).<%= features.pii ? ' An answer holding personal data is never kept.' : '' %>
+<%_   } _%>
+
+<%_ } _%>
+<%_ if (features.pii || features.logsWithoutPii || features.erasure || features.retention) { _%>
+## Personal data
+
+<%_   if (features.pii) { _%>
+Emails, phone numbers, IBANs, card numbers (Luhn-checked) and French social security numbers never reach the model:
+they are replaced by tokens such as `[EMAIL_1]` before each call, and put back in the answer and in the arguments of
+the tools. The values behind the tokens stay in Redis for <%= retention ?? '30d' %> (`agent.privacy.ttl`). Names and
+addresses are not detected: keep them out of the system prompt, or mask them in your own code.
+
+<%_   } _%>
+<%_   if (features.logsWithoutPii) { _%>
+The logs mask the same values, in messages and in stack traces; each line carries the correlation id of its request.
+
+<%_   } _%>
+<%_   if (features.erasure) { _%>
+A user erases everything the agent keeps about them (conversations, personal data, cache, limits) with
+`DELETE /api/me`. Users with the `agent-admin` role erase another user with `DELETE /api/users/{userId}`, the subject
+of their token<%= features.dockerCompose ? ' (the `admin` / `admin` user of the Keycloak started by Compose)' : '' %>.
+Roles are read from the `realm_access.roles` claim (`OIDC_ROLES_CLAIM`).
+
+<%_   } _%>
+<%_   if (features.retention) { _%>
+Conversations unused for <%= retention %> are purged every hour (`agent.memory.retention`), with their personal data.
+
+<%_   } _%>
 <%_ } _%>
 <%_ if (features.otel || features.prometheus) { _%>
 ## Observability

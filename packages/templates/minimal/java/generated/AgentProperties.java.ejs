@@ -12,7 +12,10 @@ package <%= project.generatedPackage %>;
  * @param limits what each user may use
 <%_ } _%>
 <%_ if (features.cache) { _%>
- * @param cache how long first answers are reused
+ * @param cache how first answers are reused
+<%_ } _%>
+<%_ if (features.pii) { _%>
+ * @param privacy how long the personal data behind the tokens of a conversation is kept
 <%_ } _%>
  */
 @<%= type('org.springframework.boot.context.properties.ConfigurationProperties') %>("agent")
@@ -21,12 +24,20 @@ public record AgentProperties(<%- [
   'Memory memory',
   ...(features.limits ? ['Limits limits'] : []),
   ...(features.cache ? ['Cache cache'] : []),
+  ...(features.pii ? ['Privacy privacy'] : []),
 ].join(', ') %>) {
 
     /**
      * @param window number of recent messages kept per conversation
+<%_ if (features.retention) { _%>
+     * @param retention how long an unused conversation is kept before it is purged
+<%_ } _%>
      */
+<%_ if (features.retention) { _%>
+    public record Memory(int window, <%= type('java.time.Duration') %> retention) {}
+<%_ } else { _%>
     public record Memory(int window) {}
+<%_ } _%>
 <%_ if (features.limits) { _%>
 
     /**
@@ -50,7 +61,28 @@ public record AgentProperties(<%- [
 
     /**
      * @param ttl how long a first answer is reused for the same question of the same user
+<%_   if (features.semanticCache) { _%>
+     * @param semantic answers reused for questions of the same meaning
+<%_   } _%>
      */
+<%_   if (features.semanticCache) { _%>
+    public record Cache(<%= type('java.time.Duration') %> ttl, Semantic semantic) {
+
+        /**
+         * @param threshold similarity from 0 to 1 above which two questions share their answer
+         * @param dimensions size of the embeddings of the model
+         */
+        public record Semantic(double threshold, int dimensions) {}
+    }
+<%_   } else { _%>
     public record Cache(<%= type('java.time.Duration') %> ttl) {}
+<%_   } _%>
+<%_ } _%>
+<%_ if (features.pii) { _%>
+
+    /**
+     * @param ttl how long the personal data behind the tokens of a conversation is kept
+     */
+    public record Privacy(<%= type('java.time.Duration') %> ttl) {}
 <%_ } _%>
 }

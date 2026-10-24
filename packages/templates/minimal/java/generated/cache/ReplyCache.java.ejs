@@ -38,10 +38,24 @@ public class ReplyCache {
         redis.opsForValue().set(key(userId, question), answer, ttl);
     }
 
+<%_ if (features.erasure) { _%>
+    public void forget(String userId) {
+        // SCAN rather than KEYS: Redis keeps serving the other users meanwhile.
+        try (<%= type('org.springframework.data.redis.core.Cursor') %><String> keys = redis.scan(<%= type('org.springframework.data.redis.core.ScanOptions') %>.scanOptions().match(prefix(userId) + "*").build())) {
+            keys.forEachRemaining(redis::delete);
+        }
+    }
+
+<%_ } _%>
     /** Questions that differ only by case or spacing share their answer. */
     private String key(String userId, String question) {
         String normalized = question.strip().replaceAll("\\s+", " ").toLowerCase(<%= type('java.util.Locale') %>.ROOT);
-        return "reply:" + <%= type('java.util.HexFormat') %>.of().formatHex(sha256(userId + "\n" + context + "\n" + normalized));
+        return prefix(userId) + <%= type('java.util.HexFormat') %>.of().formatHex(sha256(context + "\n" + normalized));
+    }
+
+    /** Every answer of a user starts with it, without the user id itself. */
+    private static String prefix(String userId) {
+        return "reply:" + HexFormat.of().formatHex(sha256(userId)) + ":";
     }
 
     private static byte[] sha256(String text) {

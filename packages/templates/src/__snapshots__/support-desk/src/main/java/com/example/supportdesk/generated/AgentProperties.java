@@ -11,7 +11,7 @@ import org.springframework.core.io.Resource;
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
  * @param limits what each user may use
- * @param cache how long first answers are reused
+ * @param cache how first answers are reused
  */
 @ConfigurationProperties("agent")
 public record AgentProperties(Resource systemPrompt, Memory memory, Limits limits, Cache cache) {

@@ -24,6 +24,11 @@ class <%= project.applicationClass %>Tests {
 
     @Autowired
     RecordingChatModel chatModel;
+<%_ if (features.pii) { _%>
+
+    @Autowired
+    <%= type(`${project.generatedPackage}.privacy.PersonalData`) %> personalData;
+<%_ } _%>
 <%_ if (features.limits) { _%>
 
     @Autowired
@@ -103,6 +108,106 @@ class <%= project.applicationClass %>Tests {
                 .isLenientlyEqualTo("""
                         {"auth": "oidc", "issuer": "https://issuer.example.org", "clientId": "agent-client"}
                         """);
+    }
+
+<%_   } _%>
+<%_   if (features.pii) { _%>
+    @Test
+    void keepsPersonalDataAwayFromTheModel() {
+        assertThat(post("ada", """
+                {"message": "Please write to ada@example.org"}
+                """))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.reply")
+                .asString()
+                .contains("ada@example.org");
+
+        // The model only saw a token, and gave it back: the user gets the address again.
+        assertThat(chatModel.lastPrompt().getContents()).contains("[EMAIL_1]").doesNotContain("ada@example.org");
+    }
+
+    @Test
+    void restoresTheTokensASmallModelWritesWithoutBrackets() {
+        personalData.mask("conversation", "Write to ada@example.org");
+
+        // Tool arguments as small models send them: the token without its brackets.
+        assertThat(personalData.restore("conversation", "{\"to\": \"EMAIL_1\", \"cc\": \"[EMAIL_1]\"}"))
+                .isEqualTo("{\"to\": \"ada@example.org\", \"cc\": \"ada@example.org\"}");
+        assertThat(personalData.restore("conversation", "MY_EMAIL_1 and EMAIL_2 stay")).isEqualTo("MY_EMAIL_1 and EMAIL_2 stay");
+    }
+
+<%_   } _%>
+<%_   if (features.logsWithoutPii) { _%>
+    @Test
+    @<%= type('org.junit.jupiter.api.extension.ExtendWith') %>(<%= type('org.springframework.boot.test.system.OutputCaptureExtension') %>.class)
+    void masksPersonalDataInTheLogs(<%= type('org.springframework.boot.test.system.CapturedOutput') %> output) {
+        <%= type('org.slf4j.LoggerFactory') %>.getLogger(<%= project.applicationClass %>Tests.class).info("Ticket from ada@example.org");
+
+        assertThat(output).contains("Ticket from [EMAIL]").doesNotContain("ada@example.org");
+    }
+
+<%_   } _%>
+<%_   if (features.erasure) { _%>
+    @Test
+    void erasesTheDataOfAUserWhoAsks() throws Exception {
+        String conversationId = startConversation("erin", "Remember that I like tea");
+        String othersConversation = startConversation("frank", "Remember that I like coffee");
+
+        assertThat(mockMvc.delete().uri("/api/me").with(jwt().jwt(token -> token.subject("erin")))).hasStatus(HttpStatus.NO_CONTENT);
+
+        assertThat(post("erin", """
+                {"conversationId": "%s", "message": "What do I like?"}
+                """.formatted(conversationId))).hasStatus(HttpStatus.NOT_FOUND);
+        assertThat(post("frank", """
+                {"conversationId": "%s", "message": "What do I like?"}
+                """.formatted(othersConversation))).hasStatusOk();
+    }
+
+    @Test
+    void letsOnlyAnAdministratorEraseSomeoneElse() throws Exception {
+        String conversationId = startConversation("gina", "Hello");
+
+        assertThat(mockMvc.delete().uri("/api/users/gina").with(jwt().jwt(token -> token.subject("mallory"))))
+                .hasStatus(HttpStatus.FORBIDDEN);
+        assertThat(mockMvc.delete()
+                        .uri("/api/users/gina")
+                        .with(jwt().jwt(token -> token.subject("root"))
+                                .authorities(new <%= type('org.springframework.security.core.authority.SimpleGrantedAuthority') %>("ROLE_agent-admin"))))
+                .hasStatus(HttpStatus.NO_CONTENT);
+        assertThat(post("gina", """
+                {"conversationId": "%s", "message": "Hello again"}
+                """.formatted(conversationId))).hasStatus(HttpStatus.NOT_FOUND);
+    }
+
+<%_   } _%>
+<%_   if (features.retention) { _%>
+    @Test
+    void purgesConversationsUnusedForLongerThanTheRetention(@Autowired <%= type('org.springframework.jdbc.core.simple.JdbcClient') %> jdbc, @Autowired <%= type(`${project.generatedPackage}.privacy.RetentionJob`) %> retentionJob) throws Exception {
+        String conversationId = startConversation("hugo", "Hello");
+        jdbc.sql("UPDATE agent_conversation SET last_used_at = now() - interval '400 days'").update();
+
+        retentionJob.purge();
+
+        assertThat(post("hugo", """
+                {"conversationId": "%s", "message": "Hello again"}
+                """.formatted(conversationId))).hasStatus(HttpStatus.NOT_FOUND);
+    }
+
+<%_   } _%>
+<%_   if (features.semanticCache) { _%>
+    @Test
+    void answersAQuestionOfTheSameMeaningFromTheSemanticCache() {
+        int calls = chatModel.calls();
+
+        post("iris", """
+                {"message": "What are your opening hours?"}
+                """);
+        post("iris", """
+                {"message": "What are your opening hours!!"}
+                """);
+
+        assertThat(chatModel.calls()).isEqualTo(calls + 1);
     }
 
 <%_   } _%>
@@ -245,6 +350,14 @@ class <%= project.applicationClass %>Tests {
         RecordingChatModel chatModel() {
             return new RecordingChatModel();
         }
+<%_ if (features.semanticCache) { _%>
+
+        @Bean
+        @Primary
+        WordsEmbeddingModel embeddingModel() {
+            return new WordsEmbeddingModel();
+        }
+<%_ } _%>
     }
 
     /** Answers every prompt with the same text and keeps the last prompt for assertions. */
@@ -265,6 +378,16 @@ class <%= project.applicationClass %>Tests {
         @Override
         public <%= type('org.springframework.ai.chat.model.ChatResponse') %> call(Prompt prompt) {
             this.lastPrompt = prompt;
+<%_ if (features.pii) { _%>
+            // Like a real model, it gives back the tokens of personal data it was told about.
+            String text = "Hello from the agent" + <%= type('java.util.regex.Pattern') %>.compile("\\[[A-Z]+_\\d+]")
+                    .matcher(prompt.getUserMessage().getText())
+                    .results()
+                    .map(match -> " " + match.group())
+                    .collect(<%= type('java.util.stream.Collectors') %>.joining());
+<%_ } else { _%>
+            String text = "Hello from the agent";
+<%_ } _%>
 <%_ if (features.cache) { _%>
             calls.incrementAndGet();
 <%_ } _%>
@@ -272,10 +395,10 @@ class <%= project.applicationClass %>Tests {
             // Like a real model, it reports the tokens it used: the budget counts them.
             var usage = new <%= type('org.springframework.ai.chat.metadata.DefaultUsage') %>(0, Math.toIntExact(tokensPerReply));
             return new ChatResponse(
-                    <%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.chat.model.Generation') %>(new <%= type('org.springframework.ai.chat.messages.AssistantMessage') %>("Hello from the agent"))),
+                    <%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.chat.model.Generation') %>(new <%= type('org.springframework.ai.chat.messages.AssistantMessage') %>(text))),
                     <%= type('org.springframework.ai.chat.metadata.ChatResponseMetadata') %>.builder().usage(usage).build());
 <%_ } else { _%>
-            return new ChatResponse(<%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.chat.model.Generation') %>(new <%= type('org.springframework.ai.chat.messages.AssistantMessage') %>("Hello from the agent"))));
+            return new ChatResponse(<%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.chat.model.Generation') %>(new <%= type('org.springframework.ai.chat.messages.AssistantMessage') %>(text))));
 <%_ } _%>
         }
 
@@ -295,4 +418,41 @@ class <%= project.applicationClass %>Tests {
         }
 <%_ } _%>
     }
+<%_ if (features.semanticCache) { _%>
+
+    /** Embeds a text by its words: texts with the same words get the same vector, without calling a provider. */
+    static class WordsEmbeddingModel implements <%= type('org.springframework.ai.embedding.EmbeddingModel') %> {
+
+        private static final int DIMENSIONS = <%= embedding.dimensions %>;
+
+        @Override
+        public <%= type('org.springframework.ai.embedding.EmbeddingResponse') %> call(<%= type('org.springframework.ai.embedding.EmbeddingRequest') %> request) {
+            <%= type('java.util.List') %><<%= type('org.springframework.ai.embedding.Embedding') %>> embeddings = new <%= type('java.util.ArrayList') %><>();
+            for (String text : request.getInstructions()) {
+                embeddings.add(new Embedding(vectorOf(text), embeddings.size()));
+            }
+            return new EmbeddingResponse(embeddings);
+        }
+
+        @Override
+        public float[] embed(<%= type('org.springframework.ai.document.Document') %> document) {
+            return vectorOf(document.getText());
+        }
+
+        @Override
+        public int dimensions() {
+            return DIMENSIONS;
+        }
+
+        private static float[] vectorOf(String text) {
+            float[] vector = new float[DIMENSIONS];
+            for (String word : text.toLowerCase(<%= type('java.util.Locale') %>.ROOT).split("[^a-z0-9]+")) {
+                if (!word.isEmpty()) {
+                    vector[Math.floorMod(word.hashCode(), DIMENSIONS)] += 1;
+                }
+            }
+            return vector;
+        }
+    }
+<%_ } _%>
 }

@@ -18,10 +18,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 
-@RestClientTest(
-    components = { OrderStatusTool.class, ToolCalls.class },
-    properties = "agent.tools.order-status.token=test-token"
-)
+@RestClientTest(components = OrderStatusTool.class, properties = "agent.tools.order-status.token=test-token")
 @EnableConfigurationProperties(OrderStatusToolProperties.class)
 class OrderStatusToolTests {
 

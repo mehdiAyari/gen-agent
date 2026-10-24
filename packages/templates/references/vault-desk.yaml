@@ -1,0 +1,18 @@
+# Production profile (V5a): personal data masked and kept 30 days, PII-free logs, erasure endpoints, semantic cache
+# in pgvector; an HTTP tool that gets personal data back in its arguments.
+agent:
+  name: vault-desk
+  description: Answers bank customers about their transfers
+  profile: production
+  interface: [rest, chat-ui]
+  model:
+    provider: mistral
+    name: mistral-small-latest
+  tools:
+    - name: transfer-status
+      type: http
+      description: Status of the last transfer to an IBAN
+      url: https://bank.example.org/api/transfers
+      auth: { type: bearer, env: BANK_API_TOKEN }
+      params:
+        - { name: iban, type: string, required: true }

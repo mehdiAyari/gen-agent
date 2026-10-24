@@ -10,25 +10,14 @@ class RefundToolTests {
 
     @Test
     void delegatesToTheHandler() {
-        RefundTool tool = new RefundTool(orderId -> "handled", new ToolCalls());
+        RefundTool tool = new RefundTool(orderId -> "handled");
 
         assertThat(tool.refund("test")).isEqualTo("handled");
     }
 
     @Test
-    void reportsItsCallSoTheAnswerIsNotCached() {
-        ToolCalls toolCalls = new ToolCalls();
-        RefundTool tool = new RefundTool(orderId -> "handled", toolCalls);
-        toolCalls.start();
-
-        tool.refund("test");
-
-        assertThat(toolCalls.happened()).isTrue();
-    }
-
-    @Test
     void tellsTheModelWhichRequiredArgumentIsMissing() {
-        RefundTool tool = new RefundTool(orderId -> "handled", new ToolCalls());
+        RefundTool tool = new RefundTool(orderId -> "handled");
 
         assertThatNullPointerException()
             .isThrownBy(() -> tool.refund(null))

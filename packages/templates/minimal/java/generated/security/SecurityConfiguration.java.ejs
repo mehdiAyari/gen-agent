@@ -14,26 +14,33 @@ public class SecurityConfiguration {
     /** The chat page and its settings are public; the page talks only to the agent and to the OIDC provider. */
     private static final String[] CHAT_PAGE = {"/", "/index.html", "/chat.js", "/chat.css", "/chat-config.json"};
 
+<%_ } _%>
+<%_ const value = (key) => `@${type('org.springframework.beans.factory.annotation.Value')}("\${${key}}")`; _%>
     @<%= type('org.springframework.context.annotation.Bean') %>
-    <%= type('org.springframework.security.web.SecurityFilterChain') %> securityFilterChain(
-            <%= type('org.springframework.security.config.annotation.web.builders.HttpSecurity') %> http,
-            @<%= type('org.springframework.beans.factory.annotation.Value') %>("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuer)
-            throws Exception {
+    <%= type('org.springframework.security.web.SecurityFilterChain') %> securityFilterChain(<%- [
+      `${type('org.springframework.security.config.annotation.web.builders.HttpSecurity')} http`,
+      ...(features.chatUi ? [`${value('spring.security.oauth2.resourceserver.jwt.issuer-uri')} String issuer`] : []),
+      ...(features.erasure ? [`${value('agent.security.roles-claim')} String rolesClaim`] : []),
+    ].join(', ') %>) throws Exception {
+<%_ if (features.chatUi) { _%>
         <%= type('java.net.URI') %> provider = URI.create(issuer);
         String providerOrigin = provider.getScheme() + "://" + provider.getAuthority();
-<%_ } else { _%>
-    @<%= type('org.springframework.context.annotation.Bean') %>
-    <%= type('org.springframework.security.web.SecurityFilterChain') %> securityFilterChain(<%= type('org.springframework.security.config.annotation.web.builders.HttpSecurity') %> http) throws Exception {
 <%_ } _%>
         return http.authorizeHttpRequests(requests -> requests<%_ if (features.otel || features.prometheus) { _%>
                         // Health and metrics are served on the management port only, which stays inside the network.
                         .requestMatchers(<%- ['"/actuator/health"', ...(features.prometheus ? ['"/actuator/prometheus"'] : [])].join(', ') %>)
                         .permitAll()<%_ } _%><%_ if (features.chatUi) { _%>
                         .requestMatchers(CHAT_PAGE)
-                        .permitAll()<%_ } _%>
+                        .permitAll()<%_ } _%><%_ if (features.erasure) { _%>
+                        .requestMatchers(<%= type('org.springframework.http.HttpMethod') %>.DELETE, "/api/users/**")
+                        .hasRole("agent-admin")<%_ } _%>
                         .anyRequest()
                         .authenticated())
+                <%_ if (features.erasure) { _%>
+                .oauth2ResourceServer(server -> server.jwt(jwt -> jwt.jwtAuthenticationConverter(withRoles(rolesClaim))))
+<%_ } else { _%>
                 .oauth2ResourceServer(server -> server.jwt(<%= type('org.springframework.security.config.Customizer') %>.withDefaults()))
+<%_ } _%>
                 .sessionManagement(session -> session.sessionCreationPolicy(<%= type('org.springframework.security.config.http.SessionCreationPolicy') %>.STATELESS))
                 .csrf(<%= type('org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer') %>::disable)<%_ if (features.chatUi) { _%>
                 .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(
@@ -41,4 +48,23 @@ public class SecurityConfiguration {
                                 + "; frame-ancestors 'none'; form-action 'self' " + providerOrigin)))<%_ } _%>
                 .build();
     }
+<%_ if (features.erasure) { _%>
+
+    /**
+     * Roles from the claim at {@code rolesClaim}, a path such as realm_access.roles (Keycloak) or roles (Entra ID),
+     * become ROLE_ authorities: agent-admin gives ROLE_agent-admin.
+     */
+    static <%= type('org.springframework.core.convert.converter.Converter') %><<%= type('org.springframework.security.oauth2.jwt.Jwt') %>, <%= type('org.springframework.security.authentication.AbstractAuthenticationToken') %>> withRoles(String rolesClaim) {
+        return jwt -> {
+            Object claim = jwt.getClaims();
+            for (String name : rolesClaim.split("\\.")) {
+                claim = claim instanceof <%= type('java.util.Map') %><?, ?> map ? map.get(name) : null;
+            }
+            <%= type('java.util.List') %><<%= type('org.springframework.security.core.GrantedAuthority') %>> roles = claim instanceof <%= type('java.util.Collection') %><?> names
+                    ? names.stream().map(role -> (GrantedAuthority) new <%= type('org.springframework.security.core.authority.SimpleGrantedAuthority') %>("ROLE_" + role)).toList()
+                    : List.of();
+            return new <%= type('org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken') %>(jwt, roles, jwt.getSubject());
+        };
+    }
+<%_ } _%>
 }

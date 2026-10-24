@@ -1,0 +1,46 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.privacy;
+
+<%- imports %>
+
+/** Which user each conversation belongs to, and when it was last used (table agent_conversation). */
+@<%= type('org.springframework.stereotype.Repository') %>
+public class Conversations {
+
+    private final <%= type('org.springframework.jdbc.core.simple.JdbcClient') %> jdbc;
+
+    Conversations(JdbcClient jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    public void touch(String memoryKey, String userId) {
+        jdbc.sql("""
+                        INSERT INTO agent_conversation (memory_key, user_id, last_used_at) VALUES (?, ?, now())
+                        ON CONFLICT (memory_key) DO UPDATE SET last_used_at = now()
+                        """)
+                .params(memoryKey, userId)
+                .update();
+    }
+<%_ if (features.erasure) { _%>
+
+    public <%= type('java.util.List') %><String> of(String userId) {
+        return jdbc.sql("SELECT memory_key FROM agent_conversation WHERE user_id = ?")
+                .param(userId)
+                .query(String.class)
+                .list();
+    }
+<%_ } _%>
+<%_ if (features.retention) { _%>
+
+    public <%= type('java.util.List') %><String> unusedSince(<%= type('java.time.Instant') %> moment) {
+        return jdbc.sql("SELECT memory_key FROM agent_conversation WHERE last_used_at < ?")
+                .param(<%= type('java.sql.Timestamp') %>.from(moment))
+                .query(String.class)
+                .list();
+    }
+<%_ } _%>
+
+    public void delete(String memoryKey) {
+        jdbc.sql("DELETE FROM agent_conversation WHERE memory_key = ?").param(memoryKey).update();
+    }
+}

@@ -1,0 +1,88 @@
+spring:
+  application:
+    name: vault-desk
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/agent}
+    username: ${DATABASE_USERNAME:agent}
+    password: ${DATABASE_PASSWORD}
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Only tokens of this issuer are accepted; its keys are found through its OIDC discovery document.
+          issuer-uri: ${OIDC_ISSUER_URI}
+  ai:
+    mistralai:
+      api-key: ${MISTRAL_API_KEY}
+      chat:
+        model: mistral-small-latest
+      embedding:
+        model: mistral-embed
+    chat:
+      memory:
+        repository:
+          jdbc:
+            # Creates the table of Spring AI's chat memory when it does not exist yet.
+            initialize-schema: always
+
+agent:
+  system-prompt: classpath:prompts/system.md
+  security:
+    # Where the roles are in the tokens of the provider: agent-admin may erase any user's data.
+    roles-claim: ${OIDC_ROLES_CLAIM:realm_access.roles}
+  chat-ui:
+    # Public client of the chat page at the OIDC provider: authorization code with PKCE, no secret.
+    client-id: ${OIDC_CLIENT_ID:agent-client}
+  memory:
+    window: 20
+    # Unused conversations are erased after this long (GDPR storage limitation).
+    retention: 30d
+  limits:
+    requests: 30
+    requests-period: 1m
+    tokens: 100000
+    tokens-period: 1d
+  tools:
+    transfer-status:
+      url: https://bank.example.org/api/transfers
+      token: ${BANK_API_TOKEN}
+      max-response-chars: 20000
+  cache:
+    # How long a first answer is reused for the same question of the same user.
+    ttl: 1h
+    semantic:
+      # Questions of the same user this similar (0 to 1) share their answer.
+      threshold: 0.95
+      dimensions: 1024
+  privacy:
+    # How long the personal data behind the tokens of a conversation is kept.
+    ttl: 30d
+
+management:
+  server:
+    # Health and metrics on their own port, kept off the public one.
+    port: ${MANAGEMENT_PORT:8081}
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      otlp:
+        # Sent to an OpenTelemetry collector when OTLP_ENABLED is true: docker compose starts one, with Grafana.
+        enabled: ${OTLP_ENABLED:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTLP_ENABLED:false}
+        url: ${OTLP_ENDPOINT:http://localhost:4318}/v1/metrics

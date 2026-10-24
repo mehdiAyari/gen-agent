@@ -8,26 +8,13 @@ package <%= project.generatedPackage %>.tool;
 public class <%= item.className %> {
 
     private final <%= item.handlerInterface %> handler;
-<%_ if (features.trackToolCalls) { _%>
-
-    private final ToolCalls toolCalls;
-
-    <%= item.className %>(<%= item.handlerInterface %> handler, ToolCalls toolCalls) {
-        this.handler = handler;
-        this.toolCalls = toolCalls;
-    }
-<%_ } else { _%>
 
     <%= item.className %>(<%= item.handlerInterface %> handler) {
         this.handler = handler;
     }
-<%_ } _%>
 
 <%- include('tool-method-signature', { tool: item }) %> {
 <%- include('required-arguments', { tool: item }) -%>
-<%_ if (features.trackToolCalls) { _%>
-        toolCalls.record();
-<%_ } _%>
         return handler.<%= item.methodName %>(<%= item.params.map((param) => param.name).join(', ') %>);
     }
 }

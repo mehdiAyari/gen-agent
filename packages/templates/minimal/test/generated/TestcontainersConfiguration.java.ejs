@@ -14,7 +14,12 @@ public class TestcontainersConfiguration {
     @<%= type('org.springframework.context.annotation.Bean') %>
     @<%= type('org.springframework.boot.testcontainers.service.connection.ServiceConnection') %>
     <%= type('org.testcontainers.postgresql.PostgreSQLContainer') %> postgres() {
+<%_ if (features.vectorStore) { _%>
+        // Postgres with the pgvector extension, as in production.
+        return new PostgreSQLContainer(<%= type('org.testcontainers.utility.DockerImageName') %>.parse("<%= images.pgvector %>").asCompatibleSubstituteFor("postgres"));
+<%_ } else { _%>
         return new PostgreSQLContainer("<%= images.postgres %>");
+<%_ } _%>
     }
 <%_ } _%>
 <%_ if (features.redis) { _%>
