@@ -136,6 +136,16 @@ describe('validateAgentYaml', () => {
         'agent.gdpr.erasureEndpoint: data is erased per user: set security.auth: oidc',
       ],
       [
+        'a fallback that is the model itself',
+        'model: { provider: mistral, name: mistral-small-latest, fallback: { provider: mistral, name: mistral-small-latest } }\n',
+        'agent.model.fallback: the fallback must be another model: change its provider or its name',
+      ],
+      [
+        'the erasure endpoint without a database',
+        'security: { auth: oidc }\nmemory: { type: in-memory }\ngdpr: { erasureEndpoint: true }\n',
+        'agent.gdpr.erasureEndpoint: the conversations of a user are found in Postgres: set memory.type: jdbc',
+      ],
+      [
         'a retention without a database',
         'memory:\n  retention: 30d\n',
         'agent.memory.retention: only conversations kept in Postgres are purged: set memory.type: jdbc',

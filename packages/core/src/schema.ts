@@ -323,7 +323,14 @@ const equipped = agent.transform((definition) => {
     // Answers are cached per user: only when users sign in.
     ...(definition.cache === undefined && signedIn ? { cache: { exact: 'redis' as const, ...semantic } } : {}),
     ...(production
-      ? { gdpr: { ...(signedIn ? { erasureEndpoint: true } : {}), logsWithoutPii: true, ...definition.gdpr } }
+      ? {
+          gdpr: {
+            // Conversations are found per user in Postgres.
+            ...(signedIn && memory.type === 'jdbc' ? { erasureEndpoint: true } : {}),
+            logsWithoutPii: true,
+            ...definition.gdpr,
+          },
+        }
       : {}),
     observability: definition.observability ?? { otel: true, metrics: 'prometheus' as const },
     deploy: definition.deploy ?? ['docker-compose' as const],

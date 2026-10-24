@@ -69,6 +69,8 @@ describe('buildModel', () => {
       configKey: 'mistralai',
       apiKeyEnv: 'MISTRAL_API_KEY',
       maxTokensProperty: 'max-tokens',
+      module: 'spring-ai-mistral-ai',
+      retries: 'spring',
       model: 'mistral-large-latest',
       temperature: 0.3,
       maxTokens: 2000,
@@ -191,7 +193,12 @@ agent:
   it('pins the Spring Boot version Spring AI depends on, and flags which kinds of tools exist', () => {
     const model = buildModel(assistant);
 
-    expect(model.versions).toEqual({ springBoot: '4.1.1', springAi: '2.0.1', bucket4j: '8.21.0' });
+    expect(model.versions).toEqual({
+      springBoot: '4.1.1',
+      springAi: '2.0.1',
+      bucket4j: '8.21.0',
+      resilience4j: '2.4.0',
+    });
     expect(model.features).toEqual({
       httpTools: true,
       javaTools: true,
@@ -216,6 +223,9 @@ agent:
       injectionDetection: false,
       outputGuard: false,
       requestTimeout: false,
+      resilience: false,
+      routing: false,
+      summarize: false,
     });
   });
 
@@ -363,6 +373,57 @@ agent:
     // Once a tool result held instructions, only the tools that read data stay callable.
     expect(production.readOnlyTools).toEqual(['rates']);
     expect(production.secretPatterns).toContain('AKIA[0-9A-Z]{16}');
+  });
+
+  it('falls back to another provider, routes between two models and summarizes old messages', () => {
+    const resilient = buildModel(
+      parse(`
+agent:
+  name: desk
+  profile: production
+  model:
+    provider: mistral
+    name: mistral-large-latest
+    routing: { strategy: rules, simple: mistral-small-latest, complex: mistral-large-latest }
+    fallback: { provider: openai, name: gpt-5-mini }
+  memory: { summarize: true }
+`),
+    );
+
+    expect(resilient.features).toMatchObject({ resilience: true, routing: true, summarize: true });
+    expect(resilient.fallback).toEqual({
+      provider: 'openai',
+      model: 'gpt-5-mini',
+      sameProvider: false,
+      module: 'spring-ai-openai',
+      apiKeyEnv: 'OPENAI_API_KEY',
+    });
+    expect(resilient.routing).toEqual({
+      strategy: 'rules',
+      simple: 'mistral-small-latest',
+      complex: 'mistral-large-latest',
+    });
+    expect(resilient.provider.retries).toBe('spring');
+    expect(resilient.secrets).toEqual(['MISTRAL_API_KEY', 'OPENAI_API_KEY']);
+    expect(resilient.testProperties).toContain('agent.fallback.api-key=test-key');
+  });
+
+  it('keeps one provider when the fallback is another model of it', () => {
+    const sameProvider = buildModel(
+      parse(`
+agent:
+  name: desk
+  model:
+    provider: ollama
+    name: qwen2.5:7b
+    fallback: { provider: ollama, name: qwen2.5:3b }
+`),
+    );
+
+    expect(sameProvider.features.resilience).toBe(true);
+    expect(sameProvider.fallback).toMatchObject({ sameProvider: true, apiKeyEnv: undefined });
+    expect(sameProvider.secrets).toEqual([]);
+    expect(sameProvider.ollamaModels).toEqual(['qwen2.5:7b', 'qwen2.5:3b']);
   });
 
   it('limits the tool calls of an agent that only asks for it', () => {

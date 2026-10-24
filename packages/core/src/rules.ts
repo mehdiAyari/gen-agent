@@ -145,6 +145,14 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
     if (agent.model.fallback) outsideEu(agent.model.fallback.provider, ['agent', 'model', 'fallback', 'provider']);
   }
 
+  const fallback = agent.model.fallback;
+  if (fallback?.provider === agent.model.provider && fallback.name === agent.model.name) {
+    errors.push({
+      path: ['agent', 'model', 'fallback'],
+      message: 'the fallback must be another model: change its provider or its name',
+    });
+  }
+
   if (agent.cache?.exact === 'redis' && agent.security?.auth !== 'oidc') {
     errors.push({ path: ['agent', 'cache', 'exact'], message: 'answers are cached per user: set security.auth: oidc' });
   }
@@ -165,6 +173,11 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
     errors.push({
       path: ['agent', 'gdpr', 'erasureEndpoint'],
       message: 'data is erased per user: set security.auth: oidc',
+    });
+  } else if (agent.gdpr?.erasureEndpoint === true && agent.memory.type !== 'jdbc') {
+    errors.push({
+      path: ['agent', 'gdpr', 'erasureEndpoint'],
+      message: 'the conversations of a user are found in Postgres: set memory.type: jdbc',
     });
   }
   if (agent.memory.retention !== undefined && agent.memory.type !== 'jdbc') {

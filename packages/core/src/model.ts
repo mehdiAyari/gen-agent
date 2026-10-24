@@ -22,7 +22,7 @@ export interface GenerationModel {
     generatedPackage: string;
     applicationClass: string;
   };
-  versions: { springBoot: string; springAi: string; bucket4j: string };
+  versions: { springBoot: string; springAi: string; bucket4j: string; resilience4j: string };
   /** Docker images of the services, pinned: the same in the tests and in Docker Compose. */
   images: typeof IMAGES;
   features: {
@@ -68,7 +68,20 @@ export interface GenerationModel {
     outputGuard: boolean;
     /** The whole request bounded by `loop.timeout`. */
     requestTimeout: boolean;
+    /** Tuned retries, a circuit breaker per model, the fallback model, then a fallback answer. */
+    resilience: boolean;
+    /** Simple messages go to a smaller model. */
+    routing: boolean;
+    /** Messages beyond the window are summarized instead of forgotten. */
+    summarize: boolean;
   };
+  /** The model used when the first one fails; another provider is built by hand, beside Spring AI's own. */
+  fallback:
+    | { provider: Provider; model: string; sameProvider: boolean; module: string; apiKeyEnv: string | undefined }
+    | undefined;
+  routing: { strategy: 'rules' | 'classifier'; simple: string; complex: string } | undefined;
+  /** Models to pull into Ollama before the first run: chat models, embedding model, fallback model. */
+  ollamaModels: string[];
   /** Bounds of one request: tool calls and duration (Spring duration). */
   loop: { maxIterations: number | undefined; timeout: string | undefined };
   /** Methods of the tools that only read data: still callable once a tool result held instructions. */
@@ -102,6 +115,10 @@ export interface ProviderSettings {
   configKey: string;
   /** Environment variable holding the API key; undefined for self-hosted providers. */
   apiKeyEnv: string | undefined;
+  /** The model module, without Spring Boot auto-configuration: for a fallback built by hand. */
+  module: string;
+  /** Who retries failed calls: the provider's SDK (`max-retries`) or Spring AI (`spring.ai.retry`). */
+  retries: 'sdk' | 'spring';
   maxTokensProperty: string;
   model: string;
   temperature: number | undefined;
@@ -176,6 +193,30 @@ const PERIODS: Record<string, { period: string; unit: string }> = {
   day: { period: '1d', unit: 'day' },
 };
 
+function ollamaModelsOf(agent: AgentDefinition, semanticCache: boolean): string[] {
+  const { model } = agent;
+  return [
+    ...new Set([
+      ...(model.provider === 'ollama'
+        ? [model.name, ...(model.routing ? [model.routing.simple, model.routing.complex] : [])]
+        : []),
+      ...(model.provider === 'ollama' && semanticCache && EMBEDDINGS.ollama ? [EMBEDDINGS.ollama.model] : []),
+      ...(model.fallback?.provider === 'ollama' ? [model.fallback.name] : []),
+    ]),
+  ];
+}
+
+function fallbackOf(fallback: { provider: Provider; name: string }, provider: Provider): GenerationModel['fallback'] {
+  const sameProvider = fallback.provider === provider;
+  return {
+    provider: fallback.provider,
+    model: fallback.name,
+    sameProvider,
+    module: PROVIDERS[fallback.provider].module,
+    apiKeyEnv: sameProvider ? undefined : PROVIDERS[fallback.provider].apiKeyEnv,
+  };
+}
+
 /** 30/min → 30 per 1m. */
 function limitOf(rate: string | undefined): Limit | undefined {
   const match = rate === undefined ? null : /^(\d+)\/(sec|min|hour|day)$/.exec(rate);
@@ -201,6 +242,7 @@ interface McpServer {
 
 /** Not managed by Spring Boot: checked on Maven Central (2026-10-24). */
 const BUCKET4J_VERSION = '8.21.0';
+const RESILIENCE4J_VERSION = '2.4.0';
 
 /** Checked on Docker Hub and Quay (2026-10-24). */
 const IMAGES = {
@@ -255,6 +297,8 @@ export const DEFAULT_MAX_RESPONSE_CHARS = 20_000;
 const PROVIDERS: Record<Provider, Omit<ProviderSettings, 'id' | 'model' | 'temperature' | 'maxTokens'>> = {
   openai: {
     starter: 'spring-ai-starter-model-openai',
+    module: 'spring-ai-openai',
+    retries: 'sdk',
     propertyPrefix: 'spring.ai.openai',
     configKey: 'openai',
     apiKeyEnv: 'OPENAI_API_KEY',
@@ -262,6 +306,8 @@ const PROVIDERS: Record<Provider, Omit<ProviderSettings, 'id' | 'model' | 'tempe
   },
   anthropic: {
     starter: 'spring-ai-starter-model-anthropic',
+    module: 'spring-ai-anthropic',
+    retries: 'sdk',
     propertyPrefix: 'spring.ai.anthropic',
     configKey: 'anthropic',
     apiKeyEnv: 'ANTHROPIC_API_KEY',
@@ -269,6 +315,8 @@ const PROVIDERS: Record<Provider, Omit<ProviderSettings, 'id' | 'model' | 'tempe
   },
   mistral: {
     starter: 'spring-ai-starter-model-mistral-ai',
+    module: 'spring-ai-mistral-ai',
+    retries: 'spring',
     propertyPrefix: 'spring.ai.mistralai',
     configKey: 'mistralai',
     apiKeyEnv: 'MISTRAL_API_KEY',
@@ -276,6 +324,8 @@ const PROVIDERS: Record<Provider, Omit<ProviderSettings, 'id' | 'model' | 'tempe
   },
   ollama: {
     starter: 'spring-ai-starter-model-ollama',
+    module: 'spring-ai-ollama',
+    retries: 'spring',
     propertyPrefix: 'spring.ai.ollama',
     configKey: 'ollama',
     apiKeyEnv: undefined,
@@ -322,6 +372,11 @@ export function buildModel(file: AgentFile): GenerationModel {
   const mcpServers = (agent.mcp ?? []).map(mcpServerOf);
   const hasTools = agent.tools.length > 0 || mcpServers.length > 0;
   const injectionDetection = agent.security?.injectionDetection === true;
+  const fallback = agent.model.fallback;
+  const fallbackKey =
+    fallback === undefined || fallback.provider === agent.model.provider
+      ? undefined
+      : PROVIDERS[fallback.provider].apiKeyEnv;
 
   return {
     agent,
@@ -333,7 +388,12 @@ export function buildModel(file: AgentFile): GenerationModel {
       generatedPackage: `${basePackage}.generated`,
       applicationClass: `${pascalCase(agent.name)}Application`,
     },
-    versions: { springBoot: SUPPORTED_SPRING_BOOT, springAi: agent.springAi, bucket4j: BUCKET4J_VERSION },
+    versions: {
+      springBoot: SUPPORTED_SPRING_BOOT,
+      springAi: agent.springAi,
+      bucket4j: BUCKET4J_VERSION,
+      resilience4j: RESILIENCE4J_VERSION,
+    },
     images: IMAGES,
     features: {
       httpTools: agent.tools.some((tool) => tool.type === 'http'),
@@ -359,7 +419,13 @@ export function buildModel(file: AgentFile): GenerationModel {
       injectionDetection,
       outputGuard: agent.security?.outputGuard === true,
       requestTimeout: agent.limits?.timeout !== undefined,
+      resilience: agent.profile === 'production' || agent.model.fallback !== undefined,
+      routing: agent.model.routing !== undefined,
+      summarize: agent.memory.summarize === true,
     },
+    fallback: fallback === undefined ? undefined : fallbackOf(fallback, agent.model.provider),
+    routing: agent.model.routing,
+    ollamaModels: ollamaModelsOf(agent, semantic !== undefined),
     loop: { maxIterations: agent.limits?.maxIterations, timeout: agent.limits?.timeout },
     readOnlyTools: tools.flatMap((tool) => (tool.kind === 'http' && tool.method === 'GET' ? [tool.methodName] : [])),
     secretPatterns: SECRET_PATTERNS.map((pattern) => pattern.source),
@@ -381,6 +447,7 @@ export function buildModel(file: AgentFile): GenerationModel {
     secrets: [
       ...new Set([
         ...(providerSettings.apiKeyEnv === undefined ? [] : [providerSettings.apiKeyEnv]),
+        ...(fallbackKey === undefined ? [] : [fallbackKey]),
         ...tools.flatMap((tool) => (tool.kind === 'http' && tool.auth !== undefined ? [tool.auth.env] : [])),
         ...mcpServers.flatMap((server) => server.env),
       ]),
@@ -389,6 +456,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       ...(providerSettings.apiKeyEnv === undefined ? [] : [`${providerSettings.propertyPrefix}.api-key=test-key`]),
       ...(oidc ? ['spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org'] : []),
       ...(mcpServers.length > 0 ? ['spring.ai.mcp.client.enabled=false'] : []),
+      ...(fallbackKey === undefined ? [] : ['agent.fallback.api-key=test-key']),
       // A short timeout, so that the test of a request that takes too long runs quickly.
       ...(agent.limits?.timeout === undefined ? [] : ['agent.timeout=3s']),
       ...tools.flatMap((tool) =>
@@ -485,10 +553,7 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     agent.springAi !== SUPPORTED_SPRING_AI,
     `agent.springAi: ${agent.springAi} is not supported, this version of gen-agent generates Spring AI ${SUPPORTED_SPRING_AI}`,
   );
-  add(agent.model.routing, 'agent.model.routing: model routing arrives in V5b');
-  add(agent.model.fallback, 'agent.model.fallback: provider fallback arrives in V5b');
   add(agent.memory.type === 'redis', 'agent.memory.type: "redis" arrives in V5 (in-memory and jdbc are generated)');
-  add(agent.memory.summarize, 'agent.memory.summarize: conversation summaries arrive in V5b');
   agent.tools.forEach((tool, index) => {
     add(tool.approval, `agent.tools.${String(index)}.approval: human approval arrives in V5b`);
     if (tool.type === 'http') {
