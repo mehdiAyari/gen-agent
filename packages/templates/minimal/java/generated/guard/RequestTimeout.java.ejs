@@ -1,0 +1,50 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.guard;
+
+<%- imports %>
+
+/**
+ * Bounds a whole request, model calls and tools included, by {@code agent.timeout}. Past it the work is interrupted,
+ * which cancels the call in flight, and the client gets 504.
+ */
+@<%= type('org.springframework.stereotype.Component') %>
+public class RequestTimeout implements <%= type('org.springframework.beans.factory.DisposableBean') %> {
+
+    private final <%= type('java.util.concurrent.ExecutorService') %> executor = <%= type('java.util.concurrent.Executors') %>.newVirtualThreadPerTaskExecutor();
+<%_ if (features.otel) { _%>
+
+    // Traces and the correlation id of the logs follow the work to its thread.
+    private final <%= type('io.micrometer.context.ContextSnapshotFactory') %> contextSnapshots = ContextSnapshotFactory.builder().build();
+<%_ } _%>
+
+    private final <%= type('java.time.Duration') %> timeout;
+
+    RequestTimeout(<%= type(`${project.generatedPackage}.AgentProperties`) %> properties) {
+        this.timeout = properties.timeout();
+    }
+
+    public <T> T call(<%= type('java.util.concurrent.Callable') %><T> work) {
+        <%= type('java.util.concurrent.Future') %><T> result = executor.submit(<%= features.otel ? 'contextSnapshots.captureAll().wrap(work)' : 'work' %>);
+        try {
+            return result.get(timeout.toMillis(), <%= type('java.util.concurrent.TimeUnit') %>.MILLISECONDS);
+        } catch (<%= type('java.util.concurrent.TimeoutException') %> exception) {
+            result.cancel(true);
+            throw new RequestTimeoutException(timeout);
+        } catch (<%= type('java.util.concurrent.ExecutionException') %> exception) {
+            // The errors of the work as they are: unknown conversation, limit reached…
+            if (exception.getCause() instanceof RuntimeException cause) {
+                throw cause;
+            }
+            throw new IllegalStateException(exception.getCause());
+        } catch (InterruptedException exception) {
+            result.cancel(true);
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(exception);
+        }
+    }
+
+    @Override
+    public void destroy() {
+        executor.shutdownNow();
+    }
+}

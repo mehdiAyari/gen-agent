@@ -1,6 +1,7 @@
 // Managed by gen-agent: changes here are overwritten. Edit agent.yaml and regenerate.
 package com.example.vaultdesk.generated;
 
+import com.example.vaultdesk.generated.guard.Guardrails;
 import com.example.vaultdesk.generated.privacy.PersonalData;
 import com.example.vaultdesk.generated.tool.ToolGuard;
 import com.example.vaultdesk.generated.tool.TransferStatusTool;
@@ -42,12 +43,16 @@ class AgentConfiguration {
         ChatMemory chatMemory,
         AgentProperties properties,
         TransferStatusTool transferStatusTool,
-        ToolGuard toolGuard
+        ToolGuard toolGuard,
+        Guardrails guardrails
     ) throws IOException {
-        // The model is told what the tokens of personal data are, after the system prompt.
+        // What the model must know about the guards of the agent comes after the system prompt.
         return builder
             .defaultSystem(
-                properties.systemPrompt().getContentAsString(StandardCharsets.UTF_8) + PersonalData.PROMPT_NOTE
+                properties.systemPrompt().getContentAsString(StandardCharsets.UTF_8) +
+                    PersonalData.PROMPT_NOTE +
+                    ToolGuard.PROMPT_NOTE +
+                    guardrails.promptNote()
             )
             .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
             .defaultToolCallbacks(

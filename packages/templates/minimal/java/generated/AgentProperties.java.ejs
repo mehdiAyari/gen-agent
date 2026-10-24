@@ -8,6 +8,12 @@ package <%= project.generatedPackage %>;
  *
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
+<%_ if (features.requestTimeout) { _%>
+ * @param timeout the longest a request may take
+<%_ } _%>
+<%_ if (features.injectionDetection || features.outputGuard) { _%>
+ * @param guard what the guardrails answer
+<%_ } _%>
 <%_ if (features.limits) { _%>
  * @param limits what each user may use
 <%_ } _%>
@@ -22,6 +28,8 @@ package <%= project.generatedPackage %>;
 public record AgentProperties(<%- [
   `${type('org.springframework.core.io.Resource')} systemPrompt`,
   'Memory memory',
+  ...(features.requestTimeout ? [`${type('java.time.Duration')} timeout`] : []),
+  ...(features.injectionDetection || features.outputGuard ? ['Guard guard'] : []),
   ...(features.limits ? ['Limits limits'] : []),
   ...(features.cache ? ['Cache cache'] : []),
   ...(features.pii ? ['Privacy privacy'] : []),
@@ -77,6 +85,13 @@ public record AgentProperties(<%- [
 <%_   } else { _%>
     public record Cache(<%= type('java.time.Duration') %> ttl) {}
 <%_   } _%>
+<%_ } _%>
+<%_ if (features.injectionDetection || features.outputGuard) { _%>
+
+    /**
+     * @param refusal the answer sent instead of one the guardrails refuse
+     */
+    public record Guard(String refusal) {}
 <%_ } _%>
 <%_ if (features.pii) { _%>
 

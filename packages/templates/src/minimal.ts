@@ -172,6 +172,24 @@ export const minimalEntries: TemplateEntry[] = [
     when: (m) => m.features.cache,
     output: (m) => main(m, 'generated/cache/ReplyCache.java'),
   },
+  {
+    template: 'java/generated/guard/PromptInjection.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.injectionDetection,
+    output: (m) => main(m, 'generated/guard/PromptInjection.java'),
+  },
+  {
+    template: 'java/generated/guard/Guardrails.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.injectionDetection || m.features.outputGuard,
+    output: (m) => main(m, 'generated/guard/Guardrails.java'),
+  },
+  ...['RequestTimeout', 'RequestTimeoutException'].map((name): TemplateEntry => ({
+    template: `java/generated/guard/${name}.java.ejs`,
+    owner: 'generated',
+    when: (m) => m.features.requestTimeout,
+    output: (m) => main(m, `generated/guard/${name}.java`),
+  })),
   ...['ToolGuard', 'GuardedToolCallback'].map((name): TemplateEntry => ({
     template: `java/generated/tool/${name}.java.ejs`,
     owner: 'generated',
@@ -256,10 +274,15 @@ export const minimalEntries: TemplateEntry[] = [
     output: (m) => test(m, 'generated/privacy/PersonalDataPatternsTests.java'),
   },
   {
+    template: 'test/generated/guard/PromptInjectionTests.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.injectionDetection,
+    output: (m) => test(m, 'generated/guard/PromptInjectionTests.java'),
+  },
+  {
     template: 'test/generated/tool/ToolGuardTests.java.ejs',
     owner: 'generated',
-    // With personal data masking, ToolGuard needs Redis: covered by the tests of the application.
-    when: (m) => m.features.guardTools && !m.features.pii,
+    when: (m) => m.features.guardTools,
     output: (m) => test(m, 'generated/tool/ToolGuardTests.java'),
   },
   {

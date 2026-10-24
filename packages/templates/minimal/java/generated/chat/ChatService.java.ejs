@@ -43,6 +43,10 @@ class ChatService {
 
     private final <%= type(`${project.generatedPackage}.privacy.Conversations`) %> conversations;
 <%_ } _%>
+<%_ if (features.injectionDetection || features.outputGuard) { _%>
+
+    private final <%= type(`${project.generatedPackage}.guard.Guardrails`) %> guardrails;
+<%_ } _%>
 
     ChatService(<%- [
       'ChatClient chatClient',
@@ -53,6 +57,7 @@ class ChatService {
       ...(features.semanticCache ? ['SemanticCache semanticCache'] : []),
       ...(features.pii ? ['PersonalData personalData'] : []),
       ...(features.erasure || features.retention ? ['Conversations conversations'] : []),
+      ...(features.injectionDetection || features.outputGuard ? ['Guardrails guardrails'] : []),
     ].join(', ') %>) {
         this.chatClient = chatClient;
 <%_ if (features.oidc) { _%>
@@ -76,6 +81,9 @@ class ChatService {
 <%_ if (features.erasure || features.retention) { _%>
         this.conversations = conversations;
 <%_ } _%>
+<%_ if (features.injectionDetection || features.outputGuard) { _%>
+        this.guardrails = guardrails;
+<%_ } _%>
     }
 
 <%_ const askModel = (message, key) => limits.tokens
@@ -92,7 +100,10 @@ class ChatService {
                 .user(${message})
                 .advisors(advisor -> advisor.param(${type('org.springframework.ai.chat.memory.ChatMemory')}.CONVERSATION_ID, ${key}))
                 .call()
-                .content();`; _%>
+                .content();`;
+const checkAnswer = features.outputGuard ? `
+        // Checked before anything else sees it: the caches, the user.
+        answer = guardrails.check(answer);` : ''; _%>
 <%_ if (features.oidc) { _%>
     ChatMessageResponse reply(ChatMessageRequest request, String userId) {
 <%_   if (features.limits) { _%>
@@ -107,6 +118,12 @@ class ChatService {
         if (request.conversationId() != null && chatMemory.get(memoryKey).isEmpty()) {
             throw new UnknownConversationException(conversationId);
         }
+<%_   if (features.injectionDetection) { _%>
+        <%= type('java.util.Optional') %><String> refusal = guardrails.refusalFor(request.message());
+        if (refusal.isPresent()) {
+            return new ChatMessageResponse(conversationId, refusal.get());
+        }
+<%_   } _%>
 <%_   if (features.pii) { _%>
         // The model, the memory and the caches only ever see tokens in place of personal data.
         String message = personalData.mask(memoryKey, request.message());
@@ -130,7 +147,7 @@ class ChatService {
 <%_   if (features.guardTools) { _%>
         toolGuard.start(<%= features.pii ? 'memoryKey' : '' %>);
 <%_   } _%>
-        <%- askModel('message', 'memoryKey') %>
+        <%- askModel('message', 'memoryKey') %><%- checkAnswer %>
 <%_   if (features.cache) { _%>
 <%_     const reasons = [...(features.trackToolCalls ? ['!toolGuard.toolCalled()'] : []), ...(features.pii ? ['!PersonalData.containsTokens(message)', '!PersonalData.containsTokens(answer)'] : [])]; _%>
 <%_     if (reasons.length > 0) { _%>
@@ -154,6 +171,12 @@ class ChatService {
         String conversationId = request.conversationId() != null
                 ? request.conversationId()
                 : <%= type('java.util.UUID') %>.randomUUID().toString();
+<%_   if (features.injectionDetection) { _%>
+        <%= type('java.util.Optional') %><String> refusal = guardrails.refusalFor(request.message());
+        if (refusal.isPresent()) {
+            return new ChatMessageResponse(conversationId, refusal.get());
+        }
+<%_   } _%>
 <%_   if (features.pii) { _%>
         String message = personalData.mask(conversationId, request.message());
 <%_   } else { _%>
@@ -165,7 +188,7 @@ class ChatService {
 <%_   if (features.guardTools) { _%>
         toolGuard.start(<%= features.pii ? 'conversationId' : '' %>);
 <%_   } _%>
-        <%- askModel('message', 'conversationId') %>
+        <%- askModel('message', 'conversationId') %><%- checkAnswer %>
 <%_   if (features.pii) { _%>
         return new ChatMessageResponse(conversationId, personalData.restore(conversationId, answer));
 <%_   } else { _%>

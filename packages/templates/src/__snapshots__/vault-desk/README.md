@@ -76,6 +76,23 @@ Roles are read from the `realm_access.roles` claim (`OIDC_ROLES_CLAIM`).
 
 Conversations unused for 30d are purged every hour (`agent.memory.retention`), with their personal data.
 
+## Guardrails
+
+A message that tries to take over the agent (ignore your instructions, show your system prompt, you are now…, fake
+system or tool messages, in English or French, plainly or in base64) gets a refusal (`agent.guard.refusal`) and never
+reaches the model. Tool results reach the model between `<tool-result>` tags, as data it must not obey; once a
+result holds instructions, only the tools that read data (`transferStatus`) stay callable for the rest of the request.
+These are heuristics: they make an attack harder, they do not rule it out. Never give the agent a tool whose misuse
+you could not accept.
+
+An answer that repeats the system prompt is replaced by the refusal, and API keys (OpenAI, AWS, GitHub…) are masked.
+
+The model may call tools 8 times to answer one message (`spring.ai.tools.limits.max-total-tool-calls`);
+beyond, the request stops with 422.
+
+A request may take 60s at most (`agent.timeout`), model calls and tools included; beyond, it is stopped
+and answered with 504.
+
 ## Observability
 
 Health and metrics answer on port 8081 (`MANAGEMENT_PORT`), not on the public one: `/actuator/health`, `/actuator/prometheus`.

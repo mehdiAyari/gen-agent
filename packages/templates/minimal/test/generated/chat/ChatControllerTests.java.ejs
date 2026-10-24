@@ -22,6 +22,17 @@ class ChatControllerTests {
 
     @<%= type('org.springframework.test.context.bean.override.mockito.MockitoBean') %>
     ChatService chatService;
+<%_ if (features.requestTimeout) { _%>
+
+    @MockitoBean
+    <%= type(`${project.generatedPackage}.guard.RequestTimeout`) %> requestTimeout;
+
+    @<%= type('org.junit.jupiter.api.BeforeEach') %>
+    void runRequestsRightAway() {
+        // The timeout itself is covered by the tests of the application.
+        <%= staticImport('org.mockito.BDDMockito.given') %>(requestTimeout.call(<%= staticImport('org.mockito.ArgumentMatchers.any') %>())).willAnswer(call -> call.<<%= type('java.util.concurrent.Callable') %><?>>getArgument(0).call());
+    }
+<%_ } _%>
 
     @<%= type('org.junit.jupiter.api.Test') %>
     void returnsTheReplyOfTheAgent() {

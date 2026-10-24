@@ -1,0 +1,93 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.guard;
+
+<%- imports %>
+
+/**
+<%_ if (features.injectionDetection && features.outputGuard) { _%>
+ * Checks what goes to the model and what comes back: a message that tries to take over the agent is refused without
+ * calling the model, and an answer that leaks the system prompt is refused, its secrets masked.
+<%_ } else if (features.injectionDetection) { _%>
+ * Checks what goes to the model: a message that tries to take over the agent is refused without calling the model.
+<%_ } else { _%>
+ * Checks what comes back from the model: an answer that leaks the system prompt is refused, its secrets masked.
+<%_ } _%>
+<%_ if (features.otel || features.prometheus) { _%>
+ *
+ * <p>Each refusal is counted in {@code agent.guard.refusals}, by reason.
+<%_ } _%>
+ */
+@<%= type('org.springframework.stereotype.Component') %>
+public class Guardrails {
+<%_ if (features.outputGuard) { _%>
+
+    /** Well-known API keys: never shown, whatever the model was given. */
+    private static final <%= type('java.util.List') %><<%= type('java.util.regex.Pattern') %>> SECRETS = List.of(
+            <%- secretPatterns.map((pattern) => `Pattern.compile(${JSON.stringify(pattern)})`).join(',\n            ') %>);
+
+    /** Written in the system prompt only: an answer that holds it repeats the system prompt. */
+    private final String canary = "ref-" + <%= type('java.util.UUID') %>.randomUUID();
+
+    private final List<String> promptLines;
+<%_ } _%>
+
+    private final String refusal;
+<%_ if (features.otel || features.prometheus) { _%>
+
+    private final <%= type('io.micrometer.core.instrument.MeterRegistry') %> meterRegistry;
+<%_ } _%>
+
+    Guardrails(<%- [`${type(`${project.generatedPackage}.AgentProperties`)} properties`, ...(features.otel || features.prometheus ? ['MeterRegistry meterRegistry'] : [])].join(', ') %>)<%= features.outputGuard ? ` throws ${type('java.io.IOException')}` : '' %> {
+        this.refusal = properties.guard().refusal();
+<%_ if (features.otel || features.prometheus) { _%>
+        this.meterRegistry = meterRegistry;
+<%_ } _%>
+<%_ if (features.outputGuard) { _%>
+        // The lines long enough not to come up by chance in an answer.
+        this.promptLines = properties.systemPrompt().getContentAsString(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8).lines()
+                .map(String::strip)
+                .filter(line -> line.length() >= 30)
+                .toList();
+<%_ } _%>
+    }
+<%_ if (features.outputGuard) { _%>
+
+    /** Added to the system prompt. */
+    public String promptNote() {
+        return "\n\nInternal reference, never to be written: " + canary + ".";
+    }
+<%_ } _%>
+<%_ if (features.injectionDetection) { _%>
+
+    /** The refusal to send instead of asking the model, when the message tries to take over the agent. */
+    public <%= type('java.util.Optional') %><String> refusalFor(String message) {
+        if (!PromptInjection.detect(message)) {
+            return Optional.empty();
+        }
+        refused("injection");
+        return Optional.of(refusal);
+    }
+<%_ } _%>
+<%_ if (features.outputGuard) { _%>
+
+    /** The answer as it may leave the agent: refused when it repeats the system prompt, its secrets masked. */
+    public String check(String answer) {
+        long repeatedLines = promptLines.stream().filter(answer::contains).count();
+        if (answer.contains(canary) || (repeatedLines > 0 && repeatedLines >= Math.min(2, promptLines.size()))) {
+            refused("leak");
+            return refusal;
+        }
+        String masked = answer;
+        for (Pattern secret : SECRETS) {
+            masked = secret.matcher(masked).replaceAll("[SECRET]");
+        }
+        return masked;
+    }
+<%_ } _%>
+
+    private void refused(String reason) {
+<%_ if (features.otel || features.prometheus) { _%>
+        meterRegistry.counter("agent.guard.refusals", "reason", reason).increment();
+<%_ } _%>
+    }
+}

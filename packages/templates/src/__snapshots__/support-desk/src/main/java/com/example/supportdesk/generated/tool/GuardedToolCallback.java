@@ -30,11 +30,11 @@ class GuardedToolCallback implements ToolCallback {
 
     @Override
     public String call(String toolInput) {
-        return delegate.call(guard.beforeCall(toolInput));
+        return guard.call(getToolDefinition().name(), toolInput, delegate::call);
     }
 
     @Override
     public String call(String toolInput, ToolContext toolContext) {
-        return delegate.call(guard.beforeCall(toolInput), toolContext);
+        return guard.call(getToolDefinition().name(), toolInput, input -> delegate.call(input, toolContext));
     }
 }

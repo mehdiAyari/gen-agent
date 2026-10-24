@@ -3,6 +3,7 @@ package com.example.vaultdesk.generated.chat;
 
 import com.example.vaultdesk.generated.cache.ReplyCache;
 import com.example.vaultdesk.generated.cache.SemanticCache;
+import com.example.vaultdesk.generated.guard.Guardrails;
 import com.example.vaultdesk.generated.limits.UsageLimits;
 import com.example.vaultdesk.generated.privacy.Conversations;
 import com.example.vaultdesk.generated.privacy.PersonalData;
@@ -41,6 +42,8 @@ class ChatService {
 
     private final Conversations conversations;
 
+    private final Guardrails guardrails;
+
     ChatService(
         ChatClient chatClient,
         ChatMemory chatMemory,
@@ -49,7 +52,8 @@ class ChatService {
         ToolGuard toolGuard,
         SemanticCache semanticCache,
         PersonalData personalData,
-        Conversations conversations
+        Conversations conversations,
+        Guardrails guardrails
     ) {
         this.chatClient = chatClient;
         this.chatMemory = chatMemory;
@@ -59,6 +63,7 @@ class ChatService {
         this.semanticCache = semanticCache;
         this.personalData = personalData;
         this.conversations = conversations;
+        this.guardrails = guardrails;
     }
 
     ChatMessageResponse reply(ChatMessageRequest request, String userId) {
@@ -72,6 +77,10 @@ class ChatService {
         ).toString();
         if (request.conversationId() != null && chatMemory.get(memoryKey).isEmpty()) {
             throw new UnknownConversationException(conversationId);
+        }
+        Optional<String> refusal = guardrails.refusalFor(request.message());
+        if (refusal.isPresent()) {
+            return new ChatMessageResponse(conversationId, refusal.get());
         }
         // The model, the memory and the caches only ever see tokens in place of personal data.
         String message = personalData.mask(memoryKey, request.message());
@@ -94,6 +103,8 @@ class ChatService {
             .chatResponse();
         usageLimits.recordTokens(userId, response.getMetadata().getUsage().getTotalTokens());
         String answer = response.getResult().getOutput().getText();
+        // Checked before anything else sees it: the caches, the user.
+        answer = guardrails.check(answer);
         // Never reused: an answer built from a tool depends on live data, and one about personal data is about someone.
         if (
             firstMessage &&

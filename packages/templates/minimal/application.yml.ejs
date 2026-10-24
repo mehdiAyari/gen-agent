@@ -57,6 +57,12 @@ spring:
 <%_     } _%>
 <%_   } _%>
 <%_ } _%>
+<%_ if (loop.maxIterations !== undefined) { _%>
+    tools:
+      limits:
+        # Tool calls the model may make to answer one message; beyond, the request stops with 422.
+        max-total-tool-calls: <%= loop.maxIterations %>
+<%_ } _%>
 <%_ if (features.jdbcMemory) { _%>
     chat:
       memory:
@@ -68,6 +74,15 @@ spring:
 
 agent:
   system-prompt: classpath:<%= prompt.resource %>
+<%_ if (features.requestTimeout) { _%>
+  # The longest a request may take, model calls and tools included; beyond, 504.
+  timeout: <%= loop.timeout %>
+<%_ } _%>
+<%_ if (features.injectionDetection || features.outputGuard) { _%>
+  guard:
+    # Sent instead of an answer to a message that tries to take over the agent, or that would leak its instructions.
+    refusal: "I can't help with that request."
+<%_ } _%>
 <%_ if (features.erasure) { _%>
   security:
     # Where the roles are in the tokens of the provider: agent-admin may erase any user's data.

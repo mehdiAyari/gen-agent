@@ -2,6 +2,7 @@
 package com.example.supportdesk.generated.tool;
 
 import java.util.Arrays;
+import java.util.function.UnaryOperator;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
 
@@ -29,8 +30,9 @@ public class ToolGuard {
             .toArray(ToolCallback[]::new);
     }
 
-    String beforeCall(String input) {
+    String call(String tool, String input, UnaryOperator<String> delegate) {
         called.set(true);
-        return input;
+        String result = delegate.apply(input);
+        return result;
     }
 }

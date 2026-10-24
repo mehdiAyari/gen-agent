@@ -152,6 +152,33 @@ Conversations unused for <%= retention %> are purged every hour (`agent.memory.r
 
 <%_   } _%>
 <%_ } _%>
+<%_ if (features.injectionDetection || features.outputGuard || loop.maxIterations !== undefined || features.requestTimeout) { _%>
+## Guardrails
+
+<%_   if (features.injectionDetection) { _%>
+A message that tries to take over the agent (ignore your instructions, show your system prompt, you are now…, fake
+system or tool messages, in English or French, plainly or in base64) gets a refusal (`agent.guard.refusal`) and never
+reaches the model.<%= features.guardTools ? ` Tool results reach the model between \`<tool-result>\` tags, as data it must not obey; once a
+result holds instructions, only the tools that read data${readOnlyTools.length > 0 ? ` (${readOnlyTools.map((name) => `\`${name}\``).join(', ')})` : ''} stay callable for the rest of the request.` : '' %>
+These are heuristics: they make an attack harder, they do not rule it out. Never give the agent a tool whose misuse
+you could not accept.
+
+<%_   } _%>
+<%_   if (features.outputGuard) { _%>
+An answer that repeats the system prompt is replaced by the refusal, and API keys (OpenAI, AWS, GitHub…) are masked.
+
+<%_   } _%>
+<%_   if (loop.maxIterations !== undefined) { _%>
+The model may call tools <%= loop.maxIterations %> times to answer one message (`spring.ai.tools.limits.max-total-tool-calls`);
+beyond, the request stops with 422.
+
+<%_   } _%>
+<%_   if (features.requestTimeout) { _%>
+A request may take <%= loop.timeout %> at most (`agent.timeout`), model calls and tools included; beyond, it is stopped
+and answered with 504.
+
+<%_   } _%>
+<%_ } _%>
 <%_ if (features.otel || features.prometheus) { _%>
 ## Observability
 

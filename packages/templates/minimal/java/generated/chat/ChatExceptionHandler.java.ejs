@@ -35,6 +35,26 @@ class ChatExceptionHandler extends <%= type('org.springframework.web.servlet.mvc
     }
 
 <%_ } _%>
+<%_ if (features.requestTimeout) { _%>
+    @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>
+    <%= type('org.springframework.http.ProblemDetail') %> handleTimeout(<%= type(`${project.generatedPackage}.guard.RequestTimeoutException`) %> exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(<%= type('org.springframework.http.HttpStatus') %>.GATEWAY_TIMEOUT, exception.getMessage());
+        problem.setTitle("Too slow");
+        return problem;
+    }
+
+<%_ } _%>
+<%_ if (loop.maxIterations !== undefined && (tools.length > 0 || features.mcp)) { _%>
+    @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>
+    <%= type('org.springframework.http.ProblemDetail') %> handleToolCallLimit(<%= type('org.springframework.ai.model.tool.ToolCallLimitExceededException') %> exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                <%= type('org.springframework.http.HttpStatus') %>.UNPROCESSABLE_CONTENT,
+                "The agent needed more than " + exception.getLimit() + " tool calls to answer. Ask something narrower.");
+        problem.setTitle("Too many tool calls");
+        return problem;
+    }
+
+<%_ } _%>
     @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>(Exception.class)
     <%= type('org.springframework.http.ProblemDetail') %> handleUnexpected(Exception exception) {
         log.error("The agent could not answer", exception);

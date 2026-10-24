@@ -7,9 +7,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
+import com.example.vaultdesk.generated.guard.RequestTimeout;
 import com.example.vaultdesk.generated.limits.LimitExceededException;
 import com.example.vaultdesk.generated.security.SecurityConfiguration;
 import java.time.Duration;
+import java.util.concurrent.Callable;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -32,6 +35,15 @@ class ChatControllerTests {
 
     @MockitoBean
     ChatService chatService;
+
+    @MockitoBean
+    RequestTimeout requestTimeout;
+
+    @BeforeEach
+    void runRequestsRightAway() {
+        // The timeout itself is covered by the tests of the application.
+        given(requestTimeout.call(any())).willAnswer(call -> call.<Callable<?>>getArgument(0).call());
+    }
 
     @Test
     void returnsTheReplyOfTheAgent() {

@@ -10,12 +10,22 @@ import org.springframework.core.io.Resource;
  *
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
+ * @param timeout the longest a request may take
+ * @param guard what the guardrails answer
  * @param limits what each user may use
  * @param cache how first answers are reused
  * @param privacy how long the personal data behind the tokens of a conversation is kept
  */
 @ConfigurationProperties("agent")
-public record AgentProperties(Resource systemPrompt, Memory memory, Limits limits, Cache cache, Privacy privacy) {
+public record AgentProperties(
+    Resource systemPrompt,
+    Memory memory,
+    Duration timeout,
+    Guard guard,
+    Limits limits,
+    Cache cache,
+    Privacy privacy
+) {
     /**
      * @param window number of recent messages kept per conversation
      * @param retention how long an unused conversation is kept before it is purged
@@ -43,6 +53,11 @@ public record AgentProperties(Resource systemPrompt, Memory memory, Limits limit
          */
         public record Semantic(double threshold, int dimensions) {}
     }
+
+    /**
+     * @param refusal the answer sent instead of one the guardrails refuse
+     */
+    public record Guard(String refusal) {}
 
     /**
      * @param ttl how long the personal data behind the tokens of a conversation is kept

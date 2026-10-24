@@ -1,6 +1,7 @@
 // Managed by gen-agent: changes here are overwritten.
 package com.example.vaultdesk.generated.chat;
 
+import com.example.vaultdesk.generated.guard.RequestTimeout;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -15,12 +16,15 @@ class ChatController {
 
     private final ChatService chatService;
 
-    ChatController(ChatService chatService) {
+    private final RequestTimeout requestTimeout;
+
+    ChatController(ChatService chatService, RequestTimeout requestTimeout) {
         this.chatService = chatService;
+        this.requestTimeout = requestTimeout;
     }
 
     @PostMapping
     ChatMessageResponse chat(@Valid @RequestBody ChatMessageRequest request, @AuthenticationPrincipal Jwt user) {
-        return chatService.reply(request, user.getSubject());
+        return requestTimeout.call(() -> chatService.reply(request, user.getSubject()));
     }
 }

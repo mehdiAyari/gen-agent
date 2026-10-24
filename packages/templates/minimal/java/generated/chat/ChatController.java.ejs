@@ -8,22 +8,40 @@ package <%= project.generatedPackage %>.chat;
 class ChatController {
 
     private final ChatService chatService;
+<%_ if (features.requestTimeout) { _%>
+
+    private final <%= type(`${project.generatedPackage}.guard.RequestTimeout`) %> requestTimeout;
+
+    ChatController(ChatService chatService, RequestTimeout requestTimeout) {
+        this.chatService = chatService;
+        this.requestTimeout = requestTimeout;
+    }
+<%_ } else { _%>
 
     ChatController(ChatService chatService) {
         this.chatService = chatService;
     }
+<%_ } _%>
 
 <%_ if (features.oidc) { _%>
     @<%= type('org.springframework.web.bind.annotation.PostMapping') %>
     ChatMessageResponse chat(
             @<%= type('jakarta.validation.Valid') %> @<%= type('org.springframework.web.bind.annotation.RequestBody') %> ChatMessageRequest request,
             @<%= type('org.springframework.security.core.annotation.AuthenticationPrincipal') %> <%= type('org.springframework.security.oauth2.jwt.Jwt') %> user) {
+<%_ if (features.requestTimeout) { _%>
+        return requestTimeout.call(() -> chatService.reply(request, user.getSubject()));
+<%_ } else { _%>
         return chatService.reply(request, user.getSubject());
+<%_ } _%>
     }
 <%_ } else { _%>
     @<%= type('org.springframework.web.bind.annotation.PostMapping') %>
     ChatMessageResponse chat(@<%= type('jakarta.validation.Valid') %> @<%= type('org.springframework.web.bind.annotation.RequestBody') %> ChatMessageRequest request) {
+<%_ if (features.requestTimeout) { _%>
+        return requestTimeout.call(() -> chatService.reply(request));
+<%_ } else { _%>
         return chatService.reply(request);
+<%_ } _%>
     }
 <%_ } _%>
 }

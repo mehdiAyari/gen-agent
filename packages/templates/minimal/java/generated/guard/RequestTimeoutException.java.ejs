@@ -1,0 +1,12 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.guard;
+
+<%- imports %>
+
+/** The request took longer than {@code agent.timeout}: answered with 504. */
+public class RequestTimeoutException extends RuntimeException {
+
+    public RequestTimeoutException(<%= type('java.time.Duration') %> timeout) {
+        super("The agent took longer than " + timeout.toSeconds() + "s to answer. Try again, or ask something narrower.");
+    }
+}

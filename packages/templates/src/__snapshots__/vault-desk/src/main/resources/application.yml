@@ -21,6 +21,10 @@ spring:
         model: mistral-small-latest
       embedding:
         model: mistral-embed
+    tools:
+      limits:
+        # Tool calls the model may make to answer one message; beyond, the request stops with 422.
+        max-total-tool-calls: 8
     chat:
       memory:
         repository:
@@ -30,6 +34,11 @@ spring:
 
 agent:
   system-prompt: classpath:prompts/system.md
+  # The longest a request may take, model calls and tools included; beyond, 504.
+  timeout: 60s
+  guard:
+    # Sent instead of an answer to a message that tries to take over the agent, or that would leak its instructions.
+    refusal: "I can't help with that request."
   security:
     # Where the roles are in the tokens of the provider: agent-admin may erase any user's data.
     roles-claim: ${OIDC_ROLES_CLAIM:realm_access.roles}

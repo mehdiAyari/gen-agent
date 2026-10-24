@@ -3,6 +3,11 @@ package <%= project.generatedPackage %>;
 
 <%- imports %>
 
+<%_ const promptNotes = [
+  ...(features.pii ? [`${type(`${project.generatedPackage}.privacy.PersonalData`)}.PROMPT_NOTE`] : []),
+  ...(features.injectionDetection && features.guardTools ? ['ToolGuard.PROMPT_NOTE'] : []),
+  ...(features.outputGuard ? ['guardrails.promptNote()'] : []),
+]; _%>
 /** Wires the chat client: system prompt, conversation memory and the tools the model may call. */
 @<%= type('org.springframework.context.annotation.Configuration') %>(proxyBeanMethods = false)
 <%_ if (features.httpTools) { _%>
@@ -41,10 +46,11 @@ class AgentConfiguration {
             <%= type(`${project.generatedPackage}.tool.${tool.className}`) %> <%= tool.methodName %>Tool<%_ } _%><%_ if (features.mcp) { _%>,
             // The tools of the MCP servers of application.yml; none when spring.ai.mcp.client.enabled is false.
             <%= type('java.util.List') %><<%= type('org.springframework.ai.tool.ToolCallbackProvider') %>> mcpTools<%_ } _%><%_ if (features.guardTools) { _%>,
-            <%= type(`${project.generatedPackage}.tool.ToolGuard`) %> toolGuard<%_ } _%>)<%= features.pii ? ` throws ${type('java.io.IOException')}` : '' %> {
-<%_ if (features.pii) { _%>
-        // The model is told what the tokens of personal data are, after the system prompt.
-        return builder.defaultSystem(properties.systemPrompt().getContentAsString(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8) + <%= type(`${project.generatedPackage}.privacy.PersonalData`) %>.PROMPT_NOTE)
+            <%= type(`${project.generatedPackage}.tool.ToolGuard`) %> toolGuard<%_ } _%><%_ if (features.outputGuard) { _%>,
+            <%= type(`${project.generatedPackage}.guard.Guardrails`) %> guardrails<%_ } _%>)<%= promptNotes.length > 0 ? ` throws ${type('java.io.IOException')}` : '' %> {
+<%_ if (promptNotes.length > 0) { _%>
+        // What the model must know about the guards of the agent comes after the system prompt.
+        return builder.defaultSystem(<%- [`properties.systemPrompt().getContentAsString(${type('java.nio.charset.StandardCharsets')}.UTF_8)`, ...promptNotes].join(' + ') %>)
 <%_ } else { _%>
         return builder.defaultSystem(properties.systemPrompt())
 <%_ } _%>

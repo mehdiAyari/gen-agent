@@ -27,19 +27,11 @@ class GuardedToolCallback implements <%= type('org.springframework.ai.tool.ToolC
 
     @Override
     public String call(String toolInput) {
-<%_ if (features.pii) { _%>
-        return guard.afterCall(delegate.call(guard.beforeCall(toolInput)));
-<%_ } else { _%>
-        return delegate.call(guard.beforeCall(toolInput));
-<%_ } _%>
+        return guard.call(getToolDefinition().name(), toolInput, delegate::call);
     }
 
     @Override
     public String call(String toolInput, <%= type('org.springframework.ai.chat.model.ToolContext') %> toolContext) {
-<%_ if (features.pii) { _%>
-        return guard.afterCall(delegate.call(guard.beforeCall(toolInput), toolContext));
-<%_ } else { _%>
-        return delegate.call(guard.beforeCall(toolInput), toolContext);
-<%_ } _%>
+        return guard.call(getToolDefinition().name(), toolInput, input -> delegate.call(input, toolContext));
     }
 }

@@ -1,9 +1,11 @@
 // Managed by gen-agent: changes here are overwritten.
 package com.example.vaultdesk.generated.chat;
 
+import com.example.vaultdesk.generated.guard.RequestTimeoutException;
 import com.example.vaultdesk.generated.limits.LimitExceededException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.ToolCallLimitExceededException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -43,6 +45,23 @@ class ChatExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
             .header(HttpHeaders.RETRY_AFTER, String.valueOf(seconds))
             .body(problem);
+    }
+
+    @ExceptionHandler
+    ProblemDetail handleTimeout(RequestTimeoutException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.GATEWAY_TIMEOUT, exception.getMessage());
+        problem.setTitle("Too slow");
+        return problem;
+    }
+
+    @ExceptionHandler
+    ProblemDetail handleToolCallLimit(ToolCallLimitExceededException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.UNPROCESSABLE_CONTENT,
+            "The agent needed more than " + exception.getLimit() + " tool calls to answer. Ask something narrower."
+        );
+        problem.setTitle("Too many tool calls");
+        return problem;
     }
 
     @ExceptionHandler(Exception.class)
