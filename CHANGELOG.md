@@ -50,6 +50,15 @@ All notable changes to this project are documented here. The format follows
   data, and only read-only tools left once one held instructions; answers that repeat the system prompt refused and API
   keys masked (`security.outputGuard`); `limits.maxIterations` through Spring AI's tool call limits (422) and
   `limits.timeout` interrupting the whole request (504).
+- Resilience: retries tuned per provider, a Resilience4j circuit breaker per model, `model.fallback` (another model or
+  another provider, built by hand so that one `ChatModel` bean remains) then a fallback answer instead of an error;
+  `model.routing` by rules or by a classifier; `memory.summarize` keeping a summary of older messages. The README and
+  the CLI list every Ollama model to pull.
+
+### Fixed
+
+- `gdpr.erasureEndpoint` needs `memory.type: jdbc` (conversations are found per user in Postgres); `production` only
+  turns it on then.
 
 ### Security
 
