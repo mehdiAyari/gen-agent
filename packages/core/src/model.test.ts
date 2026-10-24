@@ -226,6 +226,9 @@ agent:
       resilience: false,
       routing: false,
       summarize: false,
+      approval: false,
+      killSwitches: false,
+      adminRole: false,
     });
   });
 
@@ -426,6 +429,39 @@ agent:
     expect(sameProvider.ollamaModels).toEqual(['qwen2.5:7b', 'qwen2.5:3b']);
   });
 
+  it('waits for the approval of the user before a sensitive call, and lets administrators switch things off', () => {
+    const controlled = buildModel(
+      parse(`
+agent:
+  name: vault
+  profile: production
+  model: { provider: mistral, name: mistral-small-latest }
+  tools:
+    - { name: rates, type: http, url: https://bank.example.org/rates }
+    - name: block-card
+      type: java
+      approval: { required: true }
+    - name: wire
+      type: http
+      method: POST
+      url: https://bank.example.org/wires
+      approval: { required: true, expiresAfter: 1h }
+`),
+    );
+
+    expect(controlled.features).toMatchObject({
+      approval: true,
+      killSwitches: true,
+      adminRole: true,
+      guardTools: true,
+    });
+    expect(controlled.approvalTools).toEqual([
+      { name: 'blockCard', expiresAfter: '24h' },
+      { name: 'wire', expiresAfter: '1h' },
+    ]);
+    expect(controlled.toolNames).toEqual(['rates', 'blockCard', 'wire']);
+  });
+
   it('limits the tool calls of an agent that only asks for it', () => {
     const limited = buildModel(
       parse(`
@@ -466,7 +502,7 @@ describe('unsupportedFeatures', () => {
     expect(unsupportedFeatures(dossier)).toEqual(
       expect.arrayContaining([
         'agent.springAi: 1.0.0 is not supported, this version of gen-agent generates Spring AI 2.0.1',
-        'agent.tools.1.approval: human approval arrives in V5b',
+        'agent.tools.0.cacheTtl: caching tool results arrives in a later version',
         'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
         'agent.rag: RAG arrives in V5c',
       ]),

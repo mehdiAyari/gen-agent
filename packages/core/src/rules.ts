@@ -130,7 +130,25 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
         message: `${tool.method} has side effects: consider approval.required so a human validates each call`,
       });
     }
+    if (tool.approval?.required === true && agent.security?.auth !== 'oidc') {
+      errors.push({
+        path: ['agent', 'tools', index, 'approval'],
+        message: 'the user who asked approves: set security.auth: oidc',
+      });
+    } else if (tool.approval?.required === true && agent.memory.type !== 'jdbc') {
+      errors.push({
+        path: ['agent', 'tools', index, 'approval'],
+        message: 'calls wait in Postgres: set memory.type: jdbc',
+      });
+    }
   });
+
+  if (agent.security?.killSwitches === true && agent.security.auth !== 'oidc') {
+    errors.push({
+      path: ['agent', 'security', 'killSwitches'],
+      message: 'administrators set them: set security.auth: oidc',
+    });
+  }
 
   if (agent.gdpr?.euOnly === true && agent.gdpr.allowNonEuProviders !== true) {
     const outsideEu = (provider: string, path: (string | number)[]): void => {

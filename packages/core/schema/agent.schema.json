@@ -461,6 +461,9 @@
             },
             "outputGuard": {
               "type": "boolean"
+            },
+            "killSwitches": {
+              "type": "boolean"
             }
           },
           "additionalProperties": false

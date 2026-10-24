@@ -136,6 +136,21 @@ describe('validateAgentYaml', () => {
         'agent.gdpr.erasureEndpoint: data is erased per user: set security.auth: oidc',
       ],
       [
+        'an approval without sign-in',
+        'tools:\n  - { name: refund, type: java, approval: { required: true } }\n',
+        'agent.tools.0.approval: the user who asked approves: set security.auth: oidc',
+      ],
+      [
+        'an approval without a database',
+        'security: { auth: oidc }\nmemory: { type: in-memory }\ntools:\n  - { name: refund, type: java, approval: { required: true } }\n',
+        'agent.tools.0.approval: calls wait in Postgres: set memory.type: jdbc',
+      ],
+      [
+        'kill switches without sign-in',
+        'security: { killSwitches: true }\n',
+        'agent.security.killSwitches: administrators set them: set security.auth: oidc',
+      ],
+      [
         'a fallback that is the model itself',
         'model: { provider: mistral, name: mistral-small-latest, fallback: { provider: mistral, name: mistral-small-latest } }\n',
         'agent.model.fallback: the fallback must be another model: change its provider or its name',

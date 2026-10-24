@@ -216,6 +216,8 @@ const agent = z.strictObject({
       injectionDetection: z.boolean().optional(),
       /** Answers checked before they leave: system prompt leaks refused, secrets masked. */
       outputGuard: z.boolean().optional(),
+      /** The agent and each tool can be switched off at once by an administrator. */
+      killSwitches: z.boolean().optional(),
     })
     .optional(),
   cache: z
@@ -306,7 +308,9 @@ const equipped = agent.transform((definition) => {
     // Only conversations kept in Postgres are purged.
     memory: production && memory.type === 'jdbc' ? { retention: PRODUCTION_DEFAULTS.retention, ...memory } : memory,
     security: {
-      ...(production ? { piiMasking: true, injectionDetection: true, outputGuard: true } : {}),
+      ...(production
+        ? { piiMasking: true, injectionDetection: true, outputGuard: true, ...(signedIn ? { killSwitches: true } : {}) }
+        : {}),
       ...definition.security,
       auth,
       ...limits,

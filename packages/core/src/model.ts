@@ -74,7 +74,17 @@ export interface GenerationModel {
     routing: boolean;
     /** Messages beyond the window are summarized instead of forgotten. */
     summarize: boolean;
+    /** Some tool calls wait in Postgres for the approval of the user who asked. */
+    approval: boolean;
+    /** The agent and each tool can be switched off at once, flags in Redis. */
+    killSwitches: boolean;
+    /** Tokens carry roles: the agent-admin role erases any user or sets the kill switches. */
+    adminRole: boolean;
   };
+  /** Tools whose calls wait for approval, by their name for the model, with their Spring duration. */
+  approvalTools: { name: string; expiresAfter: string }[];
+  /** Names of the generated tools for the model: what an administrator switches off. */
+  toolNames: string[];
   /** The model used when the first one fails; another provider is built by hand, beside Spring AI's own. */
   fallback:
     | { provider: Provider; model: string; sameProvider: boolean; module: string; apiKeyEnv: string | undefined }
@@ -243,6 +253,8 @@ interface McpServer {
 /** Not managed by Spring Boot: checked on Maven Central (2026-10-24). */
 const BUCKET4J_VERSION = '8.21.0';
 const RESILIENCE4J_VERSION = '2.4.0';
+/** How long a call waits for approval when agent.yaml does not say: a working day and a night. */
+const DEFAULT_APPROVAL_EXPIRY = '24h';
 
 /** Checked on Docker Hub and Quay (2026-10-24). */
 const IMAGES = {
@@ -372,6 +384,12 @@ export function buildModel(file: AgentFile): GenerationModel {
   const mcpServers = (agent.mcp ?? []).map(mcpServerOf);
   const hasTools = agent.tools.length > 0 || mcpServers.length > 0;
   const injectionDetection = agent.security?.injectionDetection === true;
+  const killSwitches = agent.security?.killSwitches === true;
+  const approvalTools = agent.tools.flatMap((tool, index) =>
+    tool.approval?.required === true
+      ? [{ name: tools[index]?.methodName ?? '', expiresAfter: tool.approval.expiresAfter ?? DEFAULT_APPROVAL_EXPIRY }]
+      : [],
+  );
   const fallback = agent.model.fallback;
   const fallbackKey =
     fallback === undefined || fallback.provider === agent.model.provider
@@ -403,12 +421,12 @@ export function buildModel(file: AgentFile): GenerationModel {
       limits: requests !== undefined || tokens !== undefined,
       dockerCompose: agent.deploy?.includes('docker-compose') ?? false,
       cache,
-      redis: requests !== undefined || tokens !== undefined || cache || pii,
+      redis: requests !== undefined || tokens !== undefined || cache || pii || killSwitches,
       otel: agent.observability?.otel === true,
       prometheus: agent.observability?.metrics === 'prometheus',
       mcp: mcpServers.length > 0,
       trackToolCalls: cache && hasTools,
-      guardTools: (cache || pii || injectionDetection) && hasTools,
+      guardTools: (cache || pii || injectionDetection || killSwitches || approvalTools.length > 0) && hasTools,
       chatUi: agent.interface.includes('chat-ui'),
       pii,
       logsWithoutPii: agent.gdpr?.logsWithoutPii === true,
@@ -422,7 +440,12 @@ export function buildModel(file: AgentFile): GenerationModel {
       resilience: agent.profile === 'production' || agent.model.fallback !== undefined,
       routing: agent.model.routing !== undefined,
       summarize: agent.memory.summarize === true,
+      approval: approvalTools.length > 0,
+      killSwitches,
+      adminRole: agent.gdpr?.erasureEndpoint === true || killSwitches,
     },
+    approvalTools,
+    toolNames: tools.map((tool) => tool.methodName),
     fallback: fallback === undefined ? undefined : fallbackOf(fallback, agent.model.provider),
     routing: agent.model.routing,
     ollamaModels: ollamaModelsOf(agent, semantic !== undefined),
@@ -555,7 +578,6 @@ export function unsupportedFeatures(file: AgentFile): string[] {
   );
   add(agent.memory.type === 'redis', 'agent.memory.type: "redis" arrives in V5 (in-memory and jdbc are generated)');
   agent.tools.forEach((tool, index) => {
-    add(tool.approval, `agent.tools.${String(index)}.approval: human approval arrives in V5b`);
     if (tool.type === 'http') {
       add(tool.cacheTtl, `agent.tools.${String(index)}.cacheTtl: caching tool results arrives in a later version`);
     }
