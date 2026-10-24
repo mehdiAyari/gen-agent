@@ -55,8 +55,14 @@ All notable changes to this project are documented here. The format follows
   `model.routing` by rules or by a classifier; `memory.summarize` keeping a summary of older messages. The README and
   the CLI list every Ollama model to pull.
 
+- Human control: `tools[].approval` keeps each call in Postgres until the user who asked approves or denies it
+  (`GET /api/approvals`, `POST /api/approvals/{id}`, buttons in the chat page), then tells the model; calls expire
+  after `expiresAfter` (24h by default). `security.killSwitches` (on in `production`) lets the `agent-admin` role
+  switch the agent (503) or each tool off at once, through flags in Redis.
+
 ### Fixed
 
+- An empty answer of the model is never cached.
 - `gdpr.erasureEndpoint` needs `memory.type: jdbc` (conversations are found per user in Postgres); `production` only
   turns it on then.
 

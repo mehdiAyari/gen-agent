@@ -7,7 +7,7 @@ JHipster. Point it at an OpenAPI spec, or describe your agent in an `agent.yaml`
 project that compiles, passes its tests and runs. From the command line, from a web generator that runs entirely in
 your browser, or from your coding assistant over MCP.
 
-**Status:** `minimal` and `standard` profiles; `production` protects personal data (V5a) guards the agent (V5b1) and keeps it answering (V5b2), the rest of it comes next. See [what is not done yet](#limits).
+**Status:** `minimal` and `standard` profiles; `production` protects personal data (V5a) guards it (V5b1), keeps it answering (V5b2) and keeps humans in control (V5b3); RAG, evaluations and Helm come next. See [what is not done yet](#limits).
 
 ![An existing API becomes an agent: the Petstore spec imported, the project generated, a local model calling the API](docs/demo/openapi-demo.gif)
 
@@ -102,11 +102,11 @@ curl -s localhost:8080/api/chat -H 'Content-Type: application/json' -d '{"messag
 
 ## Profiles
 
-| Profile      | What the agent comes with                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `minimal`    | the agent alone: chat endpoint, memory, tools; nothing else to run                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `standard`   | conversations in Postgres, OIDC sign-in (each user sees only their conversations), request and token limits per user, cache of first answers (Redis, per user, never for answers built from a tool), OpenTelemetry traces and metrics with a Prometheus endpoint, a Dockerfile and a `compose.yaml` with Postgres, Redis, Keycloak and Grafana; optionally a chat page (`interface: [rest, chat-ui]`) where users sign in from the browser                                                                                                                                        |
-| `production` | `standard`, and personal data protected: emails, phones, IBANs, card and social security numbers masked before the model and in the logs (put back in answers and tool calls), `DELETE /api/me` and an admin erasure endpoint, conversations purged after 30 days, a semantic cache per user in pgvector; prompt injection refused before the model, tool results treated as untrusted data, answers that leak the system prompt refused and API keys masked, at most 8 tool calls and 60s per request; retries, a circuit breaker and a fallback answer when no model can answer |
+| Profile      | What the agent comes with                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `minimal`    | the agent alone: chat endpoint, memory, tools; nothing else to run                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `standard`   | conversations in Postgres, OIDC sign-in (each user sees only their conversations), request and token limits per user, cache of first answers (Redis, per user, never for answers built from a tool), OpenTelemetry traces and metrics with a Prometheus endpoint, a Dockerfile and a `compose.yaml` with Postgres, Redis, Keycloak and Grafana; optionally a chat page (`interface: [rest, chat-ui]`) where users sign in from the browser                                                                                                                                                                                   |
+| `production` | `standard`, and personal data protected: emails, phones, IBANs, card and social security numbers masked before the model and in the logs (put back in answers and tool calls), `DELETE /api/me` and an admin erasure endpoint, conversations purged after 30 days, a semantic cache per user in pgvector; prompt injection refused before the model, tool results treated as untrusted data, answers that leak the system prompt refused and API keys masked, at most 8 tool calls and 60s per request; retries, a circuit breaker and a fallback answer when no model can answer; kill switches for the agent and each tool |
 
 ```yaml
 agent:
@@ -131,6 +131,16 @@ model:
   fallback: { provider: ollama, name: qwen2.5:3b }
 memory:
   summarize: true
+```
+
+A tool can wait for the approval of the user who asked: the reply lists the call, and nothing happens until they
+approve it (`POST /api/approvals/{id}`, or the buttons of the chat page):
+
+```yaml
+tools:
+  - name: block-card
+    type: java
+    approval: { required: true, expiresAfter: 1h }
 ```
 
 Any agent can also use existing MCP servers, started with `npx` or `uvx` or inside a throwaway Docker container:
@@ -201,7 +211,7 @@ versions can regenerate safely ([ADR 0001](docs/adr/0001-separate-generated-and-
 
 ## Limits
 
-- `production` covers personal data, guardrails and resilience (V5a, V5b1, V5b2); prompt injection detection uses heuristics, which make
+- `production` covers personal data, guardrails, resilience and human control (V5a, V5b); prompt injection detection uses heuristics, which make
   attacks harder without ruling them out. A valid `agent.yaml` may describe the whole specification (RAG,
   guardrails, evaluations…); gen-agent then refuses to generate and says which version brings each feature.
 - PII masking works with patterns: names and addresses are not detected.

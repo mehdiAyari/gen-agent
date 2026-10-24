@@ -44,7 +44,7 @@ A version is released only when all its end-to-end tests pass. Each version adds
 - [x] V5b1: prompt injection detection (English and French, base64 too), untrusted tool results, output guardrails,
       tool call and request time limits
 - [x] V5b2: retries and circuit breaker, fallback provider then fallback answer, model routing, conversation summaries
-- [ ] V5b3: human approval of tool calls, kill switches
+- [x] V5b3: human approval of tool calls (Postgres, chat page buttons), kill switches (Redis, admin endpoints)
 - [ ] V5c: RAG in pgvector, documents treated as untrusted data
 - [ ] V5d: evaluations and red teaming, generated CI workflow, Grafana dashboard, Helm chart
 
