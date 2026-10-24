@@ -1,5 +1,6 @@
 'use client';
 
+import { EMBEDDING_PROVIDERS } from '@gen-agent/core';
 import { useTranslations } from 'next-intl';
 
 import { withProfile, type AgentForm } from '@/lib/agent-form';
@@ -28,10 +29,10 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
         <ChoiceField
           path="profile"
           label={t('profile')}
-          hint={form.profile === 'standard' ? t('standardHint') : t('minimalHint')}
+          hint={t(`${form.profile}Hint`)}
           value={form.profile}
-          options={['minimal', 'standard'] as const}
-          labels={{ minimal: t('minimal'), standard: t('standard') }}
+          options={['minimal', 'standard', 'production'] as const}
+          labels={{ minimal: t('minimal'), standard: t('standard'), production: t('production') }}
           onValueChange={(profile) => {
             onChange(withProfile(form, profile));
           }}
@@ -44,7 +45,8 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
             options={['in-memory', 'jdbc'] as const}
             labels={{ 'in-memory': t('memoryInMemory'), jdbc: t('memoryJdbc') }}
             onValueChange={(memoryType) => {
-              update({ memoryType });
+              // Only conversations kept in Postgres are purged.
+              update(memoryType === 'jdbc' ? { memoryType } : { memoryType, retention: '' });
             }}
           />
           <ChoiceField
@@ -55,7 +57,11 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
             labels={{ none: t('authNone'), oidc: t('authOidc') }}
             onValueChange={(auth) => {
               // Limits are counted per user: without sign-in they go.
-              update(auth === 'none' ? { auth, rateLimit: '', tokenBudget: '', cache: false } : { auth });
+              update(
+                auth === 'none'
+                  ? { auth, rateLimit: '', tokenBudget: '', cache: false, semanticCache: false, erasure: false }
+                  : { auth },
+              );
             }}
           />
         </div>
@@ -100,6 +106,79 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
             onCheckedChange={(cache) => {
               update({ cache });
             }}
+          />
+        ) : null}
+        {form.auth === 'oidc' && EMBEDDING_PROVIDERS.includes(form.provider) ? (
+          <SwitchField
+            path="semanticCache"
+            label={t('semanticCache')}
+            hint={t('semanticCacheHint')}
+            checked={form.semanticCache}
+            onCheckedChange={(semanticCache) => {
+              update({ semanticCache });
+            }}
+          />
+        ) : null}
+        {form.semanticCache ? (
+          <TextField
+            path="semanticThreshold"
+            label={t('semanticThreshold')}
+            hint={t('semanticThresholdHint')}
+            value={form.semanticThreshold}
+            error={errorOf('semanticThreshold')}
+            onValueChange={(semanticThreshold) => {
+              update({ semanticThreshold });
+            }}
+            inputMode="decimal"
+            autoComplete="off"
+            spellCheck={false}
+            className="font-mono"
+            placeholder="0.95…"
+          />
+        ) : null}
+        <SwitchField
+          path="piiMasking"
+          label={t('piiMasking')}
+          hint={t('piiMaskingHint')}
+          checked={form.piiMasking}
+          onCheckedChange={(piiMasking) => {
+            update({ piiMasking });
+          }}
+        />
+        <SwitchField
+          path="logsWithoutPii"
+          label={t('logsWithoutPii')}
+          hint={t('logsWithoutPiiHint')}
+          checked={form.logsWithoutPii}
+          onCheckedChange={(logsWithoutPii) => {
+            update({ logsWithoutPii });
+          }}
+        />
+        {form.auth === 'oidc' ? (
+          <SwitchField
+            path="erasure"
+            label={t('erasure')}
+            hint={t('erasureHint')}
+            checked={form.erasure}
+            onCheckedChange={(erasure) => {
+              update({ erasure });
+            }}
+          />
+        ) : null}
+        {form.memoryType === 'jdbc' ? (
+          <TextField
+            path="retention"
+            label={t('retention')}
+            hint={t('retentionHint')}
+            value={form.retention}
+            error={errorOf('retention')}
+            onValueChange={(retention) => {
+              update({ retention });
+            }}
+            autoComplete="off"
+            spellCheck={false}
+            className="font-mono"
+            placeholder="30d…"
           />
         ) : null}
         <SwitchField

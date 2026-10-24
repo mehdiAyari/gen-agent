@@ -209,7 +209,21 @@
       "observabilityHint": "OpenTelemetry traces and metrics (Grafana in Docker Compose) and a Prometheus endpoint.",
       "chatUi": "Chat page",
       "chatUiHint": "A page to talk to the agent in a browser, served by the agent itself.",
-      "chatUiOidcHint": "A page to talk to the agent in a browser; users sign in with your identity provider."
+      "chatUiOidcHint": "A page to talk to the agent in a browser; users sign in with your identity provider.",
+      "production": "Production",
+      "productionHint": "Standard, and personal data protected: masked before the model and in the logs, erasure on request, conversations purged after 30 days, a semantic cache per user.",
+      "semanticCache": "Semantic cache",
+      "semanticCacheHint": "A question of the same meaning from the same user is answered from Postgres (pgvector), without the model. Never across users, never for answers built from a tool or holding personal data.",
+      "semanticThreshold": "Similarity threshold",
+      "semanticThresholdHint": "Between 0 and 1: the higher, the closer the questions must be. 0.95 by default.",
+      "piiMasking": "Mask personal data",
+      "piiMaskingHint": "Emails, phone numbers, IBANs, card and social security numbers become tokens before the model and come back in the answer and in tool calls. Names are not detected.",
+      "logsWithoutPii": "Logs without personal data",
+      "logsWithoutPiiHint": "The same values masked in the logs, each line with its correlation id.",
+      "erasure": "Erasure on request",
+      "erasureHint": "DELETE /api/me erases a user's conversations, cache and limits; DELETE /api/users/{id} for the agent-admin role.",
+      "retention": "Retention",
+      "retentionHint": "e.g. 30d (s, m, h, d): conversations unused for longer are purged every hour. Empty: kept."
     },
     "mcp": {
       "legend": "MCP servers",

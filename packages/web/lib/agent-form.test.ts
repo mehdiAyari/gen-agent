@@ -160,6 +160,87 @@ describe('the standard profile', () => {
   });
 });
 
+describe('the production profile', () => {
+  it('writes only what differs from the profile', () => {
+    expect(formToYaml(withProfile(defaultForm(), 'production'))).toBe(`agent:
+  name: my-agent
+  profile: production
+  model:
+    provider: mistral
+    name: mistral-small-latest
+`);
+  });
+
+  it('switches to the defaults of the production profile', () => {
+    expect(withProfile(defaultForm(), 'production')).toMatchObject({
+      memoryType: 'jdbc',
+      auth: 'oidc',
+      cache: true,
+      piiMasking: true,
+      logsWithoutPii: true,
+      erasure: true,
+      retention: '30d',
+      semanticCache: true,
+      semanticThreshold: '0.95',
+    });
+    expect(withProfile(withProfile(defaultForm(), 'production'), 'minimal')).toEqual(defaultForm());
+  });
+
+  it('adds no semantic cache for a provider without embeddings', () => {
+    const form = withProfile({ ...defaultForm(), provider: 'anthropic', model: 'claude-sonnet-5' }, 'production');
+
+    expect(form.semanticCache).toBe(false);
+    expect(formToYaml(form)).not.toContain('cache:');
+  });
+
+  it('reads back a production agent with its own choices', () => {
+    const yaml = `agent:
+  name: vault
+  profile: production
+  model:
+    provider: ollama
+    name: llama3.1
+  memory:
+    retention: 7d
+  security:
+    piiMasking: false
+  cache:
+    exact: redis
+    semantic:
+      threshold: 0.9
+      scope: user
+  gdpr:
+    erasureEndpoint: false
+`;
+    const result = formFromYaml(yaml);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+
+    expect(result.form).toMatchObject({
+      profile: 'production',
+      retention: '7d',
+      piiMasking: false,
+      logsWithoutPii: true,
+      erasure: false,
+      semanticCache: true,
+      semanticThreshold: '0.9',
+    });
+    expect(formToYaml(result.form)).toBe(yaml);
+    expect(validateForm(result.form).errors).toEqual({});
+  });
+
+  it('turns the semantic cache off on its own', () => {
+    expect(formToYaml({ ...withProfile(defaultForm(), 'production'), semanticCache: false })).toContain(
+      'cache:\n    exact: redis\n',
+    );
+  });
+
+  it('reports a retention or a threshold that is not valid on its field', () => {
+    const form = { ...withProfile(defaultForm(), 'production'), retention: 'a month', semanticThreshold: '2' };
+
+    expect(Object.keys(validateForm(form).errors)).toEqual(['retention', 'semanticThreshold']);
+  });
+});
+
 describe('formFromYaml', () => {
   it('reads back what formToYaml wrote', () => {
     expect(formFromYaml(formToYaml(weather))).toEqual({ ok: true, form: weather });
@@ -199,12 +280,12 @@ describe('formFromYaml', () => {
 
   it('explains what the web generator cannot handle yet', () => {
     const result = formFromYaml(
-      'agent:\n  name: big\n  profile: production\n  model: { provider: mistral, name: m }\n',
+      'agent:\n  name: big\n  model: { provider: mistral, name: m }\n  rag: { enabled: true }\n',
     );
 
     expect(result).toEqual({
       ok: false,
-      errors: ['agent.profile: "production" arrives in V5 (minimal and standard are generated)'],
+      errors: ['agent.rag: RAG arrives in V5c'],
     });
   });
 

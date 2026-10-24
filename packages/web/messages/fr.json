@@ -209,7 +209,21 @@
       "observabilityHint": "Traces et métriques OpenTelemetry (Grafana dans Docker Compose) et un point d’accès Prometheus.",
       "chatUi": "Page de chat",
       "chatUiHint": "Une page pour parler à l’agent dans un navigateur, servie par l’agent lui-même.",
-      "chatUiOidcHint": "Une page pour parler à l’agent dans un navigateur ; les utilisateurs se connectent avec votre fournisseur d’identité."
+      "chatUiOidcHint": "Une page pour parler à l’agent dans un navigateur ; les utilisateurs se connectent avec votre fournisseur d’identité.",
+      "production": "Production",
+      "productionHint": "Standard, avec les données personnelles protégées : masquées avant le modèle et dans les logs, effacement sur demande, conversations purgées après 30 jours, un cache sémantique par utilisateur.",
+      "semanticCache": "Cache sémantique",
+      "semanticCacheHint": "Une question de même sens du même utilisateur est servie par Postgres (pgvector), sans le modèle. Jamais d’un utilisateur à l’autre, jamais pour une réponse issue d’un outil ou contenant des données personnelles.",
+      "semanticThreshold": "Seuil de similarité",
+      "semanticThresholdHint": "Entre 0 et 1 : plus il est haut, plus les questions doivent être proches. 0.95 par défaut.",
+      "piiMasking": "Masquer les données personnelles",
+      "piiMaskingHint": "E-mails, téléphones, IBAN, numéros de carte et de sécurité sociale deviennent des jetons avant le modèle et reviennent dans la réponse et les appels d’outils. Les noms ne sont pas détectés.",
+      "logsWithoutPii": "Logs sans données personnelles",
+      "logsWithoutPiiHint": "Les mêmes valeurs masquées dans les logs, chaque ligne avec son identifiant de corrélation.",
+      "erasure": "Effacement sur demande",
+      "erasureHint": "DELETE /api/me efface les conversations, le cache et les limites d’un utilisateur ; DELETE /api/users/{id} pour le rôle agent-admin.",
+      "retention": "Conservation",
+      "retentionHint": "Par ex. 30d (s, m, h, d) : les conversations inutilisées plus longtemps sont purgées toutes les heures. Vide : conservées."
     },
     "mcp": {
       "legend": "Serveurs MCP",

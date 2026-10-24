@@ -1,6 +1,6 @@
 'use client';
 
-import { EU_PROVIDERS, PROVIDERS, SUGGESTED_MODELS, type Provider } from '@gen-agent/core';
+import { EMBEDDING_PROVIDERS, EU_PROVIDERS, PROVIDERS, SUGGESTED_MODELS, type Provider } from '@gen-agent/core';
 import { PlusIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { FocusEvent } from 'react';
@@ -51,7 +51,12 @@ export function AgentFields({ form, errorOf, onChange, onVisit }: AgentFieldsPro
   const changeProvider = (provider: Provider): void => {
     // Keeps a model the user typed; replaces the suggestion of the previous provider.
     const suggested = form.model.trim() === '' || form.model === SUGGESTED_MODELS[form.provider];
-    update({ provider, ...(suggested ? { model: SUGGESTED_MODELS[provider] } : {}) });
+    update({
+      provider,
+      ...(suggested ? { model: SUGGESTED_MODELS[provider] } : {}),
+      // The semantic cache needs an embedding model.
+      ...(EMBEDDING_PROVIDERS.includes(provider) ? {} : { semanticCache: false }),
+    });
   };
   const addTool = (): void => {
     update({

@@ -1,4 +1,6 @@
 import {
+  EMBEDDING_PROVIDERS,
+  PRODUCTION_DEFAULTS,
   STANDARD_LIMITS,
   SUGGESTED_MODELS,
   unsupportedFeatures,
@@ -82,6 +84,17 @@ export interface AgentForm {
   mcp: McpForm[];
   /** A chat page served by the agent, next to the REST endpoint. */
   chatUi: boolean;
+  /** Emails, phones, IBANs, card and social security numbers replaced by tokens before the model. */
+  piiMasking: boolean;
+  /** The same values masked in the logs. */
+  logsWithoutPii: boolean;
+  /** DELETE /api/me, and DELETE /api/users/{id} for administrators: needs oidc. */
+  erasure: boolean;
+  /** 30d: conversations unused for longer are purged; empty for none. Postgres only. */
+  retention: string;
+  /** Answers to questions of the same meaning, per user: needs oidc and a provider with embeddings. */
+  semanticCache: boolean;
+  semanticThreshold: string;
 }
 
 interface McpForm {
@@ -102,34 +115,64 @@ export function emptyMcpServer(): McpForm {
 
 const words = (text: string): string[] => text.split(/[\s,]+/).filter((word) => word !== '');
 
-type Profile = 'minimal' | 'standard';
+type Profile = 'minimal' | 'standard' | 'production';
 type Equipment = Pick<
   AgentForm,
-  'memoryType' | 'auth' | 'rateLimit' | 'tokenBudget' | 'dockerCompose' | 'cache' | 'observability'
+  | 'memoryType'
+  | 'auth'
+  | 'rateLimit'
+  | 'tokenBudget'
+  | 'dockerCompose'
+  | 'cache'
+  | 'observability'
+  | 'piiMasking'
+  | 'logsWithoutPii'
+  | 'erasure'
+  | 'retention'
+  | 'semanticCache'
+  | 'semanticThreshold'
 >;
 
-/** What each profile equips the agent with, as core applies it: standard adds Postgres, OIDC, limits and Docker. */
-function equipmentOf(profile: Profile): Equipment {
-  return profile === 'standard'
-    ? { memoryType: 'jdbc', auth: 'oidc', ...STANDARD_LIMITS, dockerCompose: true, cache: true, observability: true }
-    : {
-        memoryType: 'in-memory',
-        auth: 'none',
-        rateLimit: '',
-        tokenBudget: '',
-        dockerCompose: false,
-        cache: false,
-        observability: false,
-      };
-}
+const DEFAULT_THRESHOLD = String(PRODUCTION_DEFAULTS.semanticThreshold);
 
-/** The limits core adds by itself: only for the standard profile with sign-in. */
-const defaultLimits = (form: Pick<AgentForm, 'profile' | 'auth'>): Pick<AgentForm, 'rateLimit' | 'tokenBudget'> =>
-  form.profile === 'standard' && form.auth === 'oidc' ? STANDARD_LIMITS : { rateLimit: '', tokenBudget: '' };
+/**
+ * What core adds by itself, as it applies the profile: standard adds Postgres, OIDC, limits, cache, observability and
+ * Docker; production adds personal data protection, a retention and a semantic cache. What is counted or kept per
+ * user comes only with sign-in.
+ */
+function addedByCore(form: Pick<AgentForm, 'profile' | 'auth' | 'provider' | 'memoryType'>): Equipment {
+  const full = form.profile !== 'minimal';
+  const production = form.profile === 'production';
+  const signedIn = full && form.auth === 'oidc';
+  return {
+    memoryType: full ? 'jdbc' : 'in-memory',
+    auth: full ? 'oidc' : 'none',
+    ...(signedIn ? STANDARD_LIMITS : { rateLimit: '', tokenBudget: '' }),
+    dockerCompose: full,
+    cache: signedIn,
+    observability: full,
+    piiMasking: production,
+    logsWithoutPii: production,
+    erasure: production && signedIn,
+    retention: production && form.memoryType === 'jdbc' ? PRODUCTION_DEFAULTS.retention : '',
+    semanticCache: production && signedIn && EMBEDDING_PROVIDERS.includes(form.provider),
+    semanticThreshold: DEFAULT_THRESHOLD,
+  };
+}
 
 /** The form with another profile, and the equipment that comes with it. */
 export function withProfile(form: AgentForm, profile: Profile): AgentForm {
-  return { ...form, profile, ...equipmentOf(profile) };
+  const full = profile !== 'minimal';
+  return {
+    ...form,
+    profile,
+    ...addedByCore({
+      profile,
+      provider: form.provider,
+      auth: full ? 'oidc' : 'none',
+      memoryType: full ? 'jdbc' : 'in-memory',
+    }),
+  };
 }
 
 const DEFAULT_PROMPT = 'prompts/system.md';
@@ -151,7 +194,7 @@ export function defaultForm(): AgentForm {
     allowNonEuProviders: false,
     tools: [],
     profile: 'minimal',
-    ...equipmentOf('minimal'),
+    ...addedByCore({ profile: 'minimal', auth: 'none', provider: 'mistral', memoryType: 'in-memory' }),
     mcp: [],
     chatUi: false,
   };
@@ -176,7 +219,7 @@ export function formToYaml(form: AgentForm): string {
   if (present(form.package)) agent.package = form.package;
   if (form.profile !== 'minimal') agent.profile = form.profile;
   agent.model = model;
-  const equipment = equipmentOf(form.profile);
+  const equipment = addedByCore(form);
 
   const prompt: Record<string, unknown> = {};
   if (form.systemPromptPath !== DEFAULT_PROMPT) prompt.system = form.systemPromptPath;
@@ -186,6 +229,7 @@ export function formToYaml(form: AgentForm): string {
   const memory: Record<string, unknown> = {};
   if (form.memoryType !== equipment.memoryType) memory.type = form.memoryType;
   if (form.memoryWindow !== DEFAULT_WINDOW) memory.window = numberOrText(form.memoryWindow);
+  if (present(form.retention) && form.retention !== equipment.retention) memory.retention = form.retention;
   if (Object.keys(memory).length > 0) agent.memory = memory;
 
   if (form.tools.length > 0) {
@@ -227,19 +271,34 @@ export function formToYaml(form: AgentForm): string {
   }
 
   const security: Record<string, unknown> = {};
-  const limits = defaultLimits(form);
   if (form.auth !== equipment.auth) security.auth = form.auth;
-  if (present(form.rateLimit) && form.rateLimit !== limits.rateLimit) security.rateLimit = form.rateLimit;
-  if (present(form.tokenBudget) && form.tokenBudget !== limits.tokenBudget) security.tokenBudget = form.tokenBudget;
+  if (present(form.rateLimit) && form.rateLimit !== equipment.rateLimit) security.rateLimit = form.rateLimit;
+  if (present(form.tokenBudget) && form.tokenBudget !== equipment.tokenBudget) {
+    security.tokenBudget = form.tokenBudget;
+  }
+  if (form.piiMasking !== equipment.piiMasking) security.piiMasking = form.piiMasking;
   if (Object.keys(security).length > 0) agent.security = security;
-  // The cache comes with sign-in: core adds it to the standard profile only then.
-  const cacheByDefault = form.profile === 'standard' && form.auth === 'oidc';
-  if (form.cache !== cacheByDefault) agent.cache = { exact: form.cache ? 'redis' : 'none' };
+  // Core adds the cache only when agent.yaml has none: any change writes it whole.
+  if (
+    form.cache !== equipment.cache ||
+    form.semanticCache !== equipment.semanticCache ||
+    (form.semanticCache && form.semanticThreshold !== DEFAULT_THRESHOLD)
+  ) {
+    agent.cache = {
+      exact: form.cache ? 'redis' : 'none',
+      ...(form.semanticCache ? { semantic: { threshold: numberOrText(form.semanticThreshold), scope: 'user' } } : {}),
+    };
+  }
   if (form.observability !== equipment.observability) {
     agent.observability = form.observability ? { otel: true, metrics: 'prometheus' } : { otel: false, metrics: 'none' };
   }
 
-  if (form.euOnly) agent.gdpr = { euOnly: true, ...(form.allowNonEuProviders ? { allowNonEuProviders: true } : {}) };
+  const gdpr: Record<string, unknown> = {};
+  if (form.euOnly)
+    Object.assign(gdpr, { euOnly: true, ...(form.allowNonEuProviders ? { allowNonEuProviders: true } : {}) });
+  if (form.erasure !== equipment.erasure) gdpr.erasureEndpoint = form.erasure;
+  if (form.logsWithoutPii !== equipment.logsWithoutPii) gdpr.logsWithoutPii = form.logsWithoutPii;
+  if (Object.keys(gdpr).length > 0) agent.gdpr = gdpr;
   if (form.chatUi) agent.interface = ['rest', 'chat-ui'];
   if (form.dockerCompose !== equipment.dockerCompose) agent.deploy = form.dockerCompose ? ['docker-compose'] : [];
 
@@ -300,7 +359,7 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     memoryWindow: String(agent.memory.window),
     euOnly: agent.gdpr?.euOnly ?? false,
     allowNonEuProviders: agent.gdpr?.allowNonEuProviders ?? false,
-    profile: agent.profile === 'standard' ? 'standard' : 'minimal',
+    profile: agent.profile,
     memoryType: agent.memory.type === 'jdbc' ? 'jdbc' : 'in-memory',
     auth: agent.security?.auth ?? 'none',
     rateLimit: agent.security?.rateLimit ?? '',
@@ -309,6 +368,12 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     cache: agent.cache?.exact === 'redis',
     observability: agent.observability?.otel === true || agent.observability?.metrics === 'prometheus',
     chatUi: agent.interface.includes('chat-ui'),
+    piiMasking: agent.security?.piiMasking ?? false,
+    logsWithoutPii: agent.gdpr?.logsWithoutPii ?? false,
+    erasure: agent.gdpr?.erasureEndpoint ?? false,
+    retention: agent.memory.retention ?? '',
+    semanticCache: agent.cache?.semantic !== undefined,
+    semanticThreshold: String(agent.cache?.semantic?.threshold ?? DEFAULT_THRESHOLD),
     mcp: (agent.mcp ?? []).map((server) => ({
       name: server.name,
       package: server.package,
@@ -357,6 +422,8 @@ const FIELDS: Record<string, keyof AgentForm> = {
   'agent.memory.window': 'memoryWindow',
   'agent.security.rateLimit': 'rateLimit',
   'agent.security.tokenBudget': 'tokenBudget',
+  'agent.memory.retention': 'retention',
+  'agent.cache.semantic.threshold': 'semanticThreshold',
 };
 
 function fieldOf(path: string): string {
