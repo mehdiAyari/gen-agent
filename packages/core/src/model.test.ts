@@ -205,7 +205,14 @@ agent:
       prometheus: false,
       mcp: false,
       trackToolCalls: false,
+      guardTools: false,
       chatUi: false,
+      pii: false,
+      logsWithoutPii: false,
+      erasure: false,
+      retention: false,
+      semanticCache: false,
+      vectorStore: false,
     });
   });
 
@@ -303,6 +310,32 @@ agent:
     expect(unsupportedFeatures(withUi)).toEqual([]);
   });
 
+  it('masks personal data, erases and purges it, and caches by meaning in pgvector with the provider embeddings', () => {
+    const production = buildModel(
+      parse(
+        'agent:\n  name: vault\n  profile: production\n  model: { provider: mistral, name: mistral-small-latest }\n',
+      ),
+    );
+
+    expect(production.features).toMatchObject({
+      pii: true,
+      logsWithoutPii: true,
+      erasure: true,
+      retention: true,
+      semanticCache: true,
+      vectorStore: true,
+      redis: true,
+    });
+    expect(production.retention).toBe('30d');
+    expect(production.semanticCache).toEqual({ threshold: 0.95 });
+    expect(production.embedding).toEqual({ model: 'mistral-embed', dimensions: 1024 });
+    expect(
+      unsupportedFeatures(
+        parse('agent:\n  name: vault\n  profile: production\n  model: { provider: mistral, name: m }\n'),
+      ),
+    ).toEqual([]);
+  });
+
   it('gives the tests an issuer they never call: requests carry their own token', () => {
     expect(buildModel(standard).testProperties).toContain(
       'spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org',
@@ -326,11 +359,10 @@ describe('unsupportedFeatures', () => {
 
     expect(unsupportedFeatures(dossier)).toEqual(
       expect.arrayContaining([
-        'agent.profile: "production" arrives in V5 (minimal and standard are generated)',
         'agent.springAi: 1.0.0 is not supported, this version of gen-agent generates Spring AI 2.0.1',
-        'agent.tools.1.approval: human approval arrives in a later version',
+        'agent.tools.1.approval: human approval arrives in V5b',
         'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
-        'agent.rag: RAG arrives in V5',
+        'agent.rag: RAG arrives in V5c',
       ]),
     );
   });

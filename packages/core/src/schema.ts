@@ -264,6 +264,12 @@ const agent = z.strictObject({
 /** Limits of the standard profile when agent.yaml sets none: enough for a person, not for a script. */
 export const STANDARD_LIMITS = { rateLimit: '30/min', tokenBudget: '100000/day' } as const;
 
+/** What production adds to standard (V5a): personal data protected, kept 30 days, a semantic cache per user. */
+export const PRODUCTION_DEFAULTS = { retention: '30d', semanticThreshold: 0.95 } as const;
+
+/** Providers with an embedding model, which the semantic cache needs. */
+export const EMBEDDING_PROVIDERS: readonly Provider[] = ['openai', 'mistral', 'ollama'];
+
 /**
  * What the profile equips the agent with, unless agent.yaml says otherwise: minimal adds nothing; standard and
  * production add a JDBC memory, OIDC with request and token limits per user, and Docker Compose.
@@ -282,12 +288,22 @@ const equipped = agent.transform((definition) => {
           tokenBudget: definition.security?.tokenBudget ?? STANDARD_LIMITS.tokenBudget,
         }
       : {};
+  const production = definition.profile === 'production';
+  const signedIn = auth === 'oidc';
+  const semantic =
+    production && signedIn && EMBEDDING_PROVIDERS.includes(definition.model.provider)
+      ? { semantic: { threshold: PRODUCTION_DEFAULTS.semanticThreshold, scope: 'user' as const } }
+      : {};
   return {
     ...definition,
-    memory,
-    security: { ...definition.security, auth, ...limits },
+    // Only conversations kept in Postgres are purged.
+    memory: production && memory.type === 'jdbc' ? { retention: PRODUCTION_DEFAULTS.retention, ...memory } : memory,
+    security: { ...(production ? { piiMasking: true } : {}), ...definition.security, auth, ...limits },
     // Answers are cached per user: only when users sign in.
-    ...(definition.cache === undefined && auth === 'oidc' ? { cache: { exact: 'redis' as const } } : {}),
+    ...(definition.cache === undefined && signedIn ? { cache: { exact: 'redis' as const, ...semantic } } : {}),
+    ...(production
+      ? { gdpr: { ...(signedIn ? { erasureEndpoint: true } : {}), logsWithoutPii: true, ...definition.gdpr } }
+      : {}),
     observability: definition.observability ?? { otel: true, metrics: 'prometheus' as const },
     deploy: definition.deploy ?? ['docker-compose' as const],
   };

@@ -45,9 +45,28 @@ export interface GenerationModel {
     mcp: boolean;
     /** Tools report their calls, so that answers built from live data are not cached. */
     trackToolCalls: boolean;
+    /** Every tool goes through ToolGuard: calls recorded, personal data restored in arguments and masked in results. */
+    guardTools: boolean;
     /** A chat page served by the agent; with OIDC, users sign in from the browser. */
     chatUi: boolean;
+    /** Personal data replaced by tokens before the model, restored in replies and tool arguments. */
+    pii: boolean;
+    /** Personal data masked in the logs, which carry a correlation id. */
+    logsWithoutPii: boolean;
+    /** DELETE /api/me and DELETE /api/users/{id}. */
+    erasure: boolean;
+    /** Conversations purged after `retention`. */
+    retention: boolean;
+    /** Answers reused for questions of the same meaning, per user. */
+    semanticCache: boolean;
+    /** pgvector: Postgres runs with the vector extension. */
+    vectorStore: boolean;
   };
+  /** Spring duration after which unused conversations are purged. */
+  retention: string | undefined;
+  semanticCache: { threshold: number } | undefined;
+  /** Embedding model of the provider, for the semantic cache. */
+  embedding: { model: string; dimensions: number } | undefined;
   /** MCP servers the agent starts and whose tools it gives the model. */
   mcpServers: McpServer[];
   /** Per user; absent when not limited. */
@@ -180,7 +199,15 @@ const IMAGES = {
   node: 'node:22.23.4-alpine',
   uv: 'astral/uv:0.13.5-python3.13-alpine',
   lgtm: 'grafana/otel-lgtm:0.38.0',
+  pgvector: 'pgvector/pgvector:0.8.7-pg18',
 } as const;
+
+/** Embedding model and its dimensions per provider; Anthropic has none. */
+const EMBEDDINGS: Partial<Record<Provider, { model: string; dimensions: number }>> = {
+  openai: { model: 'text-embedding-3-small', dimensions: 1536 },
+  mistral: { model: 'mistral-embed', dimensions: 1024 },
+  ollama: { model: 'nomic-embed-text', dimensions: 768 },
+};
 
 function mcpServerOf(server: NonNullable<AgentDefinition['mcp']>[number]): McpServer {
   const env = server.env ?? [];
@@ -276,7 +303,11 @@ export function buildModel(file: AgentFile): GenerationModel {
   const requests = limitOf(agent.security?.rateLimit);
   const tokens = limitOf(agent.security?.tokenBudget);
   const cache = agent.cache?.exact === 'redis';
+  const semantic = agent.cache?.semantic;
+  // The tokens of a conversation and the values they stand for are kept in Redis.
+  const pii = agent.security?.piiMasking === true;
   const mcpServers = (agent.mcp ?? []).map(mcpServerOf);
+  const hasTools = agent.tools.length > 0 || mcpServers.length > 0;
 
   return {
     agent,
@@ -298,13 +329,23 @@ export function buildModel(file: AgentFile): GenerationModel {
       limits: requests !== undefined || tokens !== undefined,
       dockerCompose: agent.deploy?.includes('docker-compose') ?? false,
       cache,
-      redis: requests !== undefined || tokens !== undefined || cache,
+      redis: requests !== undefined || tokens !== undefined || cache || pii,
       otel: agent.observability?.otel === true,
       prometheus: agent.observability?.metrics === 'prometheus',
       mcp: mcpServers.length > 0,
-      trackToolCalls: cache && (agent.tools.length > 0 || mcpServers.length > 0),
+      trackToolCalls: cache && hasTools,
+      guardTools: (cache || pii) && hasTools,
       chatUi: agent.interface.includes('chat-ui'),
+      pii,
+      logsWithoutPii: agent.gdpr?.logsWithoutPii === true,
+      erasure: agent.gdpr?.erasureEndpoint === true,
+      retention: agent.memory.retention !== undefined,
+      semanticCache: semantic !== undefined,
+      vectorStore: semantic !== undefined,
     },
+    retention: agent.memory.retention,
+    semanticCache: semantic === undefined ? undefined : { threshold: semantic.threshold },
+    embedding: semantic === undefined ? undefined : EMBEDDINGS[agent.model.provider],
     mcpServers,
     limits: { ...(requests === undefined ? {} : { requests }), ...(tokens === undefined ? {} : { tokens }) },
     provider: {
@@ -417,19 +458,17 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     if (condition !== undefined && condition !== false) issues.push(message);
   };
 
-  add(agent.profile === 'production', 'agent.profile: "production" arrives in V5 (minimal and standard are generated)');
   add(agent.build === 'gradle', 'agent.build: Gradle arrives in a later version (V1 generates Maven)');
   add(
     agent.springAi !== SUPPORTED_SPRING_AI,
     `agent.springAi: ${agent.springAi} is not supported, this version of gen-agent generates Spring AI ${SUPPORTED_SPRING_AI}`,
   );
-  add(agent.model.routing, 'agent.model.routing: model routing arrives in a later version');
-  add(agent.model.fallback, 'agent.model.fallback: provider fallback arrives in a later version');
+  add(agent.model.routing, 'agent.model.routing: model routing arrives in V5b');
+  add(agent.model.fallback, 'agent.model.fallback: provider fallback arrives in V5b');
   add(agent.memory.type === 'redis', 'agent.memory.type: "redis" arrives in V5 (in-memory and jdbc are generated)');
-  add(agent.memory.summarize, 'agent.memory.summarize: conversation summaries arrive in V5');
-  add(agent.memory.retention, 'agent.memory.retention: retention and purge arrive in V4');
+  add(agent.memory.summarize, 'agent.memory.summarize: conversation summaries arrive in V5b');
   agent.tools.forEach((tool, index) => {
-    add(tool.approval, `agent.tools.${String(index)}.approval: human approval arrives in a later version`);
+    add(tool.approval, `agent.tools.${String(index)}.approval: human approval arrives in V5b`);
     if (tool.type === 'http') {
       add(tool.cacheTtl, `agent.tools.${String(index)}.cacheTtl: caching tool results arrives in a later version`);
     }
@@ -438,27 +477,18 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     agent.openapi,
     'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
   );
-  add(agent.rag, 'agent.rag: RAG arrives in V5');
-  add(agent.security?.piiMasking, 'agent.security.piiMasking: PII masking arrives in V5');
+  add(agent.rag, 'agent.rag: RAG arrives in V5c');
   add(
     agent.security?.injectionDetection,
-    'agent.security.injectionDetection: prompt injection detection arrives in V5',
+    'agent.security.injectionDetection: prompt injection detection arrives in V5b',
   );
-  add(agent.cache?.semantic, 'agent.cache.semantic: the semantic cache arrives in V5');
-  add(agent.limits, 'agent.limits: iteration and timeout limits arrive in a later version');
+  add(agent.limits, 'agent.limits: iteration and timeout limits arrive in V5b');
   add(
     agent.observability?.grafanaDashboard,
-    'agent.observability.grafanaDashboard: the Grafana dashboard arrives in V5',
+    'agent.observability.grafanaDashboard: the Grafana dashboard arrives in V5d',
   );
   add(agent.observability?.feedback, 'agent.observability.feedback: feedback buttons arrive in a later version');
-  add(
-    agent.gdpr?.erasureEndpoint ?? agent.gdpr?.logsWithoutPii,
-    'agent.gdpr: the erasure endpoint and PII-free logs arrive in V5',
-  );
-  add(agent.evals, 'agent.evals: evaluations and red teaming arrive in V5');
-  add(
-    agent.deploy?.includes('helm'),
-    'agent.deploy: the Helm chart arrives in a later version (docker-compose is generated)',
-  );
+  add(agent.evals, 'agent.evals: evaluations and red teaming arrive in V5d');
+  add(agent.deploy?.includes('helm'), 'agent.deploy: the Helm chart arrives in V5d (docker-compose is generated)');
   return issues;
 }

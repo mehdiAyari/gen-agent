@@ -93,6 +93,58 @@ describe('validateAgentYaml', () => {
       expect(errorsOf(result)).toEqual([]);
     });
 
+    it('protects personal data in the production profile', () => {
+      const result = validateAgentYaml(withAgent('profile: production\n'));
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.config.agent).toMatchObject({
+        memory: { type: 'jdbc', retention: '30d' },
+        security: { auth: 'oidc', piiMasking: true },
+        cache: { exact: 'redis', semantic: { threshold: 0.95, scope: 'user' } },
+        gdpr: { erasureEndpoint: true, logsWithoutPii: true },
+      });
+    });
+
+    it('keeps no retention for conversations held in memory in the production profile', () => {
+      const result = validateAgentYaml(withAgent('profile: production\nmemory:\n  type: in-memory\n'));
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.config.agent.memory.retention).toBeUndefined();
+    });
+
+    it.each([
+      [
+        'a semantic cache without sign-in',
+        'cache:\n  semantic: { threshold: 0.9 }\n',
+        'agent.cache.semantic: answers are cached per user: set security.auth: oidc',
+      ],
+      [
+        'the erasure endpoint without sign-in',
+        'gdpr:\n  erasureEndpoint: true\n',
+        'agent.gdpr.erasureEndpoint: data is erased per user: set security.auth: oidc',
+      ],
+      [
+        'a retention without a database',
+        'memory:\n  retention: 30d\n',
+        'agent.memory.retention: only conversations kept in Postgres are purged: set memory.type: jdbc',
+      ],
+    ])('refuses %s', (_, yaml, error) => {
+      expect(errorsOf(validateAgentYaml(withAgent(yaml)))).toEqual([error]);
+    });
+
+    it('refuses a semantic cache with a provider that has no embedding model', () => {
+      const result = validateAgentYaml(
+        withAgent(
+          'model: { provider: anthropic, name: claude-sonnet-5 }\nsecurity: { auth: oidc }\ncache:\n  semantic: { threshold: 0.9 }\n',
+        ),
+      );
+
+      expect(errorsOf(result)).toEqual([
+        'agent.cache.semantic: anthropic has no embedding model: use openai, mistral or ollama, or no semantic cache',
+      ]);
+    });
+
     it('keeps what the file sets over the profile defaults', () => {
       const result = validateAgentYaml(
         withAgent('profile: standard\nmemory:\n  type: in-memory\nsecurity:\n  auth: none\ndeploy: []\n'),
@@ -250,7 +302,9 @@ tools:
     });
 
     it('refuses a global semantic cache when the agent keeps memory or has tools', () => {
-      const result = validateAgentYaml(withAgent('cache:\n  semantic:\n    threshold: 0.95\n    scope: global\n'));
+      const result = validateAgentYaml(
+        withAgent('security:\n  auth: oidc\ncache:\n  semantic:\n    threshold: 0.95\n    scope: global\n'),
+      );
 
       expect(errorsOf(result)).toEqual([expect.stringMatching(/^agent.cache.semantic.scope: /)]);
     });

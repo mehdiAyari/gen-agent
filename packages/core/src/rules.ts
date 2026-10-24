@@ -1,4 +1,11 @@
-import { BODYLESS_METHODS, EU_PROVIDERS, placementOf, urlPlaceholders, type AgentFile } from './schema.js';
+import {
+  BODYLESS_METHODS,
+  EMBEDDING_PROVIDERS,
+  EU_PROVIDERS,
+  placementOf,
+  urlPlaceholders,
+  type AgentFile,
+} from './schema.js';
 
 /** A problem found in an agent file. `path` uses dots (`agent.tools.0.url`); `line` is 1-based when known. */
 export interface Diagnostic {
@@ -140,6 +147,31 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
 
   if (agent.cache?.exact === 'redis' && agent.security?.auth !== 'oidc') {
     errors.push({ path: ['agent', 'cache', 'exact'], message: 'answers are cached per user: set security.auth: oidc' });
+  }
+  if (agent.cache?.semantic !== undefined) {
+    if (agent.security?.auth !== 'oidc') {
+      errors.push({
+        path: ['agent', 'cache', 'semantic'],
+        message: 'answers are cached per user: set security.auth: oidc',
+      });
+    } else if (!EMBEDDING_PROVIDERS.includes(agent.model.provider)) {
+      errors.push({
+        path: ['agent', 'cache', 'semantic'],
+        message: `${agent.model.provider} has no embedding model: use openai, mistral or ollama, or no semantic cache`,
+      });
+    }
+  }
+  if (agent.gdpr?.erasureEndpoint === true && agent.security?.auth !== 'oidc') {
+    errors.push({
+      path: ['agent', 'gdpr', 'erasureEndpoint'],
+      message: 'data is erased per user: set security.auth: oidc',
+    });
+  }
+  if (agent.memory.retention !== undefined && agent.memory.type !== 'jdbc') {
+    errors.push({
+      path: ['agent', 'memory', 'retention'],
+      message: 'only conversations kept in Postgres are purged: set memory.type: jdbc',
+    });
   }
   for (const limit of ['rateLimit', 'tokenBudget'] as const) {
     if (agent.security?.[limit] !== undefined && agent.security.auth !== 'oidc') {

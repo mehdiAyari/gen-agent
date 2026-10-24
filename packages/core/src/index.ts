@@ -3,9 +3,11 @@ export type { GenerationModel, ModelTool, ProviderSettings, ToolParameter } from
 export { agentJsonSchema } from './json-schema.js';
 export {
   BODYLESS_METHODS,
+  EMBEDDING_PROVIDERS,
   EU_PROVIDERS,
   GENERATOR_VERSION,
   JAVA_RESERVED,
+  PRODUCTION_DEFAULTS,
   PROVIDERS,
   STANDARD_LIMITS,
   SUGGESTED_MODELS,
