@@ -60,8 +60,15 @@ All notable changes to this project are documented here. The format follows
   after `expiresAfter` (24h by default). `security.killSwitches` (on in `production`) lets the `agent-admin` role
   switch the agent (503) or each tool off at once, through flags in Redis.
 
+- RAG (`rag.enabled`, any profile): the files of `documents/` read by Apache Tika, split into passages and indexed in
+  pgvector at startup (only what changed, by fingerprint; removed files forgotten), admin uploads at
+  `/api/admin/documents`, the `topK` closest passages sent as data between `<document>` tags and never kept in the
+  conversation, optional reranking by the model, passages that hold prompt injection dropped. Postgres now runs
+  whenever a feature needs it, even with conversations in memory.
+
 ### Fixed
 
+- A semantic cache with conversations kept in memory had no database to run on.
 - An empty answer of the model is never cached.
 - `gdpr.erasureEndpoint` needs `memory.type: jdbc` (conversations are found per user in Postgres); `production` only
   turns it on then.

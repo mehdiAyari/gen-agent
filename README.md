@@ -7,7 +7,7 @@ JHipster. Point it at an OpenAPI spec, or describe your agent in an `agent.yaml`
 project that compiles, passes its tests and runs. From the command line, from a web generator that runs entirely in
 your browser, or from your coding assistant over MCP.
 
-**Status:** `minimal` and `standard` profiles; `production` protects personal data (V5a) guards it (V5b1), keeps it answering (V5b2) and keeps humans in control (V5b3); RAG, evaluations and Helm come next. See [what is not done yet](#limits).
+**Status:** `minimal` and `standard` profiles; `production` protects personal data (V5a) guards it (V5b1), keeps it answering (V5b2) keeps humans in control (V5b3) and answers from your documents (V5c); evaluations and Helm come next. See [what is not done yet](#limits).
 
 ![An existing API becomes an agent: the Petstore spec imported, the project generated, a local model calling the API](docs/demo/openapi-demo.gif)
 
@@ -143,6 +143,16 @@ tools:
     approval: { required: true, expiresAfter: 1h }
 ```
 
+Any agent can answer from documents: the files of `documents/` (PDF, Word, HTML, Markdown… read by Apache Tika) are
+indexed in pgvector at startup, and administrators can upload more:
+
+```yaml
+rag:
+  enabled: true
+  topK: 4
+  rerank: true
+```
+
 Any agent can also use existing MCP servers, started with `npx` or `uvx` or inside a throwaway Docker container:
 
 ```yaml
@@ -211,7 +221,7 @@ versions can regenerate safely ([ADR 0001](docs/adr/0001-separate-generated-and-
 
 ## Limits
 
-- `production` covers personal data, guardrails, resilience and human control (V5a, V5b); prompt injection detection uses heuristics, which make
+- `production` covers personal data, guardrails, resilience and human control (V5a, V5b); any profile can add RAG (V5c); prompt injection detection uses heuristics, which make
   attacks harder without ruling them out. A valid `agent.yaml` may describe the whole specification (RAG,
   guardrails, evaluations…); gen-agent then refuses to generate and says which version brings each feature.
 - PII masking works with patterns: names and addresses are not detected.

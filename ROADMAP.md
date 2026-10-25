@@ -45,7 +45,8 @@ A version is released only when all its end-to-end tests pass. Each version adds
       tool call and request time limits
 - [x] V5b2: retries and circuit breaker, fallback provider then fallback answer, model routing, conversation summaries
 - [x] V5b3: human approval of tool calls (Postgres, chat page buttons), kill switches (Redis, admin endpoints)
-- [ ] V5c: RAG in pgvector, documents treated as untrusted data
+- [x] V5c: RAG in pgvector (documents folder and admin uploads, Apache Tika, reranking by the model), documents treated
+      as untrusted data
 - [ ] V5d: evaluations and red teaming, generated CI workflow, Grafana dashboard, Helm chart
 
 ## Later
