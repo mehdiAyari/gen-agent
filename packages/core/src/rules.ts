@@ -150,6 +150,13 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
     });
   }
 
+  if (agent.rag?.enabled === true && !EMBEDDING_PROVIDERS.includes(agent.model.provider)) {
+    errors.push({
+      path: ['agent', 'rag'],
+      message: `${agent.model.provider} has no embedding model: use openai, mistral or ollama for RAG`,
+    });
+  }
+
   if (agent.gdpr?.euOnly === true && agent.gdpr.allowNonEuProviders !== true) {
     const outsideEu = (provider: string, path: (string | number)[]): void => {
       if (!(EU_PROVIDERS as readonly string[]).includes(provider)) {

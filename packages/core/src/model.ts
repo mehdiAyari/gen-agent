@@ -62,6 +62,10 @@ export interface GenerationModel {
     semanticCache: boolean;
     /** pgvector: Postgres runs with the vector extension. */
     vectorStore: boolean;
+    /** Postgres runs: for the conversations, the vector store or the tables of the agent. */
+    postgres: boolean;
+    /** Answers are grounded in the documents of a shared knowledge base. */
+    rag: boolean;
     /** User messages and tool results checked for prompt injection; tool results marked as untrusted data. */
     injectionDetection: boolean;
     /** Answers checked before they leave: system prompt leaks refused, secrets masked. */
@@ -101,7 +105,9 @@ export interface GenerationModel {
   /** Spring duration after which unused conversations are purged. */
   retention: string | undefined;
   semanticCache: { threshold: number } | undefined;
-  /** Embedding model of the provider, for the semantic cache. */
+  /** Passages per answer, whether the model reranks them, and their size in tokens. */
+  rag: { topK: number; rerank: boolean; chunkSize: number } | undefined;
+  /** Embedding model of the provider, for the semantic cache and RAG. */
   embedding: { model: string; dimensions: number } | undefined;
   /** MCP servers the agent starts and whose tools it gives the model. */
   mcpServers: McpServer[];
@@ -255,6 +261,8 @@ const BUCKET4J_VERSION = '8.21.0';
 const RESILIENCE4J_VERSION = '2.4.0';
 /** How long a call waits for approval when agent.yaml does not say: a working day and a night. */
 const DEFAULT_APPROVAL_EXPIRY = '24h';
+/** Few, short passages: precise answers and few tokens. */
+const RAG_DEFAULTS = { topK: 4, chunkSize: 500 };
 
 /** Checked on Docker Hub and Quay (2026-10-24). */
 const IMAGES = {
@@ -385,6 +393,9 @@ export function buildModel(file: AgentFile): GenerationModel {
   const hasTools = agent.tools.length > 0 || mcpServers.length > 0;
   const injectionDetection = agent.security?.injectionDetection === true;
   const killSwitches = agent.security?.killSwitches === true;
+  const ragEnabled = agent.rag?.enabled === true;
+  // The semantic cache and RAG both embed text with the model of the provider.
+  const embeddings = semantic !== undefined || ragEnabled;
   const approvalTools = agent.tools.flatMap((tool, index) =>
     tool.approval?.required === true
       ? [{ name: tools[index]?.methodName ?? '', expiresAfter: tool.approval.expiresAfter ?? DEFAULT_APPROVAL_EXPIRY }]
@@ -433,7 +444,14 @@ export function buildModel(file: AgentFile): GenerationModel {
       erasure: agent.gdpr?.erasureEndpoint === true,
       retention: agent.memory.retention !== undefined,
       semanticCache: semantic !== undefined,
-      vectorStore: semantic !== undefined,
+      vectorStore: embeddings,
+      postgres:
+        agent.memory.type === 'jdbc' ||
+        embeddings ||
+        agent.gdpr?.erasureEndpoint === true ||
+        agent.memory.retention !== undefined ||
+        approvalTools.length > 0,
+      rag: ragEnabled,
       injectionDetection,
       outputGuard: agent.security?.outputGuard === true,
       requestTimeout: agent.limits?.timeout !== undefined,
@@ -442,19 +460,27 @@ export function buildModel(file: AgentFile): GenerationModel {
       summarize: agent.memory.summarize === true,
       approval: approvalTools.length > 0,
       killSwitches,
-      adminRole: agent.gdpr?.erasureEndpoint === true || killSwitches,
+      // Administrators also manage the documents, when users sign in.
+      adminRole: agent.gdpr?.erasureEndpoint === true || killSwitches || (ragEnabled && oidc),
     },
     approvalTools,
     toolNames: tools.map((tool) => tool.methodName),
     fallback: fallback === undefined ? undefined : fallbackOf(fallback, agent.model.provider),
     routing: agent.model.routing,
-    ollamaModels: ollamaModelsOf(agent, semantic !== undefined),
+    ollamaModels: ollamaModelsOf(agent, embeddings),
+    rag: ragEnabled
+      ? {
+          topK: agent.rag?.topK ?? RAG_DEFAULTS.topK,
+          rerank: agent.rag?.rerank === true,
+          chunkSize: agent.rag?.chunkSize ?? RAG_DEFAULTS.chunkSize,
+        }
+      : undefined,
     loop: { maxIterations: agent.limits?.maxIterations, timeout: agent.limits?.timeout },
     readOnlyTools: tools.flatMap((tool) => (tool.kind === 'http' && tool.method === 'GET' ? [tool.methodName] : [])),
     secretPatterns: SECRET_PATTERNS.map((pattern) => pattern.source),
     retention: agent.memory.retention,
     semanticCache: semantic === undefined ? undefined : { threshold: semantic.threshold },
-    embedding: semantic === undefined ? undefined : EMBEDDINGS[agent.model.provider],
+    embedding: embeddings ? EMBEDDINGS[agent.model.provider] : undefined,
     mcpServers,
     limits: { ...(requests === undefined ? {} : { requests }), ...(tokens === undefined ? {} : { tokens }) },
     provider: {
@@ -480,6 +506,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       ...(oidc ? ['spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org'] : []),
       ...(mcpServers.length > 0 ? ['spring.ai.mcp.client.enabled=false'] : []),
       ...(fallbackKey === undefined ? [] : ['agent.fallback.api-key=test-key']),
+      ...(ragEnabled ? ['agent.rag.documents=src/test/resources/documents'] : []),
       // A short timeout, so that the test of a request that takes too long runs quickly.
       ...(agent.limits?.timeout === undefined ? [] : ['agent.timeout=3s']),
       ...tools.flatMap((tool) =>
@@ -586,7 +613,6 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     agent.openapi,
     'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
   );
-  add(agent.rag, 'agent.rag: RAG arrives in V5c');
   add(
     agent.observability?.grafanaDashboard,
     'agent.observability.grafanaDashboard: the Grafana dashboard arrives in V5d',

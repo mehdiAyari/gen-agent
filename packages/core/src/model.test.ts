@@ -220,6 +220,8 @@ agent:
       retention: false,
       semanticCache: false,
       vectorStore: false,
+      postgres: false,
+      rag: false,
       injectionDetection: false,
       outputGuard: false,
       requestTimeout: false,
@@ -462,6 +464,27 @@ agent:
     expect(controlled.toolNames).toEqual(['rates', 'blockCard', 'wire']);
   });
 
+  it('answers from documents indexed in pgvector, Postgres running even with conversations in memory', () => {
+    const rag = buildModel(
+      parse(`
+agent:
+  name: helpdesk
+  model: { provider: ollama, name: qwen2.5:3b }
+  rag: { enabled: true, topK: 3, rerank: true }
+`),
+    );
+
+    expect(rag.features).toMatchObject({ rag: true, vectorStore: true, postgres: true, jdbcMemory: false });
+    expect(rag.rag).toEqual({ topK: 3, rerank: true, chunkSize: 500 });
+    expect(rag.embedding).toEqual({ model: 'nomic-embed-text', dimensions: 768 });
+    expect(rag.ollamaModels).toEqual(['qwen2.5:3b', 'nomic-embed-text']);
+    expect(
+      unsupportedFeatures(
+        parse('agent:\n  name: h\n  model: { provider: ollama, name: m }\n  rag: { enabled: true }\n'),
+      ),
+    ).toEqual([]);
+  });
+
   it('limits the tool calls of an agent that only asks for it', () => {
     const limited = buildModel(
       parse(`
@@ -504,7 +527,7 @@ describe('unsupportedFeatures', () => {
         'agent.springAi: 1.0.0 is not supported, this version of gen-agent generates Spring AI 2.0.1',
         'agent.tools.0.cacheTtl: caching tool results arrives in a later version',
         'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
-        'agent.rag: RAG arrives in V5c',
+        'agent.evals: evaluations and red teaming arrive in V5d',
       ]),
     );
   });

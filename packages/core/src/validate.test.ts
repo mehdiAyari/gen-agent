@@ -151,6 +151,11 @@ describe('validateAgentYaml', () => {
         'agent.security.killSwitches: administrators set them: set security.auth: oidc',
       ],
       [
+        'RAG with a provider that has no embedding model',
+        'model: { provider: anthropic, name: claude-sonnet-5 }\nrag: { enabled: true }\n',
+        'agent.rag: anthropic has no embedding model: use openai, mistral or ollama for RAG',
+      ],
+      [
         'a fallback that is the model itself',
         'model: { provider: mistral, name: mistral-small-latest, fallback: { provider: mistral, name: mistral-small-latest } }\n',
         'agent.model.fallback: the fallback must be another model: change its provider or its name',
