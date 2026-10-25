@@ -78,6 +78,18 @@ Roles are read from the `realm_access.roles` claim (`OIDC_ROLES_CLAIM`).
 
 Conversations unused for 30d are purged every hour (`agent.memory.retention`), with their personal data.
 
+## Knowledge base
+
+Put the documents the agent answers from in `documents/` (PDF, Word, PowerPoint, HTML, Markdown, text…: anything
+Apache Tika reads), mounted into the container by Compose. When the agent starts, new and changed files are
+indexed in pgvector (table `agent_document`) and files that are gone are forgotten (`agent.rag.documents`).
+Users with the `agent-admin` role also add documents with `POST /api/admin/documents` (a `file` part), list them with
+`GET /api/admin/documents` and remove one with `DELETE /api/admin/documents?source=upload/<name>`.
+
+Each question gets the 4 closest passages of 500 tokens (`agent.rag.top-k`, `agent.rag.chunk-size`), chosen by the model (`mistral-small-latest`) among three times as many. They reach the model as data
+between `<document>` tags, never as instructions, and are not kept in the conversation; a passage that holds
+instructions for the model is never sent. The knowledge base is shared by every user of the agent.
+
 ## Human control
 
 Calls to `blockCard` wait for the approval of the user who asked: the reply lists them in

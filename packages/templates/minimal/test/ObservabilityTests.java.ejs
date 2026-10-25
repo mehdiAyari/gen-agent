@@ -7,7 +7,7 @@ package <%= project.basePackage %>;
 @<%= type('org.springframework.boot.test.context.SpringBootTest') %>(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {<%- [...testProperties, 'management.server.port=0'].map((property) => javaString(property)).join(', ') %>})
-<%_ if (features.jdbcMemory || features.redis) { _%>
+<%_ if (features.postgres || features.redis) { _%>
 @<%= type('org.springframework.context.annotation.Import') %>({<%= project.applicationClass %>Tests.FakeModelConfiguration.class, <%= type(`${project.generatedPackage}.TestcontainersConfiguration`) %>.class})
 <%_ } else { _%>
 @<%= type('org.springframework.context.annotation.Import') %>(<%= project.applicationClass %>Tests.FakeModelConfiguration.class)

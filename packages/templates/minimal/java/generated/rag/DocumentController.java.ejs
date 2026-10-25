@@ -1,0 +1,42 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.rag;
+
+<%- imports %>
+
+/** For the agent-admin role: the documents of the knowledge base, beside those of the documents folder. */
+@<%= type('org.springframework.web.bind.annotation.RestController') %>
+@<%= type('org.springframework.web.bind.annotation.RequestMapping') %>("/api/admin/documents")
+class DocumentController {
+
+    /** Where uploaded documents are kept, apart from the files of the documents folder. */
+    static final String UPLOADS = "upload/";
+
+    private final KnowledgeBase knowledgeBase;
+
+    DocumentController(KnowledgeBase knowledgeBase) {
+        this.knowledgeBase = knowledgeBase;
+    }
+
+    @<%= type('org.springframework.web.bind.annotation.GetMapping') %>
+    <%= type('java.util.List') %><IndexedDocument> documents() {
+        return knowledgeBase.documents();
+    }
+
+    /** Indexes the file, in place of an earlier upload of the same name. */
+    @<%= type('org.springframework.web.bind.annotation.PostMapping') %>
+    <%= type('org.springframework.http.ResponseEntity') %><IndexedDocument> upload(@<%= type('org.springframework.web.bind.annotation.RequestParam') %> <%= type('org.springframework.web.multipart.MultipartFile') %> file) throws <%= type('java.io.IOException') %> {
+        String name = <%= type('org.springframework.util.StringUtils') %>.getFilename(file.getOriginalFilename());
+        if (name == null || name.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        String source = UPLOADS + name;
+        knowledgeBase.index(source, file.getResource());
+        return ResponseEntity.status(<%= type('org.springframework.http.HttpStatus') %>.CREATED)
+                .body(knowledgeBase.documents().stream().filter(document -> document.source().equals(source)).findFirst().orElseThrow());
+    }
+
+    @<%= type('org.springframework.web.bind.annotation.DeleteMapping') %>
+    ResponseEntity<Void> forget(@RequestParam String source) {
+        return knowledgeBase.forget(source) ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+}

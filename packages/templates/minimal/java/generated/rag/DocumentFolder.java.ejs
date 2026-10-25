@@ -1,0 +1,45 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.rag;
+
+<%- imports %>
+
+/**
+ * Indexes the documents folder ({@code agent.rag.documents}) once the agent is ready: new and changed files are
+ * indexed, files that are gone are forgotten<%= features.oidc ? ', uploaded documents are kept' : '' %>.
+ */
+@<%= type('org.springframework.stereotype.Component') %>
+class DocumentFolder {
+
+    private static final <%= type('org.slf4j.Logger') %> log = <%= type('org.slf4j.LoggerFactory') %>.getLogger(DocumentFolder.class);
+
+    private final KnowledgeBase knowledgeBase;
+
+    private final <%= type('java.nio.file.Path') %> folder;
+
+    DocumentFolder(KnowledgeBase knowledgeBase, <%= type(`${project.generatedPackage}.AgentProperties`) %> properties) {
+        this.knowledgeBase = knowledgeBase;
+        this.folder = properties.rag().documents();
+    }
+
+    @<%= type('org.springframework.context.event.EventListener') %>(<%= type('org.springframework.boot.context.event.ApplicationReadyEvent') %>.class)
+    void index() throws <%= type('java.io.IOException') %> {
+        if (!<%= type('java.nio.file.Files') %>.isDirectory(folder)) {
+            log.warn("No documents folder at {}: the knowledge base keeps what it has", folder.toAbsolutePath());
+            return;
+        }
+        <%= type('java.util.Set') %><String> present = new <%= type('java.util.HashSet') %><>();
+        try (<%= type('java.util.stream.Stream') %><Path> files = Files.walk(folder)) {
+            for (Path file : files.filter(Files::isRegularFile).toList()) {
+                String source = folder.relativize(file).toString().replace('\\', '/');
+                present.add(source);
+                knowledgeBase.index(source, new <%= type('org.springframework.core.io.FileSystemResource') %>(file));
+            }
+        }
+        for (IndexedDocument document : knowledgeBase.documents()) {
+            if (!present.contains(document.source())<%= features.oidc ? ' && !document.source().startsWith(DocumentController.UPLOADS)' : '' %>) {
+                knowledgeBase.forget(document.source());
+                log.info("Forgot {}: it is no longer in the documents folder", document.source());
+            }
+        }
+    }
+}

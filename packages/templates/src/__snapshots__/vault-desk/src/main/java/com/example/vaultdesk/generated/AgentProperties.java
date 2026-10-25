@@ -1,6 +1,7 @@
 // Managed by gen-agent: changes here are overwritten. Set the values in application.yml.
 package com.example.vaultdesk.generated;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
@@ -10,6 +11,7 @@ import org.springframework.core.io.Resource;
  *
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
+ * @param rag the knowledge base the answers draw on
  * @param fallbackAnswer the answer sent when no model can answer
  * @param fallback the model that answers when the first one fails
  * @param routing the models of simple and complex messages
@@ -23,6 +25,7 @@ import org.springframework.core.io.Resource;
 public record AgentProperties(
     Resource systemPrompt,
     Memory memory,
+    Rag rag,
     String fallbackAnswer,
     Fallback fallback,
     Routing routing,
@@ -59,6 +62,14 @@ public record AgentProperties(
          */
         public record Semantic(double threshold, int dimensions) {}
     }
+
+    /**
+     * @param documents the folder indexed at startup
+     * @param topK passages sent with each question
+     * @param chunkSize size of a passage, in tokens
+     * @param dimensions size of the embeddings of the model
+     */
+    public record Rag(Path documents, int topK, int chunkSize, int dimensions) {}
 
     /**
      * @param model name of the fallback model

@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: docs-helper
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/agent}
+    username: ${DATABASE_USERNAME:agent}
+    password: ${DATABASE_PASSWORD}
+  ai:
+    ollama:
+      chat:
+        model: qwen2.5:3b
+      embedding:
+        model: nomic-embed-text
+
+agent:
+  system-prompt: classpath:prompts/system.md
+  rag:
+    # Indexed at startup: new and changed files only.
+    documents: ${AGENT_RAG_DOCUMENTS:documents}
+    # Passages sent with each question, and their size in tokens.
+    top-k: 3
+    chunk-size: 500
+    dimensions: 768
+  memory:
+    window: 20

@@ -1,7 +1,7 @@
 spring:
   application:
     name: <%= project.artifactId %>
-<%_ if (features.jdbcMemory) { _%>
+<%_ if (features.postgres) { _%>
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/agent}
     username: ${DATABASE_USERNAME:agent}
@@ -11,6 +11,13 @@ spring:
   data:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}
+<%_ } _%>
+<%_ if (features.rag && features.oidc) { _%>
+  servlet:
+    multipart:
+      # The largest document an administrator may upload.
+      max-file-size: 20MB
+      max-request-size: 20MB
 <%_ } _%>
 <%_ if (features.oidc) { _%>
   security:
@@ -113,6 +120,15 @@ agent:
 <%_   if (fallback.provider === 'ollama' && !fallback.sameProvider) { _%>
     base-url: ${AGENT_FALLBACK_BASE_URL:http://localhost:11434}
 <%_   } _%>
+<%_ } _%>
+<%_ if (features.rag) { _%>
+  rag:
+    # Indexed at startup: new and changed files only.
+    documents: ${AGENT_RAG_DOCUMENTS:documents}
+    # Passages sent with each question, and their size in tokens.
+    top-k: <%= rag.topK %>
+    chunk-size: <%= rag.chunkSize %>
+    dimensions: <%= embedding.dimensions %>
 <%_ } _%>
 <%_ if (routing) { _%>
   routing:

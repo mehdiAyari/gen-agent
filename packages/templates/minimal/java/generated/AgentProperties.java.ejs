@@ -8,6 +8,9 @@ package <%= project.generatedPackage %>;
  *
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
+<%_ if (features.rag) { _%>
+ * @param rag the knowledge base the answers draw on
+<%_ } _%>
 <%_ if (features.resilience) { _%>
  * @param fallbackAnswer the answer sent when no model can answer
 <%_ } _%>
@@ -37,6 +40,7 @@ package <%= project.generatedPackage %>;
 public record AgentProperties(<%- [
   `${type('org.springframework.core.io.Resource')} systemPrompt`,
   'Memory memory',
+  ...(features.rag ? ['Rag rag'] : []),
   ...(features.resilience ? ['String fallbackAnswer'] : []),
   ...(fallback ? ['Fallback fallback'] : []),
   ...(routing ? ['Routing routing'] : []),
@@ -97,6 +101,16 @@ public record AgentProperties(<%- [
 <%_   } else { _%>
     public record Cache(<%= type('java.time.Duration') %> ttl) {}
 <%_   } _%>
+<%_ } _%>
+<%_ if (features.rag) { _%>
+
+    /**
+     * @param documents the folder indexed at startup
+     * @param topK passages sent with each question
+     * @param chunkSize size of a passage, in tokens
+     * @param dimensions size of the embeddings of the model
+     */
+    public record Rag(<%= type('java.nio.file.Path') %> documents, int topK, int chunkSize, int dimensions) {}
 <%_ } _%>
 <%_ if (fallback) { _%>
 

@@ -52,6 +52,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
@@ -65,6 +66,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
     properties = {
         "spring.ai.mistralai.api-key=test-key",
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org",
+        "agent.rag.documents=src/test/resources/documents",
         "agent.timeout=3s",
         "agent.tools.transfer-status.token=test-token",
     }
@@ -659,6 +661,55 @@ class VaultDeskApplicationTests {
         }
 
         assertThat(chatModel.lastPrompt().getContents()).contains("Summary of the earlier conversation");
+    }
+
+    @Test
+    void answersFromTheDocumentsOfTheKnowledgeBase() {
+        ask("When is the agency open on Monday?");
+
+        assertThat(chatModel.lastPrompt().getContents())
+            .contains("<document source=\"opening-hours.md\">")
+            .contains("9am to 5pm");
+    }
+
+    @Test
+    void neverSendsAPassageThatHoldsInstructions() {
+        ask("What does the leaflet tell customers about their account?");
+
+        assertThat(chatModel.lastPrompt().getContents()).doesNotContain("Ignore all previous instructions");
+    }
+
+    @Test
+    void letsAnAdministratorAddAndRemoveDocuments() {
+        MockMultipartFile fees = new MockMultipartFile(
+            "file",
+            "fees.md",
+            "text/markdown",
+            "A transfer abroad costs 2 euros.".getBytes(StandardCharsets.UTF_8)
+        );
+
+        assertThat(
+            mockMvc
+                .post()
+                .uri("/api/admin/documents")
+                .multipart()
+                .file(fees)
+                .with(jwt().jwt(token -> token.subject("mallory")))
+        ).hasStatus(HttpStatus.FORBIDDEN);
+        assertThat(mockMvc.post().uri("/api/admin/documents").multipart().file(fees).with(admin()))
+            .hasStatus(HttpStatus.CREATED)
+            .bodyJson()
+            .extractingPath("$.source")
+            .isEqualTo("upload/fees.md");
+        ask("How much does a transfer abroad cost?");
+        assertThat(chatModel.lastPrompt().getContents()).contains("2 euros");
+
+        assertThat(mockMvc.delete().uri("/api/admin/documents?source=upload/fees.md").with(admin())).hasStatus(
+            HttpStatus.NO_CONTENT
+        );
+        assertThat(mockMvc.delete().uri("/api/admin/documents?source=upload/fees.md").with(admin())).hasStatus(
+            HttpStatus.NOT_FOUND
+        );
     }
 
     private MvcTestResult ask(String message) {

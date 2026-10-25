@@ -19,6 +19,7 @@ import org.springframework.web.client.RestClient;
     properties = {
         "spring.ai.mistralai.api-key=test-key",
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org",
+        "agent.rag.documents=src/test/resources/documents",
         "agent.timeout=3s",
         "agent.tools.transfer-status.token=test-token",
         "management.server.port=0",

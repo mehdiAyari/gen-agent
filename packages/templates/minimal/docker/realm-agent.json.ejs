@@ -23,7 +23,7 @@
   ],
 <%_ if (features.adminRole) { _%>
   "roles": {
-    "realm": [{ "name": "agent-admin", "description": "May <%= [...(features.erasure ? ['erase the data of any user'] : []), ...(features.killSwitches ? ['switch the agent and its tools off'] : [])].join(' and ') %>" }]
+    "realm": [{ "name": "agent-admin", "description": "May <%= [...(features.erasure ? ['erase the data of any user'] : []), ...(features.killSwitches ? ['switch the agent and its tools off'] : []), ...(features.rag ? ['manage the documents of the knowledge base'] : [])].join(' and ') %>" }]
   },
 <%_ } _%>
   "users": [

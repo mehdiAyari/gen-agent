@@ -71,6 +71,11 @@
             <artifactId>spring-ai-pgvector-store</artifactId>
         </dependency>
         <dependency>
+            <!-- Reads the documents of the knowledge base: PDF, Word, PowerPoint, HTML, Markdown, text… -->
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-tika-document-reader</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>

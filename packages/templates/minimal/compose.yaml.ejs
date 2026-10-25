@@ -8,7 +8,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-<%_ if (features.jdbcMemory) { _%>
+<%_ if (features.postgres) { _%>
       DATABASE_URL: jdbc:postgresql://postgres:5432/agent
       DATABASE_USERNAME: agent
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-agent}
@@ -29,6 +29,9 @@ services:
       # The fallback model runs on the host too: ollama pull <%= fallback.model %>
       AGENT_FALLBACK_BASE_URL: http://host.docker.internal:11434
 <%_ } _%>
+<%_ if (features.rag) { _%>
+      AGENT_RAG_DOCUMENTS: /app/documents
+<%_ } _%>
 <%_ if (features.otel) { _%>
       OTLP_ENABLED: "true"
       OTLP_ENDPOINT: http://lgtm:4318
@@ -41,13 +44,18 @@ services:
 <%_ for (const secret of secrets) { _%>
       <%= secret %>: ${<%= secret %>:?export <%= secret %> before docker compose up}
 <%_ } _%>
+<%_ if (features.rag) { _%>
+    volumes:
+      # The documents of the knowledge base, indexed when the agent starts.
+      - ./documents:/app/documents:ro
+<%_ } _%>
 <%_ if (provider.id === 'ollama' || fallback?.provider === 'ollama') { _%>
     extra_hosts:
       - "host.docker.internal:host-gateway"
 <%_ } _%>
-<%_ if (features.jdbcMemory || features.redis) { _%>
+<%_ if (features.postgres || features.redis) { _%>
     depends_on:
-<%_   if (features.jdbcMemory) { _%>
+<%_   if (features.postgres) { _%>
       postgres:
         condition: service_healthy
 <%_   } _%>
@@ -56,7 +64,7 @@ services:
         condition: service_healthy
 <%_   } _%>
 <%_ } _%>
-<%_ if (features.jdbcMemory) { _%>
+<%_ if (features.postgres) { _%>
 
   postgres:
     image: <%= features.vectorStore ? images.pgvector : images.postgres %>
@@ -102,7 +110,7 @@ services:
     ports:
       - "3000:3000"
 <%_ } _%>
-<%_ if (features.jdbcMemory) { _%>
+<%_ if (features.postgres) { _%>
 
 volumes:
   postgres-data:

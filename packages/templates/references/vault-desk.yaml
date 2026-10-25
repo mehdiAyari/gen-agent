@@ -1,6 +1,7 @@
 # Production profile: personal data masked and kept 30 days, PII-free logs, erasure endpoints, semantic cache in
 # pgvector (V5a); guardrails and limits (V5b1); rules routing, a fallback on Ollama, summaries (V5b2); an HTTP tool that
-# gets personal data back in its arguments; a Java tool that waits for the approval of the user, kill switches (V5b3).
+# gets personal data back in its arguments; a Java tool that waits for the approval of the user, kill switches (V5b3);
+# a knowledge base with reranking (V5c).
 agent:
   name: vault-desk
   description: Answers bank customers about their transfers
@@ -13,6 +14,9 @@ agent:
     fallback: { provider: ollama, name: qwen2.5:3b }
   memory:
     summarize: true
+  rag:
+    enabled: true
+    rerank: true
   tools:
     - name: transfer-status
       type: http

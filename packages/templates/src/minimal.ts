@@ -202,6 +202,38 @@ export const minimalEntries: TemplateEntry[] = [
     when: (m) => m.features.resilience,
     output: (m) => main(m, `generated/resilience/${name}.java`),
   })),
+  ...['DocumentStoreConfiguration', 'IndexedDocument', 'KnowledgeBase', 'DocumentFolder'].map(
+    (name): TemplateEntry => ({
+      template: `java/generated/rag/${name}.java.ejs`,
+      owner: 'generated',
+      when: (m) => m.features.rag,
+      output: (m) => main(m, `generated/rag/${name}.java`),
+    }),
+  ),
+  {
+    template: 'java/generated/rag/DocumentController.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.rag && m.features.oidc,
+    output: (m) => main(m, 'generated/rag/DocumentController.java'),
+  },
+  {
+    template: 'resources/db/V3__agent_document_source.sql.ejs',
+    owner: 'generated',
+    when: (m) => m.features.rag,
+    output: () => 'src/main/resources/db/migration/V3__agent_document_source.sql',
+  },
+  {
+    template: 'test/documents/opening-hours.md.ejs',
+    owner: 'generated',
+    when: (m) => m.features.rag,
+    output: () => 'src/test/resources/documents/opening-hours.md',
+  },
+  {
+    template: 'test/documents/leaflet.md.ejs',
+    owner: 'generated',
+    when: (m) => m.features.rag && m.features.injectionDetection,
+    output: () => 'src/test/resources/documents/leaflet.md',
+  },
   {
     template: 'java/generated/chat/ModelRouter.java.ejs',
     owner: 'generated',
@@ -289,7 +321,7 @@ export const minimalEntries: TemplateEntry[] = [
   {
     template: 'test/generated/TestcontainersConfiguration.java.ejs',
     owner: 'generated',
-    when: (m) => m.features.jdbcMemory || m.features.limits,
+    when: (m) => m.features.postgres || m.features.redis,
     output: (m) => test(m, 'generated/TestcontainersConfiguration.java'),
   },
   {

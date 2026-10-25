@@ -64,13 +64,20 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-chat-memory-repository-jdbc</artifactId>
         </dependency>
+<%_ } else if (features.postgres) { _%>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+<%_ } _%>
+<%_ if (features.postgres) { _%>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 <%_ } _%>
-<%_ if (features.erasure || features.retention || features.approval) { _%>
+<%_ if (features.erasure || features.retention || features.approval || features.rag) { _%>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-flyway</artifactId>
@@ -84,6 +91,13 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-pgvector-store</artifactId>
+        </dependency>
+<%_ } _%>
+<%_ if (features.rag) { _%>
+        <dependency>
+            <!-- Reads the documents of the knowledge base: PDF, Word, PowerPoint, HTML, Markdown, text… -->
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-tika-document-reader</artifactId>
         </dependency>
 <%_ } _%>
 <%_ if (features.oidc) { _%>
@@ -150,14 +164,14 @@
             <scope>test</scope>
         </dependency>
 <%_ } _%>
-<%_ if (features.jdbcMemory || features.redis) { _%>
+<%_ if (features.postgres || features.redis) { _%>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
 <%_ } _%>
-<%_ if (features.jdbcMemory) { _%>
+<%_ if (features.postgres) { _%>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-postgresql</artifactId>

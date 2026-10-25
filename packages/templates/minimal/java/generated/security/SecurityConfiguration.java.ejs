@@ -33,7 +33,7 @@ public class SecurityConfiguration {
                         .requestMatchers(CHAT_PAGE)
                         .permitAll()<%_ } _%><%_ if (features.erasure) { _%>
                         .requestMatchers(<%= type('org.springframework.http.HttpMethod') %>.DELETE, "/api/users/**")
-                        .hasRole("agent-admin")<%_ } _%><%_ if (features.killSwitches) { _%>
+                        .hasRole("agent-admin")<%_ } _%><%_ if (features.killSwitches || features.rag) { _%>
                         .requestMatchers("/api/admin/**")
                         .hasRole("agent-admin")<%_ } _%>
                         .anyRequest()

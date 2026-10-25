@@ -55,6 +55,10 @@ class ChatService {
 
     private final <%= type(`${project.generatedPackage}.approval.Approvals`) %> approvals;
 <%_ } _%>
+<%_ if (features.rag) { _%>
+
+    private final <%= type(`${project.generatedPackage}.rag.KnowledgeBase`) %> knowledgeBase;
+<%_ } _%>
 <%_ if (features.killSwitches) { _%>
 
     private final <%= type(`${project.generatedPackage}.switches.KillSwitches`) %> killSwitches;
@@ -76,6 +80,7 @@ class ChatService {
       ...(features.injectionDetection || features.outputGuard ? ['Guardrails guardrails'] : []),
       ...(routing ? ['ModelRouter modelRouter'] : []),
       ...(features.approval ? ['Approvals approvals'] : []),
+      ...(features.rag ? ['KnowledgeBase knowledgeBase'] : []),
       ...(features.killSwitches ? ['KillSwitches killSwitches'] : []),
       ...(features.resilience ? [`${type(`${project.generatedPackage}.AgentProperties`)} properties`] : []),
     ].join(', ') %>) {
@@ -110,6 +115,9 @@ class ChatService {
 <%_ if (features.approval) { _%>
         this.approvals = approvals;
 <%_ } _%>
+<%_ if (features.rag) { _%>
+        this.knowledgeBase = knowledgeBase;
+<%_ } _%>
 <%_ if (features.killSwitches) { _%>
         this.killSwitches = killSwitches;
 <%_ } _%>
@@ -119,10 +127,11 @@ class ChatService {
     }
 
 <%_ const routed = (message) => routing ? `\n                .options(${type('org.springframework.ai.chat.prompt.ChatOptions')}.builder().model(modelRouter.modelFor(${message})))` : '';
-const askModel = (message, key) => limits.tokens
+const withPassages = (documents) => documents ? '\n                .messages(passages)' : '';
+const askModel = (message, key, documents = features.rag) => limits.tokens
   ? `${type('org.springframework.ai.chat.model.ChatResponse')} response = chatClient
                 .prompt()
-                .user(${message})${routed(message)}
+                .user(${message})${routed(message)}${withPassages(documents)}
                 .advisors(advisor -> advisor.param(${type('org.springframework.ai.chat.memory.ChatMemory')}.CONVERSATION_ID, ${key}))
                 .call()
                 .chatResponse();
@@ -130,19 +139,19 @@ const askModel = (message, key) => limits.tokens
         String answer = response.getResult().getOutput().getText();`
   : `String answer = chatClient
                 .prompt()
-                .user(${message})${routed(message)}
+                .user(${message})${routed(message)}${withPassages(documents)}
                 .advisors(advisor -> advisor.param(${type('org.springframework.ai.chat.memory.ChatMemory')}.CONVERSATION_ID, ${key}))
                 .call()
                 .content();`;
-const askOrFallBack = (message, key) => features.resilience
+const askOrFallBack = (message, key, documents = features.rag) => features.resilience
   ? `String answer;
         try {
-            ${askModel(message, key).replace('String answer = ', 'answer = ').replaceAll('\n', '\n    ')}
+            ${askModel(message, key, documents).replace('String answer = ', 'answer = ').replaceAll('\n', '\n    ')}
         } catch (${type(`${project.generatedPackage}.resilience.ModelUnavailableException`)} unavailable) {
             // No model could answer: the user gets the fallback answer, which nothing keeps.
             return new ChatMessageResponse(conversationId, fallbackAnswer);
         }`
-  : askModel(message, key);
+  : askModel(message, key, documents);
 const checkAnswer = features.outputGuard ? `
         // Checked before anything else sees it: the caches, the user.
         answer = guardrails.check(answer);` : ''; _%>
@@ -191,6 +200,12 @@ const checkAnswer = features.outputGuard ? `
             }
         }
 <%_   } _%>
+<%_   if (features.rag) { _%>
+        // The passages of the knowledge base reach the model as data, never the memory of the conversation.
+        <%= type('java.util.List') %><<%= type('org.springframework.ai.chat.messages.Message') %>> passages = knowledgeBase.contextFor(message)
+                .map(context -> List.<Message>of(new <%= type('org.springframework.ai.chat.messages.SystemMessage') %>(<%- features.pii ? 'personalData.mask(memoryKey, context)' : 'context' %>)))
+                .orElse(List.of());
+<%_   } _%>
 <%_   if (features.guardTools) { _%>
         toolGuard.start(<%- [...(features.pii || features.approval ? ['memoryKey'] : []), ...(features.approval ? ['userId', 'conversationId'] : [])].join(', ') %>);
 <%_   } _%>
@@ -234,7 +249,7 @@ const checkAnswer = features.outputGuard ? `
                 ? "The user approved the call to " + approval.tool() + ": it is done, do not make it again. It returned:\n"
                         + toolGuard.callApproved(approval.tool(), approval.arguments())
                 : "The user denied the call to " + approval.tool() + ": it was not made. Do not make it again unless they ask.";
-        <%- askOrFallBack('message', 'memoryKey') %><%- checkAnswer %>
+        <%- askOrFallBack('message', 'memoryKey', false) %><%- checkAnswer %>
         return new ChatMessageResponse(conversationId, <%- finalReply %>, <%- waiting %>);
     }
 <%_     if (features.pii) { _%>
@@ -265,6 +280,12 @@ const checkAnswer = features.outputGuard ? `
 <%_   } _%>
 <%_   if (features.retention) { _%>
         conversations.touch(conversationId, "");
+<%_   } _%>
+<%_   if (features.rag) { _%>
+        // The passages of the knowledge base reach the model as data, never the memory of the conversation.
+        <%= type('java.util.List') %><<%= type('org.springframework.ai.chat.messages.Message') %>> passages = knowledgeBase.contextFor(message)
+                .map(context -> List.<Message>of(new <%= type('org.springframework.ai.chat.messages.SystemMessage') %>(<%- features.pii ? 'personalData.mask(conversationId, context)' : 'context' %>)))
+                .orElse(List.of());
 <%_   } _%>
 <%_   if (features.guardTools) { _%>
         toolGuard.start(<%= features.pii ? 'conversationId' : '' %>);

@@ -15,10 +15,14 @@ services:
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI: http://keycloak:8080/realms/agent/protocol/openid-connect/certs
       # The fallback model runs on the host too: ollama pull qwen2.5:3b
       AGENT_FALLBACK_BASE_URL: http://host.docker.internal:11434
+      AGENT_RAG_DOCUMENTS: /app/documents
       OTLP_ENABLED: "true"
       OTLP_ENDPOINT: http://lgtm:4318
       MISTRAL_API_KEY: ${MISTRAL_API_KEY:?export MISTRAL_API_KEY before docker compose up}
       BANK_API_TOKEN: ${BANK_API_TOKEN:?export BANK_API_TOKEN before docker compose up}
+    volumes:
+      # The documents of the knowledge base, indexed when the agent starts.
+      - ./documents:/app/documents:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

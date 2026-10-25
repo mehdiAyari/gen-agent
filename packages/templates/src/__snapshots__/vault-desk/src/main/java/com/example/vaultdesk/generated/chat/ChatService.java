@@ -10,6 +10,7 @@ import com.example.vaultdesk.generated.guard.Guardrails;
 import com.example.vaultdesk.generated.limits.UsageLimits;
 import com.example.vaultdesk.generated.privacy.Conversations;
 import com.example.vaultdesk.generated.privacy.PersonalData;
+import com.example.vaultdesk.generated.rag.KnowledgeBase;
 import com.example.vaultdesk.generated.resilience.ModelUnavailableException;
 import com.example.vaultdesk.generated.switches.AgentSwitchedOffException;
 import com.example.vaultdesk.generated.switches.KillSwitches;
@@ -21,6 +22,8 @@ import java.util.UUID;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -55,6 +58,8 @@ class ChatService {
 
     private final Approvals approvals;
 
+    private final KnowledgeBase knowledgeBase;
+
     private final KillSwitches killSwitches;
 
     private final String fallbackAnswer;
@@ -71,6 +76,7 @@ class ChatService {
         Guardrails guardrails,
         ModelRouter modelRouter,
         Approvals approvals,
+        KnowledgeBase knowledgeBase,
         KillSwitches killSwitches,
         AgentProperties properties
     ) {
@@ -85,6 +91,7 @@ class ChatService {
         this.guardrails = guardrails;
         this.modelRouter = modelRouter;
         this.approvals = approvals;
+        this.knowledgeBase = knowledgeBase;
         this.killSwitches = killSwitches;
         this.fallbackAnswer = properties.fallbackAnswer();
     }
@@ -120,6 +127,11 @@ class ChatService {
                 return new ChatMessageResponse(conversationId, cached.get());
             }
         }
+        // The passages of the knowledge base reach the model as data, never the memory of the conversation.
+        List<Message> passages = knowledgeBase
+            .contextFor(message)
+            .map(context -> List.<Message>of(new SystemMessage(personalData.mask(memoryKey, context))))
+            .orElse(List.of());
         toolGuard.start(memoryKey, userId, conversationId);
         String answer;
         try {
@@ -127,6 +139,7 @@ class ChatService {
                 .prompt()
                 .user(message)
                 .options(ChatOptions.builder().model(modelRouter.modelFor(message)))
+                .messages(passages)
                 .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
                 .call()
                 .chatResponse();
