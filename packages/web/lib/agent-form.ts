@@ -120,6 +120,13 @@ export interface AgentForm {
   summarize: boolean;
   /** An administrator switches the agent or a tool off at once: needs oidc. */
   killSwitches: boolean;
+  /** Answers grounded in the documents of a shared knowledge base. */
+  rag: boolean;
+  /** Passages per question; empty for 4. */
+  ragTopK: string;
+  /** Tokens per passage; empty for 500. */
+  ragChunkSize: string;
+  ragRerank: boolean;
 }
 
 interface McpForm {
@@ -234,6 +241,10 @@ export function defaultForm(): AgentForm {
     routingSimple: '',
     routingComplex: '',
     summarize: false,
+    rag: false,
+    ragTopK: '',
+    ragChunkSize: '',
+    ragRerank: false,
     profile: 'minimal',
     ...addedByCore({ profile: 'minimal', auth: 'none', provider: 'mistral', memoryType: 'in-memory' }),
     mcp: [],
@@ -357,6 +368,14 @@ export function formToYaml(form: AgentForm): string {
   if (Object.keys(limits).length > 0) agent.limits = limits;
 
   const gdpr: Record<string, unknown> = {};
+  if (form.rag) {
+    agent.rag = {
+      enabled: true,
+      ...(present(form.ragTopK) ? { topK: numberOrText(form.ragTopK) } : {}),
+      ...(form.ragRerank ? { rerank: true } : {}),
+      ...(present(form.ragChunkSize) ? { chunkSize: numberOrText(form.ragChunkSize) } : {}),
+    };
+  }
   if (form.euOnly)
     Object.assign(gdpr, { euOnly: true, ...(form.allowNonEuProviders ? { allowNonEuProviders: true } : {}) });
   if (form.erasure !== equipment.erasure) gdpr.erasureEndpoint = form.erasure;
@@ -448,6 +467,10 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     routingComplex: agent.model.routing?.complex ?? '',
     summarize: agent.memory.summarize ?? false,
     killSwitches: agent.security?.killSwitches ?? false,
+    rag: agent.rag?.enabled ?? false,
+    ragTopK: agent.rag?.topK === undefined ? '' : String(agent.rag.topK),
+    ragChunkSize: agent.rag?.chunkSize === undefined ? '' : String(agent.rag.chunkSize),
+    ragRerank: agent.rag?.rerank ?? false,
     mcp: (agent.mcp ?? []).map((server) => ({
       name: server.name,
       package: server.package,
@@ -506,6 +529,9 @@ const FIELDS: Record<string, keyof AgentForm> = {
   'agent.model.fallback': 'fallbackModel',
   'agent.model.routing.simple': 'routingSimple',
   'agent.model.routing.complex': 'routingComplex',
+  'agent.rag.topK': 'ragTopK',
+  'agent.rag.chunkSize': 'ragChunkSize',
+  'agent.rag': 'rag',
 };
 
 function fieldOf(path: string): string {

@@ -251,7 +251,15 @@
       "summarize": "Résumé des longues conversations",
       "summarizeHint": "Au-delà de la fenêtre, les anciens messages sont résumés par le modèle au lieu d’être oubliés.",
       "killSwitches": "Interrupteurs d’urgence",
-      "killSwitchesHint": "Les utilisateurs du rôle agent-admin coupent l’agent ou l’un de ses outils immédiatement."
+      "killSwitchesHint": "Les utilisateurs du rôle agent-admin coupent l’agent ou l’un de ses outils immédiatement.",
+      "rag": "Base de connaissances (RAG)",
+      "ragHint": "Les réponses s’appuient sur les documents d’un dossier documents/ (PDF, Word, HTML, Markdown…), indexés dans pgvector au démarrage ; partagée par tous les utilisateurs. Demande un fournisseur avec embeddings.",
+      "ragTopK": "Passages par question",
+      "ragTopKHint": "Vide : 4. Peu de passages : des réponses précises, peu de tokens.",
+      "ragChunkSize": "Taille d’un passage",
+      "ragChunkSizeHint": "En tokens. Vide : 500.",
+      "ragRerank": "Reclasser les passages",
+      "ragRerankHint": "Le modèle note trois fois plus de passages en un appel et garde les meilleurs."
     },
     "mcp": {
       "legend": "Serveurs MCP",

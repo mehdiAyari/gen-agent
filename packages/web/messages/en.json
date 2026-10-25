@@ -251,7 +251,15 @@
       "summarize": "Summaries of long conversations",
       "summarizeHint": "Beyond the window, older messages are summarized by the model instead of being forgotten.",
       "killSwitches": "Kill switches",
-      "killSwitchesHint": "Users with the agent-admin role switch the agent or one of its tools off at once."
+      "killSwitchesHint": "Users with the agent-admin role switch the agent or one of its tools off at once.",
+      "rag": "Knowledge base (RAG)",
+      "ragHint": "Answers draw on the documents of a documents/ folder (PDF, Word, HTML, Markdown…), indexed in pgvector at startup; shared by every user. Needs a provider with embeddings.",
+      "ragTopK": "Passages per question",
+      "ragTopKHint": "Empty: 4. Few passages: precise answers, few tokens.",
+      "ragChunkSize": "Passage size",
+      "ragChunkSizeHint": "In tokens. Empty: 500.",
+      "ragRerank": "Rerank the passages",
+      "ragRerankHint": "The model scores three times as many passages in one call and keeps the best ones."
     },
     "mcp": {
       "legend": "MCP servers",

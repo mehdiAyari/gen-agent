@@ -321,6 +321,28 @@ describe('the production profile', () => {
     expect(withProfile(defaultForm(), 'production').killSwitches).toBe(true);
   });
 
+  it('keeps a knowledge base, and reports its settings on their fields', () => {
+    const yaml = `agent:
+  name: docs
+  model:
+    provider: ollama
+    name: qwen2.5:3b
+  rag:
+    enabled: true
+    topK: 3
+    rerank: true
+`;
+    const result = formFromYaml(yaml);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+
+    expect(result.form).toMatchObject({ rag: true, ragTopK: '3', ragRerank: true, ragChunkSize: '' });
+    expect(formToYaml(result.form)).toBe(yaml);
+    expect(Object.keys(validateForm({ ...result.form, ragTopK: '0', ragChunkSize: 'big' }).errors).sort()).toEqual([
+      'ragChunkSize',
+      'ragTopK',
+    ]);
+  });
+
   it('limits any agent when asked, and reports limits that are not valid on their field', () => {
     expect(formToYaml({ ...defaultForm(), maxIterations: '5', timeout: '20s' })).toContain(
       'limits:\n    maxIterations: 5\n    timeout: 20s\n',
@@ -370,12 +392,12 @@ describe('formFromYaml', () => {
 
   it('explains what the web generator cannot handle yet', () => {
     const result = formFromYaml(
-      'agent:\n  name: big\n  model: { provider: mistral, name: m }\n  rag: { enabled: true }\n',
+      'agent:\n  name: big\n  model: { provider: mistral, name: m }\n  evals: { redTeam: true }\n',
     );
 
     expect(result).toEqual({
       ok: false,
-      errors: ['agent.rag: RAG arrives in V5c'],
+      errors: ['agent.evals: evaluations and red teaming arrive in V5d'],
     });
   });
 

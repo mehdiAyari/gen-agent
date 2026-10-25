@@ -4,7 +4,7 @@ import { EMBEDDING_PROVIDERS, PROVIDERS, SUGGESTED_MODELS } from '@gen-agent/cor
 import { useTranslations } from 'next-intl';
 
 import { withProfile, type AgentForm } from '@/lib/agent-form';
-import { FieldDescription, FieldGroup, FieldLegend, FieldSet } from '@/components/ui/field';
+import { FieldDescription, FieldError, FieldGroup, FieldLegend, FieldSet } from '@/components/ui/field';
 
 import { PROVIDER_NAMES } from './agent-fields';
 import { ChoiceField, SelectField, SwitchField, TextField } from './form-controls';
@@ -333,6 +333,59 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
             />
           </div>
         )}
+        <SwitchField
+          path="rag"
+          label={t('rag')}
+          hint={t('ragHint')}
+          checked={form.rag}
+          onCheckedChange={(rag) => {
+            update({ rag });
+          }}
+        />
+        <FieldError>{errorOf('rag')}</FieldError>
+        {form.rag ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                path="ragTopK"
+                label={t('ragTopK')}
+                hint={t('ragTopKHint')}
+                value={form.ragTopK}
+                error={errorOf('ragTopK')}
+                onValueChange={(ragTopK) => {
+                  update({ ragTopK });
+                }}
+                inputMode="numeric"
+                autoComplete="off"
+                className="tabular-nums"
+                placeholder="4…"
+              />
+              <TextField
+                path="ragChunkSize"
+                label={t('ragChunkSize')}
+                hint={t('ragChunkSizeHint')}
+                value={form.ragChunkSize}
+                error={errorOf('ragChunkSize')}
+                onValueChange={(ragChunkSize) => {
+                  update({ ragChunkSize });
+                }}
+                inputMode="numeric"
+                autoComplete="off"
+                className="tabular-nums"
+                placeholder="500…"
+              />
+            </div>
+            <SwitchField
+              path="ragRerank"
+              label={t('ragRerank')}
+              hint={t('ragRerankHint')}
+              checked={form.ragRerank}
+              onCheckedChange={(ragRerank) => {
+                update({ ragRerank });
+              }}
+            />
+          </>
+        ) : null}
         <SwitchField
           path="summarize"
           label={t('summarize')}
