@@ -84,7 +84,17 @@ export interface GenerationModel {
     killSwitches: boolean;
     /** Tokens carry roles: the agent-admin role erases any user or sets the kill switches. */
     adminRole: boolean;
+    /** ./mvnw verify -Pevals scores the answers of a reference set on Ollama. */
+    evals: boolean;
+    /** The same run attacks the agent and checks it neither leaks its instructions nor obeys. */
+    redTeam: boolean;
+    /** A dashboard of the agent, provisioned into Grafana by Compose. */
+    grafanaDashboard: boolean;
+    /** A Helm chart to deploy the agent on Kubernetes. */
+    helm: boolean;
   };
+  /** The reference set, the red team, and the Ollama model they run on. */
+  evals: { dataset: string | undefined; redTeam: boolean; model: string } | undefined;
   /** Tools whose calls wait for approval, by their name for the model, with their Spring duration. */
   approvalTools: { name: string; expiresAfter: string }[];
   /** Names of the generated tools for the model: what an administrator switches off. */
@@ -263,6 +273,8 @@ const RESILIENCE4J_VERSION = '2.4.0';
 const DEFAULT_APPROVAL_EXPIRY = '24h';
 /** Few, short passages: precise answers and few tokens. */
 const RAG_DEFAULTS = { topK: 4, chunkSize: 500 };
+// qwen2.5:1.5b judges at random; qwen2.5:3b is the smallest that judges reliably.
+const DEFAULT_EVALS_MODEL = 'qwen2.5:3b';
 
 /** Checked on Docker Hub and Quay (2026-10-24). */
 const IMAGES = {
@@ -462,7 +474,20 @@ export function buildModel(file: AgentFile): GenerationModel {
       killSwitches,
       // Administrators also manage the documents, when users sign in.
       adminRole: agent.gdpr?.erasureEndpoint === true || killSwitches || (ragEnabled && oidc),
+      evals: agent.evals !== undefined,
+      redTeam: agent.evals?.redTeam === true,
+      grafanaDashboard: agent.observability?.grafanaDashboard === true,
+      helm: agent.deploy?.includes('helm') ?? false,
     },
+    evals:
+      agent.evals === undefined
+        ? undefined
+        : {
+            dataset: agent.evals.dataset,
+            redTeam: agent.evals.redTeam === true,
+            // The model of the agent when it runs on Ollama; else a small one, quick to pull in CI.
+            model: agent.model.provider === 'ollama' ? agent.model.name : DEFAULT_EVALS_MODEL,
+          },
     approvalTools,
     toolNames: tools.map((tool) => tool.methodName),
     fallback: fallback === undefined ? undefined : fallbackOf(fallback, agent.model.provider),
@@ -613,12 +638,6 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     agent.openapi,
     'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
   );
-  add(
-    agent.observability?.grafanaDashboard,
-    'agent.observability.grafanaDashboard: the Grafana dashboard arrives in V5d',
-  );
   add(agent.observability?.feedback, 'agent.observability.feedback: feedback buttons arrive in a later version');
-  add(agent.evals, 'agent.evals: evaluations and red teaming arrive in V5d');
-  add(agent.deploy?.includes('helm'), 'agent.deploy: the Helm chart arrives in V5d (docker-compose is generated)');
   return issues;
 }

@@ -150,6 +150,22 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
     });
   }
 
+  const actuator = agent.observability?.otel === true || agent.observability?.metrics === 'prometheus';
+  if (agent.deploy?.includes('helm') === true && !actuator) {
+    errors.push({
+      path: ['agent', 'deploy'],
+      message:
+        'Kubernetes probes the agent on its management port: set observability.otel: true or metrics: prometheus',
+    });
+  }
+
+  if (agent.observability?.grafanaDashboard === true && agent.observability.otel !== true) {
+    errors.push({
+      path: ['agent', 'observability', 'grafanaDashboard'],
+      message: 'it shows what OpenTelemetry sends: set observability.otel: true',
+    });
+  }
+
   if (agent.rag?.enabled === true && !EMBEDDING_PROVIDERS.includes(agent.model.provider)) {
     errors.push({
       path: ['agent', 'rag'],

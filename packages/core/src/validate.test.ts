@@ -156,6 +156,16 @@ describe('validateAgentYaml', () => {
         'agent.rag: anthropic has no embedding model: use openai, mistral or ollama for RAG',
       ],
       [
+        'a Helm chart without the management port',
+        'observability: { otel: false, metrics: none }\ndeploy: [helm]\n',
+        'agent.deploy: Kubernetes probes the agent on its management port: set observability.otel: true or metrics: prometheus',
+      ],
+      [
+        'a Grafana dashboard without OpenTelemetry',
+        'observability: { grafanaDashboard: true }\n',
+        'agent.observability.grafanaDashboard: it shows what OpenTelemetry sends: set observability.otel: true',
+      ],
+      [
         'a fallback that is the model itself',
         'model: { provider: mistral, name: mistral-small-latest, fallback: { provider: mistral, name: mistral-small-latest } }\n',
         'agent.model.fallback: the fallback must be another model: change its provider or its name',

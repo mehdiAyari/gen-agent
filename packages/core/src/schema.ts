@@ -274,6 +274,7 @@ export const PRODUCTION_DEFAULTS = {
   semanticThreshold: 0.95,
   maxIterations: 8,
   timeout: '60s',
+  dataset: 'evals/golden.yaml',
 } as const;
 
 /** Providers with an embedding model, which the semantic cache needs. */
@@ -336,8 +337,23 @@ const equipped = agent.transform((definition) => {
           },
         }
       : {}),
-    observability: definition.observability ?? { otel: true, metrics: 'prometheus' as const },
-    deploy: definition.deploy ?? ['docker-compose' as const],
+    observability: definition.observability ?? {
+      otel: true,
+      metrics: 'prometheus' as const,
+      ...(production ? { grafanaDashboard: true } : {}),
+    },
+    deploy:
+      definition.deploy ?? (production ? ['docker-compose' as const, 'helm' as const] : ['docker-compose' as const]),
+    ...(production
+      ? {
+          evals: {
+            dataset: PRODUCTION_DEFAULTS.dataset,
+            redTeam: true,
+            ciModel: 'ollama' as const,
+            ...definition.evals,
+          },
+        }
+      : {}),
   };
 });
 

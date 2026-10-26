@@ -231,6 +231,10 @@ agent:
       approval: false,
       killSwitches: false,
       adminRole: false,
+      evals: false,
+      redTeam: false,
+      grafanaDashboard: false,
+      helm: false,
     });
   });
 
@@ -485,6 +489,25 @@ agent:
     ).toEqual([]);
   });
 
+  it('evaluates a production agent on Ollama, ships its dashboard and a Helm chart', () => {
+    const production = buildModel(
+      parse(
+        'agent:\n  name: vault\n  profile: production\n  model: { provider: mistral, name: mistral-small-latest }\n',
+      ),
+    );
+
+    expect(production.features).toMatchObject({ evals: true, redTeam: true, grafanaDashboard: true, helm: true });
+    expect(production.evals).toEqual({ dataset: 'evals/golden.yaml', redTeam: true, model: 'qwen2.5:3b' });
+
+    const local = buildModel(
+      parse(
+        'agent:\n  name: desk\n  model: { provider: ollama, name: qwen2.5:3b }\n  evals: { dataset: evals/cases.yaml }\n',
+      ),
+    );
+    expect(local.evals).toEqual({ dataset: 'evals/cases.yaml', redTeam: false, model: 'qwen2.5:3b' });
+    expect(local.features).toMatchObject({ evals: true, redTeam: false, helm: false, grafanaDashboard: false });
+  });
+
   it('limits the tool calls of an agent that only asks for it', () => {
     const limited = buildModel(
       parse(`
@@ -527,7 +550,7 @@ describe('unsupportedFeatures', () => {
         'agent.springAi: 1.0.0 is not supported, this version of gen-agent generates Spring AI 2.0.1',
         'agent.tools.0.cacheTtl: caching tool results arrives in a later version',
         'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
-        'agent.evals: evaluations and red teaming arrive in V5d',
+        'agent.observability.feedback: feedback buttons arrive in a later version',
       ]),
     );
   });
