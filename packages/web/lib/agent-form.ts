@@ -127,6 +127,15 @@ export interface AgentForm {
   /** Tokens per passage; empty for 500. */
   ragChunkSize: string;
   ragRerank: boolean;
+  /** ./mvnw verify -Pevals scores the agent on Ollama. */
+  evals: boolean;
+  /** The reference set; empty for none. */
+  evalsDataset: string;
+  redTeam: boolean;
+  /** A Grafana dashboard of the agent: needs OpenTelemetry. */
+  grafanaDashboard: boolean;
+  /** A Helm chart: needs the management port. */
+  helm: boolean;
 }
 
 interface McpForm {
@@ -168,6 +177,11 @@ type Equipment = Pick<
   | 'maxIterations'
   | 'timeout'
   | 'killSwitches'
+  | 'evals'
+  | 'evalsDataset'
+  | 'redTeam'
+  | 'grafanaDashboard'
+  | 'helm'
 >;
 
 const DEFAULT_THRESHOLD = String(PRODUCTION_DEFAULTS.semanticThreshold);
@@ -199,6 +213,11 @@ function addedByCore(form: Pick<AgentForm, 'profile' | 'auth' | 'provider' | 'me
     maxIterations: production ? String(PRODUCTION_DEFAULTS.maxIterations) : '',
     timeout: production ? PRODUCTION_DEFAULTS.timeout : '',
     killSwitches: production && signedIn,
+    evals: production,
+    evalsDataset: production ? PRODUCTION_DEFAULTS.dataset : '',
+    redTeam: production,
+    grafanaDashboard: production,
+    helm: production,
   };
 }
 
@@ -355,8 +374,10 @@ export function formToYaml(form: AgentForm): string {
       ...(form.semanticCache ? { semantic: { threshold: numberOrText(form.semanticThreshold), scope: 'user' } } : {}),
     };
   }
-  if (form.observability !== equipment.observability) {
-    agent.observability = form.observability ? { otel: true, metrics: 'prometheus' } : { otel: false, metrics: 'none' };
+  if (form.observability !== equipment.observability || form.grafanaDashboard !== equipment.grafanaDashboard) {
+    agent.observability = form.observability
+      ? { otel: true, metrics: 'prometheus', ...(form.grafanaDashboard ? { grafanaDashboard: true } : {}) }
+      : { otel: false, metrics: 'none' };
   }
 
   // Core keeps the limits agent.yaml sets and adds the others: only the changed ones are written.
@@ -382,7 +403,16 @@ export function formToYaml(form: AgentForm): string {
   if (form.logsWithoutPii !== equipment.logsWithoutPii) gdpr.logsWithoutPii = form.logsWithoutPii;
   if (Object.keys(gdpr).length > 0) agent.gdpr = gdpr;
   if (form.chatUi) agent.interface = ['rest', 'chat-ui'];
-  if (form.dockerCompose !== equipment.dockerCompose) agent.deploy = form.dockerCompose ? ['docker-compose'] : [];
+  // Core keeps the evaluation settings agent.yaml sets and adds the others.
+  const evals: Record<string, unknown> = {};
+  if (form.evals) {
+    if (form.evalsDataset !== equipment.evalsDataset && present(form.evalsDataset)) evals.dataset = form.evalsDataset;
+    if (form.redTeam !== equipment.redTeam) evals.redTeam = form.redTeam;
+  }
+  if (form.evals && (form.evals !== equipment.evals || Object.keys(evals).length > 0)) agent.evals = evals;
+  if (form.dockerCompose !== equipment.dockerCompose || form.helm !== equipment.helm) {
+    agent.deploy = [...(form.dockerCompose ? ['docker-compose'] : []), ...(form.helm ? ['helm'] : [])];
+  }
 
   const document = new Document({ agent });
   // Parameters and authentication read best on one line each: { name: latitude, type: number, required: true }.
@@ -467,6 +497,11 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     routingComplex: agent.model.routing?.complex ?? '',
     summarize: agent.memory.summarize ?? false,
     killSwitches: agent.security?.killSwitches ?? false,
+    evals: agent.evals !== undefined,
+    evalsDataset: agent.evals?.dataset ?? '',
+    redTeam: agent.evals?.redTeam ?? false,
+    grafanaDashboard: agent.observability?.grafanaDashboard ?? false,
+    helm: agent.deploy?.includes('helm') ?? false,
     rag: agent.rag?.enabled ?? false,
     ragTopK: agent.rag?.topK === undefined ? '' : String(agent.rag.topK),
     ragChunkSize: agent.rag?.chunkSize === undefined ? '' : String(agent.rag.chunkSize),

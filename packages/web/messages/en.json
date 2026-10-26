@@ -259,7 +259,15 @@
       "ragChunkSize": "Passage size",
       "ragChunkSizeHint": "In tokens. Empty: 500.",
       "ragRerank": "Rerank the passages",
-      "ragRerankHint": "The model scores three times as many passages in one call and keeps the best ones."
+      "ragRerankHint": "The model scores three times as many passages in one call and keeps the best ones.",
+      "grafanaDashboard": "Grafana dashboard",
+      "grafanaDashboardHint": "Requests, model calls and tokens by model, tool calls, guard refusals and circuit breakers, provisioned into Grafana by Docker Compose.",
+      "evals": "Evaluations",
+      "evalsHint": "./mvnw verify -Pevals scores the answers of evals/golden.yaml on Ollama, and a GitHub Actions workflow runs it on every push.",
+      "redTeam": "Red team",
+      "redTeamHint": "The same run attacks the agent in English and French, and checks it neither leaks its instructions nor obeys.",
+      "helm": "Helm chart",
+      "helmHint": "Deploys the agent on Kubernetes: secrets by reference, external services, probes on the management port, non-root."
     },
     "mcp": {
       "legend": "MCP servers",

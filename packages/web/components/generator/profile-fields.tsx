@@ -410,9 +410,52 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
           hint={t('observabilityHint')}
           checked={form.observability}
           onCheckedChange={(observability) => {
-            update({ observability });
+            // The dashboard shows what OpenTelemetry sends, and Kubernetes probes the management port.
+            update(observability ? { observability } : { observability, grafanaDashboard: false, helm: false });
           }}
         />
+        {form.observability ? (
+          <SwitchField
+            path="grafanaDashboard"
+            label={t('grafanaDashboard')}
+            hint={t('grafanaDashboardHint')}
+            checked={form.grafanaDashboard}
+            onCheckedChange={(grafanaDashboard) => {
+              update({ grafanaDashboard });
+            }}
+          />
+        ) : null}
+        <SwitchField
+          path="evals"
+          label={t('evals')}
+          hint={t('evalsHint')}
+          checked={form.evals}
+          onCheckedChange={(evals) => {
+            update(evals ? { evals, evalsDataset: form.evalsDataset || 'evals/golden.yaml' } : { evals });
+          }}
+        />
+        {form.evals ? (
+          <SwitchField
+            path="redTeam"
+            label={t('redTeam')}
+            hint={t('redTeamHint')}
+            checked={form.redTeam}
+            onCheckedChange={(redTeam) => {
+              update({ redTeam });
+            }}
+          />
+        ) : null}
+        {form.observability ? (
+          <SwitchField
+            path="helm"
+            label={t('helm')}
+            hint={t('helmHint')}
+            checked={form.helm}
+            onCheckedChange={(helm) => {
+              update({ helm });
+            }}
+          />
+        ) : null}
         <SwitchField
           path="dockerCompose"
           label={t('docker')}

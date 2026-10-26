@@ -343,6 +343,46 @@ describe('the production profile', () => {
     ]);
   });
 
+  it('keeps the evaluations, the dashboard and the Helm chart', () => {
+    expect(withProfile(defaultForm(), 'production')).toMatchObject({
+      evals: true,
+      evalsDataset: 'evals/golden.yaml',
+      redTeam: true,
+      grafanaDashboard: true,
+      helm: true,
+    });
+    expect(formToYaml(withProfile(defaultForm(), 'production'))).not.toMatch(/evals|deploy|grafana/);
+
+    const yaml = `agent:
+  name: desk
+  profile: standard
+  model:
+    provider: mistral
+    name: mistral-small-latest
+  observability:
+    otel: true
+    metrics: prometheus
+    grafanaDashboard: true
+  evals:
+    dataset: evals/cases.yaml
+    redTeam: true
+  deploy:
+    - docker-compose
+    - helm
+`;
+    const result = formFromYaml(yaml);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+
+    expect(result.form).toMatchObject({
+      evals: true,
+      evalsDataset: 'evals/cases.yaml',
+      redTeam: true,
+      grafanaDashboard: true,
+      helm: true,
+    });
+    expect(formToYaml(result.form)).toBe(yaml);
+  });
+
   it('limits any agent when asked, and reports limits that are not valid on their field', () => {
     expect(formToYaml({ ...defaultForm(), maxIterations: '5', timeout: '20s' })).toContain(
       'limits:\n    maxIterations: 5\n    timeout: 20s\n',
@@ -392,12 +432,12 @@ describe('formFromYaml', () => {
 
   it('explains what the web generator cannot handle yet', () => {
     const result = formFromYaml(
-      'agent:\n  name: big\n  model: { provider: mistral, name: m }\n  evals: { redTeam: true }\n',
+      'agent:\n  name: big\n  model: { provider: mistral, name: m }\n  observability: { feedback: true }\n',
     );
 
     expect(result).toEqual({
       ok: false,
-      errors: ['agent.evals: evaluations and red teaming arrive in V5d'],
+      errors: ['agent.observability.feedback: feedback buttons arrive in a later version'],
     });
   });
 

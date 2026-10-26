@@ -145,12 +145,15 @@ describe('gen-agent generate --from', () => {
   });
 
   it('refuses what this version cannot generate yet, with the version that brings it', async () => {
-    writeFileSync(join(cwd, 'agent.yaml'), agentYaml.replace('  tools:', '  evals: { redTeam: true }\n  tools:'));
+    writeFileSync(
+      join(cwd, 'agent.yaml'),
+      agentYaml.replace('  tools:', '  observability: { feedback: true }\n  tools:'),
+    );
 
     const code = await generateCommand({ from: 'agent.yaml', cwd }, out);
 
     expect(code).toBe(1);
-    expect(out.text()).toMatch(/agent.evals: evaluations and red teaming arrive in V5d/);
+    expect(out.text()).toMatch(/agent.observability.feedback: feedback buttons arrive in a later version/);
     expect(existsSync(join(cwd, 'weather-bot'))).toBe(false);
   });
 

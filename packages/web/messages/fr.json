@@ -259,7 +259,15 @@
       "ragChunkSize": "Taille d’un passage",
       "ragChunkSizeHint": "En tokens. Vide : 500.",
       "ragRerank": "Reclasser les passages",
-      "ragRerankHint": "Le modèle note trois fois plus de passages en un appel et garde les meilleurs."
+      "ragRerankHint": "Le modèle note trois fois plus de passages en un appel et garde les meilleurs.",
+      "grafanaDashboard": "Tableau de bord Grafana",
+      "grafanaDashboardHint": "Requêtes, appels et tokens par modèle, appels d’outils, refus des garde-fous et disjoncteurs, provisionné dans Grafana par Docker Compose.",
+      "evals": "Évaluations",
+      "evalsHint": "./mvnw verify -Pevals note les réponses de evals/golden.yaml sur Ollama, et un workflow GitHub Actions le lance à chaque push.",
+      "redTeam": "Red team",
+      "redTeamHint": "Le même lancement attaque l’agent en anglais et en français, et vérifie qu’il ne livre pas ses instructions et n’obéit pas.",
+      "helm": "Chart Helm",
+      "helmHint": "Déploie l’agent sur Kubernetes : secrets par référence, services externes, sondes sur le port de gestion, sans root."
     },
     "mcp": {
       "legend": "Serveurs MCP",
