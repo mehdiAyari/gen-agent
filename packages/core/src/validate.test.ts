@@ -166,6 +166,36 @@ describe('validateAgentYaml', () => {
         'agent.observability.grafanaDashboard: it shows what OpenTelemetry sends: set observability.otel: true',
       ],
       [
+        'an MCP server with neither a package nor a URL',
+        'mcp:\n  - { name: lost }\n',
+        'agent.mcp.0: set package (a server the agent starts) or url (a remote server)',
+      ],
+      [
+        'an MCP server with both a package and a URL',
+        'mcp:\n  - { name: both, package: x, version: 1.0.0, runtime: node, url: "https://mcp.example.org/mcp" }\n',
+        'agent.mcp.0: set package (a server the agent starts) or url (a remote server), not both',
+      ],
+      [
+        'a local MCP server without its version',
+        'mcp:\n  - { name: files, package: x, runtime: node }\n',
+        'agent.mcp.0.version: is required for a server the agent starts',
+      ],
+      [
+        'a remote MCP server over plain HTTP',
+        'mcp:\n  - { name: docs, url: "http://mcp.example.org/mcp" }\n',
+        'agent.mcp.0.url: messages go over the network: use https (http only for localhost)',
+      ],
+      [
+        'the network for an MCP server outside a container',
+        'mcp:\n  - { name: files, package: x, version: 1.0.0, runtime: node, sandbox: none, network: true }\n',
+        'agent.mcp.0.network: only a server in a container is cut off the network: it has it already',
+      ],
+      [
+        'a token for a local MCP server',
+        'mcp:\n  - { name: files, package: x, version: 1.0.0, runtime: node, auth: { type: bearer, env: TOKEN } }\n',
+        'agent.mcp.0.auth: only a remote server takes a token: pass it to a local one with env',
+      ],
+      [
         'a fallback that is the model itself',
         'model: { provider: mistral, name: mistral-small-latest, fallback: { provider: mistral, name: mistral-small-latest } }\n',
         'agent.model.fallback: the fallback must be another model: change its provider or its name',

@@ -60,6 +60,50 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
   const warnings: RuleIssue[] = [];
 
   const seen = new Set<string>();
+  agent.mcp?.forEach((server, index) => {
+    const at = (...path: string[]): (string | number)[] => ['agent', 'mcp', index, ...path];
+    if (server.package === undefined && server.url === undefined) {
+      errors.push({ path: at(), message: 'set package (a server the agent starts) or url (a remote server)' });
+    } else if (server.package !== undefined && server.url !== undefined) {
+      errors.push({
+        path: at(),
+        message: 'set package (a server the agent starts) or url (a remote server), not both',
+      });
+    } else if (server.package !== undefined) {
+      for (const field of ['version', 'runtime'] as const) {
+        if (server[field] === undefined) {
+          errors.push({ path: at(field), message: 'is required for a server the agent starts' });
+        }
+      }
+      if (server.network !== undefined && server.sandbox === 'none') {
+        errors.push({
+          path: at('network'),
+          message: 'only a server in a container is cut off the network: it has it already',
+        });
+      }
+      if (server.auth !== undefined) {
+        errors.push({
+          path: at('auth'),
+          message: 'only a remote server takes a token: pass it to a local one with env',
+        });
+      }
+    } else if (server.url !== undefined) {
+      const url = new URL(server.url);
+      const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+      if (url.protocol !== 'https:' && !(url.protocol === 'http:' && local)) {
+        errors.push({
+          path: at('url'),
+          message: 'messages go over the network: use https (http only for localhost)',
+        });
+      }
+      for (const field of ['version', 'runtime', 'sandbox', 'args', 'env', 'network'] as const) {
+        if (server[field] !== undefined) {
+          errors.push({ path: at(field), message: 'applies to a server the agent starts, not to a remote one' });
+        }
+      }
+    }
+  });
+
   agent.tools.forEach((tool, index) => {
     if (seen.has(tool.name)) {
       errors.push({ path: ['agent', 'tools', index, 'name'], message: `duplicate tool name "${tool.name}"` });

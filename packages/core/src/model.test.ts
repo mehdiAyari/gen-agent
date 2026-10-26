@@ -211,6 +211,7 @@ agent:
       otel: false,
       prometheus: false,
       mcp: false,
+      remoteMcp: false,
       trackToolCalls: false,
       guardTools: false,
       chatUi: false,
@@ -274,14 +275,30 @@ agent:
     expect(buildModel(standard).features).toMatchObject({ cache: true, redis: true, otel: true, prometheus: true });
   });
 
-  it('runs MCP servers with npx or uvx, or inside Docker when sandboxed, with only the variables they name', () => {
+  it('runs MCP servers with npx or uvx, or in a hardened container of their own, offline unless they need the network', () => {
+    const HARDENED = [
+      '--read-only',
+      '--tmpfs',
+      '/tmp:rw,exec,size=256m',
+      '--cap-drop',
+      'ALL',
+      '--security-opt',
+      'no-new-privileges',
+      '--memory',
+      '512m',
+      '--cpus',
+      '1',
+      '--pids-limit',
+      '256',
+    ];
     const { mcpServers, secrets, testProperties } = buildModel(
       parse(`
 agent:
   name: tools-agent
   model: { provider: ollama, name: llama3.1 }
   mcp:
-    - { name: github, package: "@modelcontextprotocol/server-github", version: 2025.4.8, runtime: node, env: [GITHUB_TOKEN] }
+    - { name: github, package: "@modelcontextprotocol/server-github", version: 2025.4.8, runtime: node, env: [GITHUB_TOKEN], network: true }
+    - { name: time, package: mcp-server-time, version: 2026.10.19, runtime: python }
     - { name: files, package: "@modelcontextprotocol/server-filesystem", version: 2025.8.21, runtime: node, sandbox: none, args: [/srv/docs] }
     - { name: fetch, package: mcp-server-fetch, version: 2025.4.7, runtime: python, sandbox: none }
 `),
@@ -289,34 +306,116 @@ agent:
 
     expect(mcpServers).toEqual([
       {
+        kind: 'local',
         name: 'github',
         command: 'docker',
         args: [
           'run',
           '--interactive',
           '--rm',
+          '--network',
+          'bridge',
+          ...HARDENED,
           '--env',
           'GITHUB_TOKEN',
-          'node:22.23.4-alpine',
-          'npx',
+          '--env',
+          'HOME=/tmp',
+          '--env',
+          'npm_config_cache=/tmp/npm',
+          '--workdir',
+          '/server',
+          'tools-agent-mcp-github:2025.4.8',
+          'npm',
+          'exec',
+          '--offline',
           '--yes',
+          '--',
           '@modelcontextprotocol/server-github@2025.4.8',
         ],
         env: ['GITHUB_TOKEN'],
         sandboxed: true,
+        image: {
+          tag: 'tools-agent-mcp-github:2025.4.8',
+          base: 'node:22.23.4-alpine',
+          runtime: 'node',
+          package: '@modelcontextprotocol/server-github',
+          version: '2025.4.8',
+          network: true,
+        },
       },
       {
+        kind: 'local',
+        name: 'time',
+        command: 'docker',
+        args: [
+          'run',
+          '--interactive',
+          '--rm',
+          '--network',
+          'none',
+          ...HARDENED,
+          'tools-agent-mcp-time:2026.10.19',
+          '/home/mcp/start',
+        ],
+        env: [],
+        sandboxed: true,
+        image: {
+          tag: 'tools-agent-mcp-time:2026.10.19',
+          base: 'astral/uv:0.13.5-python3.13-alpine',
+          runtime: 'python',
+          package: 'mcp-server-time',
+          version: '2026.10.19',
+          network: false,
+        },
+      },
+      {
+        kind: 'local',
         name: 'files',
         command: 'npx',
         args: ['--yes', '@modelcontextprotocol/server-filesystem@2025.8.21', '/srv/docs'],
         env: [],
         sandboxed: false,
       },
-      { name: 'fetch', command: 'uvx', args: ['mcp-server-fetch==2025.4.7'], env: [], sandboxed: false },
+      { kind: 'local', name: 'fetch', command: 'uvx', args: ['mcp-server-fetch==2025.4.7'], env: [], sandboxed: false },
     ]);
     expect(secrets).toContain('GITHUB_TOKEN');
     // The tests start no MCP server: they would download packages and need the network.
     expect(testProperties).toContain('spring.ai.mcp.client.enabled=false');
+  });
+
+  it('connects to remote MCP servers over HTTP, signed with a token from the environment', () => {
+    const { mcpServers, secrets, testProperties, features } = buildModel(
+      parse(`
+agent:
+  name: tools-agent
+  model: { provider: ollama, name: llama3.1 }
+  mcp:
+    - { name: github, url: "https://api.githubcopilot.com/mcp/", auth: { type: bearer, env: GITHUB_TOKEN } }
+    - { name: docs, url: "http://localhost:8090/mcp" }
+`),
+    );
+
+    expect(mcpServers).toEqual([
+      {
+        kind: 'remote',
+        name: 'github',
+        url: 'https://api.githubcopilot.com',
+        endpoint: '/mcp/',
+        auth: { kind: 'bearer', header: 'Authorization', env: 'GITHUB_TOKEN' },
+        tokenField: 'githubToken',
+      },
+      {
+        kind: 'remote',
+        name: 'docs',
+        url: 'http://localhost:8090',
+        endpoint: '/mcp',
+        auth: undefined,
+        tokenField: 'docsToken',
+      },
+    ]);
+    expect(features).toMatchObject({ mcp: true, remoteMcp: true });
+    expect(secrets).toEqual(['GITHUB_TOKEN']);
+    expect(testProperties).toContain('agent.mcp.github.token=test-token');
   });
 
   it('serves a chat page when the interface asks for it', () => {

@@ -388,7 +388,6 @@
                 "enum": ["node", "python"]
               },
               "sandbox": {
-                "default": "docker",
                 "type": "string",
                 "enum": ["docker", "none"]
               },
@@ -405,9 +404,54 @@
                   "type": "string",
                   "pattern": "^[A-Z][A-Z0-9_]*$"
                 }
+              },
+              "network": {
+                "type": "boolean"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "auth": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "bearer"
+                      },
+                      "env": {
+                        "type": "string",
+                        "pattern": "^[A-Z][A-Z0-9_]*$"
+                      }
+                    },
+                    "required": ["type", "env"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "header"
+                      },
+                      "name": {
+                        "type": "string",
+                        "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
+                      },
+                      "env": {
+                        "type": "string",
+                        "pattern": "^[A-Z][A-Z0-9_]*$"
+                      }
+                    },
+                    "required": ["type", "name", "env"],
+                    "additionalProperties": false
+                  }
+                ]
               }
             },
-            "required": ["name", "package", "version", "runtime"],
+            "required": ["name"],
             "additionalProperties": false
           }
         },

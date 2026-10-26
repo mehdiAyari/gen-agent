@@ -185,16 +185,24 @@ const agent = z.strictObject({
     .optional(),
   mcp: z
     .array(
+      // A server the agent starts (package, version, runtime) or a remote one (url): rules.ts checks which.
       z.strictObject({
         name: kebabCase,
-        package: z.string().min(1),
-        version: exactVersion,
-        runtime: z.enum(['node', 'python']),
-        sandbox: z.enum(['docker', 'none']).default('docker'),
+        package: z.string().min(1).optional(),
+        version: exactVersion.optional(),
+        runtime: z.enum(['node', 'python']).optional(),
+        /** Started servers only; docker by default. */
+        sandbox: z.enum(['docker', 'none']).optional(),
         /** Arguments of the server, after its package: a directory to serve, an option… */
         args: z.array(z.string().min(1)).optional(),
         /** Environment variables the server needs, by name only: their values never appear in agent.yaml. */
         env: z.array(environmentVariable).optional(),
+        /** A server in a container is cut off the network unless this is true. */
+        network: z.boolean().optional(),
+        /** A remote server, over Streamable HTTP. */
+        url: z.url().optional(),
+        /** The token of a remote server, from an environment variable. */
+        auth: auth.optional(),
       }),
     )
     .optional(),

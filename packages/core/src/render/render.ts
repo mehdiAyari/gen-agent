@@ -26,6 +26,7 @@ interface SingleEntry {
 }
 
 type HttpTool = Extract<ModelTool, { kind: 'http' }>;
+type ImagedMcpServer = Extract<GenerationModel['mcpServers'][number], { kind: 'local' }>;
 type JavaTool = Extract<ModelTool, { kind: 'java' }>;
 
 /** A template rendered once per tool of the selected kind, available to the template as `item`. */
@@ -38,7 +39,11 @@ interface EachEntry<Each extends string, Item> {
 }
 
 export type TemplateEntry =
-  SingleEntry | EachEntry<'tool', ModelTool> | EachEntry<'httpTool', HttpTool> | EachEntry<'javaTool', JavaTool>;
+  | SingleEntry
+  | EachEntry<'tool', ModelTool>
+  | EachEntry<'httpTool', HttpTool>
+  | EachEntry<'javaTool', JavaTool>
+  | EachEntry<'mcpImage', ImagedMcpServer>;
 
 /** Template sources by name, and how they map to project files. Provided by @gen-agent/templates. */
 export interface TemplateSet {
@@ -70,6 +75,7 @@ export async function renderProject(
       path,
       owner: entry.owner,
       content: await renderFile(templates, entry.template, path, model, locals),
+      ...(entry.each === undefined && entry.executable === true ? { executable: true } : {}),
     });
   };
 
@@ -102,6 +108,12 @@ export async function renderProject(
         for (const tool of model.tools) {
           if (tool.kind === 'java')
             await render(entry, entry.output(model, tool), { item: tool, ...entry.locals?.(model, tool) });
+        }
+        break;
+      case 'mcpImage':
+        for (const server of model.mcpServers) {
+          if (server.kind === 'local' && server.image !== undefined)
+            await render(entry, entry.output(model, server), { item: server, ...entry.locals?.(model, server) });
         }
         break;
     }

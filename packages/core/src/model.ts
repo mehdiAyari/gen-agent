@@ -44,6 +44,8 @@ export interface GenerationModel {
     /** Metrics scraped at /actuator/prometheus. */
     prometheus: boolean;
     mcp: boolean;
+    /** Some MCP servers are remote, reached over Streamable HTTP. */
+    remoteMcp: boolean;
     /** Tools report their calls, so that answers built from live data are not cached. */
     trackToolCalls: boolean;
     /** Every tool goes through ToolGuard: calls recorded, personal data restored in arguments and masked in results. */
@@ -256,15 +258,36 @@ interface HttpAuth {
   env: string;
 }
 
-interface McpServer {
-  name: string;
-  command: string;
-  args: string[];
-  /** Names of the environment variables passed to the server. */
-  env: string[];
-  /** Runs in a throwaway container: it sees only the variables it names, not the files of the agent. */
-  sandboxed: boolean;
-}
+type McpServer =
+  | {
+      kind: 'local';
+      name: string;
+      command: string;
+      args: string[];
+      /** Names of the environment variables passed to the server. */
+      env: string[];
+      /** Runs in a throwaway container: it sees only the variables it names, not the files of the agent. */
+      sandboxed: boolean;
+      /** The image of a sandboxed server, its package installed at build time so that it can run offline. */
+      image?: {
+        tag: string;
+        base: string;
+        runtime: 'node' | 'python';
+        package: string;
+        version: string;
+        network: boolean;
+      };
+    }
+  | {
+      kind: 'remote';
+      name: string;
+      /** Scheme, host and port: Spring AI takes the path apart. */
+      url: string;
+      endpoint: string;
+      auth: HttpAuth | undefined;
+      /** Java name of its token in the generated configuration. */
+      tokenField: string;
+    };
 
 /** Not managed by Spring Boot: checked on Maven Central (2026-10-24). */
 const BUCKET4J_VERSION = '8.21.0';
@@ -296,29 +319,95 @@ const EMBEDDINGS: Partial<Record<Provider, { model: string; dimensions: number }
   ollama: { model: 'nomic-embed-text', dimensions: 768 },
 };
 
-function mcpServerOf(server: NonNullable<AgentDefinition['mcp']>[number]): McpServer {
-  const env = server.env ?? [];
-  const run =
-    server.runtime === 'node'
-      ? ['npx', '--yes', `${server.package}@${server.version}`, ...(server.args ?? [])]
-      : ['uvx', `${server.package}==${server.version}`, ...(server.args ?? [])];
-  if (server.sandbox === 'none') {
-    const [command = 'npx', ...args] = run;
-    return { name: server.name, command, args, env, sandboxed: false };
+/** No capability, no privilege escalation, a read-only file system but /tmp, bounded memory, CPU and processes. */
+const HARDENED_CONTAINER = [
+  '--read-only',
+  '--tmpfs',
+  '/tmp:rw,exec,size=256m',
+  '--cap-drop',
+  'ALL',
+  '--security-opt',
+  'no-new-privileges',
+  '--memory',
+  '512m',
+  '--cpus',
+  '1',
+  '--pids-limit',
+  '256',
+];
+
+function mcpServerOf(server: NonNullable<AgentDefinition['mcp']>[number], agentName: string): McpServer {
+  if (server.url !== undefined) {
+    const url = new URL(server.url);
+    return {
+      kind: 'remote',
+      name: server.name,
+      url: url.origin,
+      endpoint: url.pathname + url.search,
+      tokenField: `${camelCase(server.name)}Token`,
+      auth:
+        server.auth === undefined
+          ? undefined
+          : server.auth.type === 'bearer'
+            ? { kind: 'bearer', header: 'Authorization', env: server.auth.env }
+            : { kind: 'header', header: server.auth.name, env: server.auth.env },
+    };
   }
+  const env = server.env ?? [];
+  // Rules ensure a started server has its package, version and runtime.
+  const runtime = server.runtime ?? 'node';
+  const pkg = server.package ?? '';
+  const version = server.version ?? '';
+  if (server.sandbox === 'none') {
+    return runtime === 'node'
+      ? {
+          kind: 'local',
+          name: server.name,
+          command: 'npx',
+          args: ['--yes', `${pkg}@${version}`, ...(server.args ?? [])],
+          env,
+          sandboxed: false,
+        }
+      : {
+          kind: 'local',
+          name: server.name,
+          command: 'uvx',
+          args: [`${pkg}==${version}`, ...(server.args ?? [])],
+          env,
+          sandboxed: false,
+        };
+  }
+  const tag = `${agentName}-mcp-${server.name}:${version}`;
   return {
+    kind: 'local',
     name: server.name,
     command: 'docker',
     args: [
       'run',
       '--interactive',
       '--rm',
+      '--network',
+      server.network === true ? 'bridge' : 'none',
+      ...HARDENED_CONTAINER,
       ...env.flatMap((name) => ['--env', name]),
-      server.runtime === 'node' ? IMAGES.node : IMAGES.uv,
-      ...run,
+      // npm writes its cache and logs: only /tmp is writable.
+      ...(runtime === 'node'
+        ? ['--env', 'HOME=/tmp', '--env', 'npm_config_cache=/tmp/npm', '--workdir', '/server']
+        : []),
+      tag,
+      ...(runtime === 'node' ? ['npm', 'exec', '--offline', '--yes', '--', `${pkg}@${version}`] : ['/home/mcp/start']),
+      ...(server.args ?? []),
     ],
     env,
     sandboxed: true,
+    image: {
+      tag,
+      base: runtime === 'node' ? IMAGES.node : IMAGES.uv,
+      runtime,
+      package: pkg,
+      version,
+      network: server.network === true,
+    },
   };
 }
 
@@ -401,7 +490,7 @@ export function buildModel(file: AgentFile): GenerationModel {
   const semantic = agent.cache?.semantic;
   // The tokens of a conversation and the values they stand for are kept in Redis.
   const pii = agent.security?.piiMasking === true;
-  const mcpServers = (agent.mcp ?? []).map(mcpServerOf);
+  const mcpServers = (agent.mcp ?? []).map((server) => mcpServerOf(server, agent.name));
   const hasTools = agent.tools.length > 0 || mcpServers.length > 0;
   const injectionDetection = agent.security?.injectionDetection === true;
   const killSwitches = agent.security?.killSwitches === true;
@@ -448,6 +537,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       otel: agent.observability?.otel === true,
       prometheus: agent.observability?.metrics === 'prometheus',
       mcp: mcpServers.length > 0,
+      remoteMcp: mcpServers.some((server) => server.kind === 'remote'),
       trackToolCalls: cache && hasTools,
       guardTools: (cache || pii || injectionDetection || killSwitches || approvalTools.length > 0) && hasTools,
       chatUi: agent.interface.includes('chat-ui'),
@@ -523,13 +613,18 @@ export function buildModel(file: AgentFile): GenerationModel {
         ...(providerSettings.apiKeyEnv === undefined ? [] : [providerSettings.apiKeyEnv]),
         ...(fallbackKey === undefined ? [] : [fallbackKey]),
         ...tools.flatMap((tool) => (tool.kind === 'http' && tool.auth !== undefined ? [tool.auth.env] : [])),
-        ...mcpServers.flatMap((server) => server.env),
+        ...mcpServers.flatMap((server) =>
+          server.kind === 'local' ? server.env : server.auth === undefined ? [] : [server.auth.env],
+        ),
       ]),
     ],
     testProperties: [
       ...(providerSettings.apiKeyEnv === undefined ? [] : [`${providerSettings.propertyPrefix}.api-key=test-key`]),
       ...(oidc ? ['spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org'] : []),
       ...(mcpServers.length > 0 ? ['spring.ai.mcp.client.enabled=false'] : []),
+      ...mcpServers.flatMap((server) =>
+        server.kind === 'remote' && server.auth !== undefined ? [`agent.mcp.${server.name}.token=test-token`] : [],
+      ),
       ...(fallbackKey === undefined ? [] : ['agent.fallback.api-key=test-key']),
       ...(ragEnabled ? ['agent.rag.documents=src/test/resources/documents'] : []),
       // A short timeout, so that the test of a request that takes too long runs quickly.
