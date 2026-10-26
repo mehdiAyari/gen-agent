@@ -24,6 +24,10 @@
 <%_ if (features.limits) { _%>
         <bucket4j.version><%= versions.bucket4j %></bucket4j.version>
 <%_ } _%>
+<%_ if (features.evals) { _%>
+        <!-- The evaluations call a real model: only ./mvnw verify -Pevals runs them. -->
+        <excludedGroups>evals</excludedGroups>
+<%_ } _%>
     </properties>
 
     <dependencies>
@@ -164,6 +168,14 @@
             <scope>test</scope>
         </dependency>
 <%_ } _%>
+<%_ if (features.evals && provider.id !== 'ollama' && !(fallback?.provider === 'ollama' && !fallback.sameProvider)) { _%>
+        <dependency>
+            <!-- The model of the evaluations. -->
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-ollama</artifactId>
+            <scope>test</scope>
+        </dependency>
+<%_ } _%>
 <%_ if (features.postgres || features.redis) { _%>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -199,6 +211,19 @@
         </dependencies>
     </dependencyManagement>
 
+<%_ if (features.evals) { _%>
+    <profiles>
+        <profile>
+            <!-- ./mvnw verify -Pevals: the reference set<%= features.redTeam ? ' and the red team' : '' %>, on Ollama. -->
+            <id>evals</id>
+            <properties>
+                <groups>evals</groups>
+                <excludedGroups/>
+            </properties>
+        </profile>
+    </profiles>
+
+<%_ } _%>
     <build>
         <plugins>
             <plugin>

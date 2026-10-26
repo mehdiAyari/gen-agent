@@ -1,0 +1,64 @@
+# Values of the <%= project.artifactId %> chart: helm install <%= project.artifactId %> ./helm/<%= project.artifactId %> -f my-values.yaml
+
+replicaCount: 2
+
+image:
+  # Built from the Dockerfile and pushed to your registry.
+  repository: <%= project.artifactId %>
+  tag: "0.0.1-SNAPSHOT"
+  pullPolicy: IfNotPresent
+
+<%_ const secretNames = [...secrets, ...(features.postgres ? ['DATABASE_PASSWORD'] : [])]; _%>
+<%_ if (secretNames.length > 0) { _%>
+# Secrets by reference only: a Secret you create, with the keys <%= secretNames.join(', ') %>.
+#   kubectl create secret generic <%= project.artifactId %>-secrets <%- secretNames.map((name) => `--from-literal=${name}=...`).join(' ') %>
+existingSecret: <%= project.artifactId %>-secrets
+
+<%_ } _%>
+# Settings of the agent, as environment variables (application.yml reads them).
+env:
+<%_ if (features.postgres) { _%>
+  # Postgres<%= features.vectorStore ? ' with the pgvector extension' : '' %>, run apart from the chart.
+  DATABASE_URL: jdbc:postgresql://postgres:5432/agent
+  DATABASE_USERNAME: agent
+<%_ } _%>
+<%_ if (features.redis) { _%>
+  REDIS_URL: redis://redis:6379
+<%_ } _%>
+<%_ if (features.oidc) { _%>
+  OIDC_ISSUER_URI: https://login.example.org/realms/agent
+<%_ } _%>
+<%_ if (provider.id === 'ollama') { _%>
+  SPRING_AI_OLLAMA_BASE_URL: http://ollama:11434
+<%_ } _%>
+<%_ if (fallback?.provider === 'ollama' && !fallback.sameProvider) { _%>
+  AGENT_FALLBACK_BASE_URL: http://ollama:11434
+<%_ } _%>
+<%_ if (features.otel) { _%>
+  OTLP_ENABLED: "true"
+  OTLP_ENDPOINT: http://otel-collector:4318
+<%_ } _%>
+<%_ if (features.rag) { _%>
+  AGENT_RAG_DOCUMENTS: /app/documents
+
+# The documents of the knowledge base: a PersistentVolumeClaim you create and fill.
+documents:
+  existingClaim: ""
+<%_ } _%>
+
+service:
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  host: <%= project.artifactId %>.example.org
+  # The name of a Secret holding the TLS certificate of the host; empty for none.
+  tlsSecret: ""
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi

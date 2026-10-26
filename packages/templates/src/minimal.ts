@@ -222,6 +222,43 @@ export const minimalEntries: TemplateEntry[] = [
     when: (m) => m.features.rag,
     output: () => 'src/main/resources/db/migration/V3__agent_document_source.sql',
   },
+  ...[
+    'Chart.yaml',
+    'values.yaml',
+    'templates/_helpers.tpl',
+    'templates/deployment.yaml',
+    'templates/service.yaml',
+    'templates/ingress.yaml',
+  ].map((name): TemplateEntry => ({
+    template: `helm/${name}.ejs`,
+    owner: name === 'values.yaml' ? 'merged' : 'generated',
+    when: (m) => m.features.helm,
+    output: (m) => `helm/${m.project.artifactId}/${name}`,
+  })),
+  ...['dashboards.yaml', 'agent-dashboard.json'].map((name): TemplateEntry => ({
+    template: `docker/grafana/${name}.ejs`,
+    owner: 'generated',
+    when: (m) => m.features.grafanaDashboard,
+    output: () => `docker/grafana/${name}`,
+  })),
+  {
+    template: 'evals/golden.yaml.ejs',
+    owner: 'user',
+    when: (m) => m.evals?.dataset !== undefined,
+    output: (m) => m.evals?.dataset ?? 'evals/golden.yaml',
+  },
+  {
+    template: 'test/evals/AgentEvaluationTests.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.evals,
+    output: (m) => test(m, 'evals/AgentEvaluationTests.java'),
+  },
+  {
+    template: 'github/ci.yml.ejs',
+    owner: 'merged',
+    when: (m) => m.features.evals,
+    output: () => '.github/workflows/ci.yml',
+  },
   {
     template: 'test/documents/opening-hours.md.ejs',
     owner: 'generated',

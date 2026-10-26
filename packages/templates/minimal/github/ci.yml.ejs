@@ -1,0 +1,53 @@
+# Tests on every push, then the evaluations on Ollama: no API key, no cost.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "<%= agent.java %>"
+          cache: maven
+      # The fake model answers: no provider is called<%= features.postgres || features.redis ? '; Testcontainers starts the services in Docker' : '' %>.
+      - run: ./mvnw -B verify
+
+  evals:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      EVALS_MODEL: <%= evals.model %>
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "<%= agent.java %>"
+          cache: maven
+      - name: Cache the Ollama models
+        uses: actions/cache@v6
+        with:
+          path: ~/.ollama/models
+          key: ollama-<%= [evals.model, ...(features.vectorStore ? ['nomic-embed-text'] : [])].join('-') %>
+      - name: Start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          sleep 5
+          ollama pull <%= evals.model %>
+<%_ if (features.vectorStore) { _%>
+          ollama pull nomic-embed-text
+<%_ } _%>
+      - run: ./mvnw -B verify -Pevals
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: evals-report
+          path: target/evals-report.md

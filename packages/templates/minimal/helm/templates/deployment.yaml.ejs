@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    {{- include "agent.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "agent.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 8081
+          env:
+            {{- range $name, $value := .Values.env }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+<%_ if ([...secrets, ...(features.postgres ? ['DATABASE_PASSWORD'] : [])].length > 0) { _%>
+          envFrom:
+            - secretRef:
+                name: {{ .Values.existingSecret }}
+<%_ } _%>
+          # Health answers on the management port only, which no Service exposes.
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: management
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: management
+            initialDelaySeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            # Spring Boot and Tomcat write their temporary files here: the root file system is read-only.
+            - name: tmp
+              mountPath: /tmp
+<%_ if (features.rag) { _%>
+            {{- if .Values.documents.existingClaim }}
+            - name: documents
+              mountPath: /app/documents
+              readOnly: true
+            {{- end }}
+<%_ } _%>
+      volumes:
+        - name: tmp
+          emptyDir: {}
+<%_ if (features.rag) { _%>
+        {{- if .Values.documents.existingClaim }}
+        - name: documents
+          persistentVolumeClaim:
+            claimName: {{ .Values.documents.existingClaim }}
+        {{- end }}
+<%_ } _%>

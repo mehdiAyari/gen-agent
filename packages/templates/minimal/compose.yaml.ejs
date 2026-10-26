@@ -109,6 +109,12 @@ services:
     image: <%= images.lgtm %>
     ports:
       - "3000:3000"
+<%_ if (features.grafanaDashboard) { _%>
+    volumes:
+      # The dashboard of the agent, beside those of otel-lgtm.
+      - ./docker/grafana/dashboards.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/agent.yaml:ro
+      - ./docker/grafana/agent-dashboard.json:/otel-lgtm/agent-dashboard.json:ro
+<%_ } _%>
 <%_ } _%>
 <%_ if (features.postgres) { _%>
 

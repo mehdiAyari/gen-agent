@@ -68,6 +68,10 @@ services:
     image: grafana/otel-lgtm:0.38.0
     ports:
       - "3000:3000"
+    volumes:
+      # The dashboard of the agent, beside those of otel-lgtm.
+      - ./docker/grafana/dashboards.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/agent.yaml:ro
+      - ./docker/grafana/agent-dashboard.json:/otel-lgtm/agent-dashboard.json:ro
 
 volumes:
   postgres-data:

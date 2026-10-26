@@ -1,0 +1,45 @@
+<%_
+const prometheus = { type: 'prometheus', uid: 'prometheus' };
+const service = `service_name="${project.artifactId}"`;
+const panels = [];
+const add = (title, unit, queries, description, stat = false) => {
+  const index = panels.length;
+  panels.push({
+    type: stat ? 'stat' : 'timeseries',
+    title,
+    description,
+    datasource: prometheus,
+    gridPos: { h: 8, w: 12, x: (index % 2) * 12, y: Math.floor(index / 2) * 8 },
+    fieldConfig: { defaults: { unit }, overrides: [] },
+    options: stat
+      ? { textMode: 'name', colorMode: 'background', reduceOptions: { calcs: ['lastNotNull'], fields: '', values: false } }
+      : { legend: { displayMode: 'list', placement: 'bottom' }, tooltip: { mode: 'multi' } },
+    targets: queries.map(([expr, legendFormat], number) => ({ datasource: prometheus, expr, legendFormat, refId: String.fromCharCode(65 + number) })),
+  });
+};
+// Micrometer names, as OpenTelemetry sends them to otel-lgtm: durations in milliseconds.
+add('Requests per second', 'reqps', [[`sum by (uri, status) (rate(http_server_requests_milliseconds_count{${service}, uri!~"/actuator.*"}[$__rate_interval]))`, '{{uri}} {{status}}']], 'Requests to the agent, by route and status.');
+add('Request duration (95th percentile)', 'ms', [[`histogram_quantile(0.95, sum by (le, uri) (rate(http_server_requests_milliseconds_bucket{${service}, uri!~"/actuator.*"}[$__rate_interval])))`, '{{uri}}']], 'How long the agent takes to answer.');
+add('Model calls per second', 'reqps', [[`sum by (gen_ai_operation_name, gen_ai_response_model, error) (rate(gen_ai_client_operation_milliseconds_count{${service}}[$__rate_interval]))`, '{{gen_ai_operation_name}} {{gen_ai_response_model}} {{error}}']], 'Calls to each model (chat, embeddings), failed ones apart.');
+add('Tokens per minute', 'short', [[`sum by (gen_ai_response_model, gen_ai_token_type) (rate(gen_ai_client_token_usage_total{${service}, gen_ai_token_type!="total"}[$__rate_interval])) * 60`, '{{gen_ai_response_model}} {{gen_ai_token_type}}']], 'What the models bill.');
+if (tools.length > 0 || features.mcp) {
+  add('Tool calls per second', 'reqps', [[`sum by (spring_ai_tool_definition_name) (rate(spring_ai_tool_milliseconds_count{${service}}[$__rate_interval]))`, '{{spring_ai_tool_definition_name}}']], 'Calls the model makes to each tool.');
+}
+if (features.injectionDetection || features.outputGuard) {
+  add('Guard refusals per minute', 'short', [[`sum by (reason) (rate(agent_guard_refusals_total{${service}}[$__rate_interval])) * 60`, '{{reason}}']], 'Messages refused as prompt injection, answers refused as leaks.');
+}
+if (features.resilience) {
+  add('Circuit breakers', 'short', [[`max by (name, state) (resilience4j_circuitbreaker_state{${service}}) == 1`, '{{name}}: {{state}}']], 'The state of the breaker of each model: closed is healthy.', true);
+}
+const dashboard = {
+  title: project.artifactId,
+  uid: project.artifactId.slice(0, 40),
+  tags: ['gen-agent'],
+  timezone: 'browser',
+  refresh: '30s',
+  time: { from: 'now-1h', to: 'now' },
+  schemaVersion: 41,
+  panels,
+};
+_%>
+<%- JSON.stringify(dashboard, null, 2) %>

@@ -211,6 +211,23 @@ management:
     web:
       exposure:
         include: <%= ['health', ...(features.prometheus ? ['prometheus'] : [])].join(', ') %>
+<%_   if (features.grafanaDashboard) { _%>
+  metrics:
+    distribution:
+      percentiles-histogram:
+        # Buckets for the request duration percentiles of the dashboard.
+        http.server.requests: true
+      maximum-expected-value:
+        # Answers of a model take seconds, not milliseconds.
+        http.server.requests: 2m
+<%_   } _%>
+<%_   if (features.helm) { _%>
+  endpoint:
+    health:
+      # Liveness and readiness, for the probes of Kubernetes.
+      probes:
+        enabled: true
+<%_   } _%>
 <%_   if (features.otel) { _%>
   tracing:
     sampling:

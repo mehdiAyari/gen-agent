@@ -1,0 +1,37 @@
+# Values of the claims-desk chart: helm install claims-desk ./helm/claims-desk -f my-values.yaml
+
+replicaCount: 2
+
+image:
+  # Built from the Dockerfile and pushed to your registry.
+  repository: claims-desk
+  tag: "0.0.1-SNAPSHOT"
+  pullPolicy: IfNotPresent
+
+# Secrets by reference only: a Secret you create, with the keys ANTHROPIC_API_KEY, OPENAI_API_KEY.
+#   kubectl create secret generic claims-desk-secrets --from-literal=ANTHROPIC_API_KEY=... --from-literal=OPENAI_API_KEY=...
+existingSecret: claims-desk-secrets
+
+# Settings of the agent, as environment variables (application.yml reads them).
+env:
+  REDIS_URL: redis://redis:6379
+  OIDC_ISSUER_URI: https://login.example.org/realms/agent
+  OTLP_ENABLED: "true"
+  OTLP_ENDPOINT: http://otel-collector:4318
+
+service:
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  host: claims-desk.example.org
+  # The name of a Secret holding the TLS certificate of the host; empty for none.
+  tlsSecret: ""
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi

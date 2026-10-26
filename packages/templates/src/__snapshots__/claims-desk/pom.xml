@@ -20,6 +20,8 @@
         <java.version>21</java.version>
         <spring-ai.version>2.0.1</spring-ai.version>
         <bucket4j.version>8.21.0</bucket4j.version>
+        <!-- The evaluations call a real model: only ./mvnw verify -Pevals runs them. -->
+        <excludedGroups>evals</excludedGroups>
     </properties>
 
     <dependencies>
@@ -83,6 +85,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <!-- The model of the evaluations. -->
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-ollama</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
@@ -105,6 +113,17 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <profiles>
+        <profile>
+            <!-- ./mvnw verify -Pevals: the reference set and the red team, on Ollama. -->
+            <id>evals</id>
+            <properties>
+                <groups>evals</groups>
+                <excludedGroups/>
+            </properties>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>

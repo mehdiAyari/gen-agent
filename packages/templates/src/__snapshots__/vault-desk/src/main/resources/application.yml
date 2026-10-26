@@ -117,6 +117,19 @@ management:
     web:
       exposure:
         include: health, prometheus
+  metrics:
+    distribution:
+      percentiles-histogram:
+        # Buckets for the request duration percentiles of the dashboard.
+        http.server.requests: true
+      maximum-expected-value:
+        # Answers of a model take seconds, not milliseconds.
+        http.server.requests: 2m
+  endpoint:
+    health:
+      # Liveness and readiness, for the probes of Kubernetes.
+      probes:
+        enabled: true
   tracing:
     sampling:
       probability: 1.0

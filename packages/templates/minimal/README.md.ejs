@@ -245,6 +245,10 @@ Health and metrics answer on port 8081 (`MANAGEMENT_PORT`), not on the public on
 Traces and metrics of every conversation (model calls, tools, tokens) go to OpenTelemetry when `OTLP_ENABLED` is
 true<%= features.dockerCompose ? ': Docker Compose sends them to Grafana, at http://localhost:3000' : ' (`OTLP_ENDPOINT`, http://localhost:4318 by default)' %>.
 <%_   } _%>
+<%_   if (features.grafanaDashboard) { _%>
+The dashboard of the agent (requests, model calls and tokens by model<%= tools.length > 0 || features.mcp ? ', tool calls' : '' %><%= features.injectionDetection || features.outputGuard ? ', guard refusals' : '' %><%= features.resilience ? ', circuit breakers' : '' %>)
+is in `docker/grafana/agent-dashboard.json`<%= features.dockerCompose ? ': Compose provisions it into Grafana' : ': import it into your Grafana' %>.
+<%_   } _%>
 
 <%_ } _%>
 <%_ if (features.mcp) { _%>
@@ -268,6 +272,38 @@ Their tools are given to the model with the ones of agent.yaml. The tests do not
 The tests use a fake model: they never call <%= provider.id %> and cost nothing.
 <%_ if (features.postgres || features.redis) { _%>
 Docker must run: the tests start <%= [features.postgres ? 'Postgres' : '', features.redis ? 'Redis' : ''].filter(Boolean).join(' and ') %> in containers (Testcontainers).
+<%_ } _%>
+<%_ if (features.evals) { _%>
+
+### Evaluations
+
+```bash
+ollama pull <%= evals.model %><%= features.vectorStore && provider.id !== 'ollama' ? ' && ollama pull nomic-embed-text' : '' %>
+./mvnw verify -Pevals
+```
+
+The whole agent answers on Ollama (`OLLAMA_BASE_URL`, `EVALS_MODEL`, <%= evals.model %> by default)<%= evals.dataset ? `: each case of \`${evals.dataset}\`
+is scored by its words and, judged by the model, by its criterion` : '' %><%= features.redTeam ? `${evals.dataset ? ';' : ':'} the red team attacks it in English and French
+and checks it neither leaks its instructions nor obeys` : '' %>. The report is in `target/evals-report.md`; the run fails below the
+threshold. `.github/workflows/ci.yml` runs the tests, then the evaluations with Ollama, on every push.
+<%_ } _%>
+<%_ if (features.helm) { _%>
+
+## Kubernetes
+
+`helm/<%= project.artifactId %>` deploys the image built from the Dockerfile:
+
+```bash
+<%_   const secretNames = [...secrets, ...(features.postgres ? ['DATABASE_PASSWORD'] : [])]; _%>
+<%_   if (secretNames.length > 0) { _%>
+kubectl create secret generic <%= project.artifactId %>-secrets <%- secretNames.map((name) => `--from-literal=${name}=...`).join(' ') %>
+<%_   } _%>
+helm install <%= project.artifactId %> ./helm/<%= project.artifactId %> -f my-values.yaml
+```
+
+Secrets are only referenced (`existingSecret`); <%= [features.postgres ? 'Postgres' : '', features.redis ? 'Redis' : '', features.oidc ? 'the identity provider' : ''].filter(Boolean).join(', ') || 'the services' %> run apart, set in `env`
+of `values.yaml`. Kubernetes probes liveness and readiness on the management port, which no Service exposes; the
+container runs as a non-root user on a read-only file system. An ingress is ready in `values.yaml` (`ingress.enabled`).
 <%_ } _%>
 
 ## Where to put your code

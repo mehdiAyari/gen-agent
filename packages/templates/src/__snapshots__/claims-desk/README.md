@@ -98,6 +98,8 @@ and answered with 504.
 Health and metrics answer on port 8081 (`MANAGEMENT_PORT`), not on the public one: `/actuator/health`, `/actuator/prometheus`.
 Traces and metrics of every conversation (model calls, tools, tokens) go to OpenTelemetry when `OTLP_ENABLED` is
 true: Docker Compose sends them to Grafana, at http://localhost:3000.
+The dashboard of the agent (requests, model calls and tokens by model, guard refusals, circuit breakers)
+is in `docker/grafana/agent-dashboard.json`: Compose provisions it into Grafana.
 
 ## Test
 
@@ -107,6 +109,31 @@ true: Docker Compose sends them to Grafana, at http://localhost:3000.
 
 The tests use a fake model: they never call anthropic and cost nothing.
 Docker must run: the tests start Redis in containers (Testcontainers).
+
+### Evaluations
+
+```bash
+ollama pull qwen2.5:3b
+./mvnw verify -Pevals
+```
+
+The whole agent answers on Ollama (`OLLAMA_BASE_URL`, `EVALS_MODEL`, qwen2.5:3b by default): each case of `evals/golden.yaml`
+is scored by its words and, judged by the model, by its criterion; the red team attacks it in English and French
+and checks it neither leaks its instructions nor obeys. The report is in `target/evals-report.md`; the run fails below the
+threshold. `.github/workflows/ci.yml` runs the tests, then the evaluations with Ollama, on every push.
+
+## Kubernetes
+
+`helm/claims-desk` deploys the image built from the Dockerfile:
+
+```bash
+kubectl create secret generic claims-desk-secrets --from-literal=ANTHROPIC_API_KEY=... --from-literal=OPENAI_API_KEY=...
+helm install claims-desk ./helm/claims-desk -f my-values.yaml
+```
+
+Secrets are only referenced (`existingSecret`); Redis, the identity provider run apart, set in `env`
+of `values.yaml`. Kubernetes probes liveness and readiness on the management port, which no Service exposes; the
+container runs as a non-root user on a read-only file system. An ingress is ready in `values.yaml` (`ingress.enabled`).
 
 ## Where to put your code
 

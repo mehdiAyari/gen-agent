@@ -10,8 +10,9 @@ COPY src/ src/
 RUN ./mvnw --batch-mode --quiet package -DskipTests
 
 FROM eclipse-temurin:21.0.12.1_1-jre-alpine
-RUN addgroup -S agent && adduser -S agent -G agent
-USER agent
+RUN addgroup -S -g 10001 agent && adduser -S -u 10001 -G agent agent
+# Numeric, so that Kubernetes can check the container does not run as root.
+USER 10001
 WORKDIR /app
 COPY --from=build /workspace/target/support-desk-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
