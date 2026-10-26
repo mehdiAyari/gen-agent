@@ -143,12 +143,16 @@ async function generateFromSource(
     writeFileSync(join(directory, file.path), file.content, file.executable === true ? { mode: 0o755 } : {});
   }
 
-  const { secrets, features, ollamaModels } = buildModel(config);
+  const { secrets, features, ollamaModels, mcpServers } = buildModel(config);
   out.info(
     [
       `Created ${config.agent.name} in ${shown} (${String(files.length)} files). Next steps:`,
       `  cd ${shown}`,
       ...ollamaModels.map((model) => `  ollama pull ${model}`),
+      // The MCP servers in containers run from images of their own, built once.
+      ...(mcpServers.some((server) => server.kind === 'local' && server.image !== undefined)
+        ? ['  ./docker/mcp/build-images.sh']
+        : []),
       ...secrets.map((secret) => `  export ${secret}=...`),
       // With Compose, the agent starts with its database, Redis and identity provider.
       features.dockerCompose ? '  docker compose up --build' : '  ./mvnw spring-boot:run',

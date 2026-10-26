@@ -148,10 +148,32 @@ interface McpForm {
   args: string;
   /** Names of environment variables, separated by spaces or commas. */
   env: string;
+  /** local: a package the agent starts; remote: a server reached at url. */
+  kind: 'local' | 'remote';
+  url: string;
+  /** Environment variable holding the token of a remote server; empty for none. */
+  tokenEnv: string;
+  /** The header the token goes in; empty for Authorization: Bearer. */
+  tokenHeader: string;
+  /** A server in a container keeps the network: off by default. */
+  network: boolean;
 }
 
 export function emptyMcpServer(): McpForm {
-  return { name: '', package: '', version: '', runtime: 'node', sandbox: 'docker', args: '', env: '' };
+  return {
+    name: '',
+    package: '',
+    version: '',
+    runtime: 'node',
+    sandbox: 'docker',
+    args: '',
+    env: '',
+    kind: 'local',
+    url: '',
+    tokenEnv: '',
+    tokenHeader: '',
+    network: false,
+  };
 }
 
 const words = (text: string): string[] => text.split(/[\s,]+/).filter((word) => word !== '');
@@ -341,15 +363,30 @@ export function formToYaml(form: AgentForm): string {
   }
 
   if (form.mcp.length > 0) {
-    agent.mcp = form.mcp.map((server) => ({
-      name: server.name,
-      package: server.package,
-      version: server.version,
-      runtime: server.runtime,
-      ...(server.sandbox === 'none' ? { sandbox: 'none' } : {}),
-      ...(words(server.args).length > 0 ? { args: words(server.args) } : {}),
-      ...(words(server.env).length > 0 ? { env: words(server.env) } : {}),
-    }));
+    agent.mcp = form.mcp.map((server) =>
+      server.kind === 'remote'
+        ? {
+            name: server.name,
+            url: server.url,
+            ...(present(server.tokenEnv)
+              ? {
+                  auth: present(server.tokenHeader)
+                    ? { type: 'header', name: server.tokenHeader, env: server.tokenEnv }
+                    : { type: 'bearer', env: server.tokenEnv },
+                }
+              : {}),
+          }
+        : {
+            name: server.name,
+            package: server.package,
+            version: server.version,
+            runtime: server.runtime,
+            ...(server.sandbox === 'none' ? { sandbox: 'none' } : {}),
+            ...(words(server.args).length > 0 ? { args: words(server.args) } : {}),
+            ...(words(server.env).length > 0 ? { env: words(server.env) } : {}),
+            ...(server.sandbox === 'docker' && server.network ? { network: true } : {}),
+          },
+    );
   }
 
   const security: Record<string, unknown> = {};
@@ -430,9 +467,9 @@ export function formToYaml(form: AgentForm): string {
   if (isSeq(servers)) {
     for (const server of servers.items) {
       if (!isMap(server)) continue;
-      for (const key of ['args', 'env']) {
+      for (const key of ['args', 'env', 'auth']) {
         const list = server.get(key);
-        if (list instanceof YAMLSeq) list.flow = true;
+        if (list instanceof YAMLSeq || list instanceof YAMLMap) list.flow = true;
       }
     }
   }
@@ -508,12 +545,17 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     ragRerank: agent.rag?.rerank ?? false,
     mcp: (agent.mcp ?? []).map((server) => ({
       name: server.name,
-      package: server.package,
-      version: server.version,
-      runtime: server.runtime,
-      sandbox: server.sandbox,
+      package: server.package ?? '',
+      version: server.version ?? '',
+      runtime: server.runtime ?? 'node',
+      sandbox: server.sandbox ?? 'docker',
       args: (server.args ?? []).join(' '),
       env: (server.env ?? []).join(' '),
+      kind: server.url === undefined ? 'local' : 'remote',
+      url: server.url ?? '',
+      tokenEnv: server.auth?.env ?? '',
+      tokenHeader: server.auth?.type === 'header' ? server.auth.name : '',
+      network: server.network ?? false,
     })),
     tools: agent.tools.map((tool) => ({
       name: tool.name,

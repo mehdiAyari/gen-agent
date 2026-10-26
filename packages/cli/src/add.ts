@@ -25,14 +25,17 @@ export interface AddToolOptions extends ProjectOptions {
   params?: string[];
 }
 
+/** A server the agent starts (package, version, runtime) or a remote one (url, its token in tokenEnv). */
 export interface AddMcpOptions extends ProjectOptions {
   name: string;
-  package: string;
-  version: string;
-  runtime: 'node' | 'python';
+  package?: string;
+  version?: string;
+  runtime?: 'node' | 'python';
   sandbox?: 'docker' | 'none';
   args?: string[];
   env?: string[];
+  url?: string;
+  tokenEnv?: string;
 }
 
 /** `gen-agent add tool <name>`: adds the tool to agent.yaml, then updates the project. */
@@ -63,18 +66,21 @@ export async function addToolCommand(options: AddToolOptions, out: Output): Prom
 export async function addMcpCommand(options: AddMcpOptions, out: Output): Promise<number> {
   return updateProject(options, out, (document) => {
     if (names(document, 'mcp').includes(options.name)) return `${options.name} is already an MCP server of the agent`;
+    // Whatever is given goes to agent.yaml: core says what does not fit together.
     const node = document.createNode({
       name: options.name,
-      package: options.package,
-      version: options.version,
-      runtime: options.runtime,
+      ...(options.package === undefined ? {} : { package: options.package }),
+      ...(options.version === undefined ? {} : { version: options.version }),
+      ...(options.runtime === undefined ? {} : { runtime: options.runtime }),
       ...(options.sandbox === 'none' ? { sandbox: 'none' } : {}),
       ...(options.args === undefined || options.args.length === 0 ? {} : { args: options.args }),
       ...(options.env === undefined || options.env.length === 0 ? {} : { env: options.env }),
+      ...(options.url === undefined ? {} : { url: options.url }),
+      ...(options.tokenEnv === undefined ? {} : { auth: { type: 'bearer', env: options.tokenEnv } }),
     }) as YAMLMap;
-    for (const key of ['args', 'env']) {
+    for (const key of ['args', 'env', 'auth']) {
       const list = node.get(key);
-      if (list instanceof YAMLSeq) list.flow = true;
+      if (list instanceof YAMLSeq || list instanceof YAMLMap) list.flow = true;
     }
     listAt(document, 'mcp').items.push(node);
     return undefined;

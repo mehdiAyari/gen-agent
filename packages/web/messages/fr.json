@@ -289,7 +289,18 @@
       "args": "Arguments",
       "argsHint": "Séparés par des espaces",
       "env": "Variables d’environnement",
-      "envHint": "Les noms seulement : les valeurs restent dans l’environnement"
+      "envHint": "Les noms seulement : les valeurs restent dans l’environnement",
+      "kind": "Serveur",
+      "kindLocal": "Lancé par l’agent",
+      "kindRemote": "Distant",
+      "url": "URL",
+      "urlHint": "Streamable HTTP ; https (http seulement pour localhost).",
+      "tokenEnv": "Variable du jeton",
+      "tokenEnvHint": "Variable d’environnement qui contient le jeton ; vide : aucun.",
+      "tokenHeader": "En-tête du jeton",
+      "tokenHeaderHint": "Vide : Authorization: Bearer.",
+      "network": "Accès réseau",
+      "networkHint": "Désactivé : le conteneur ne joint rien. À activer pour les serveurs qui appellent une API (GitHub, Slack…)."
     }
   },
   "gallery": {

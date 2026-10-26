@@ -108,6 +108,28 @@ describe('gen-agent add mcp', () => {
   });
 });
 
+describe('gen-agent add mcp, remote', () => {
+  it('adds a remote MCP server with its token from the environment', async () => {
+    const code = await addMcpCommand(
+      { name: 'docs', url: 'https://mcp.example.org/mcp', tokenEnv: 'DOCS_TOKEN', dir: 'shop-bot', cwd },
+      out,
+    );
+
+    expect(code).toBe(0);
+    expect(read('agent.yaml')).toContain('auth: { type: bearer, env: DOCS_TOKEN }');
+    expect(read('src/main/resources/application.yml')).toContain('streamable-http:');
+    expect(existsSync(at(`${javaRoot}/generated/mcp/McpConfiguration.java`))).toBe(true);
+  });
+
+  it('refuses a server with neither a package nor a URL, and changes nothing', async () => {
+    const before = read('agent.yaml');
+
+    expect(await addMcpCommand({ name: 'lost', dir: 'shop-bot', cwd }, out)).toBe(1);
+    expect(out.text()).toMatch(/set package \(a server the agent starts\) or url \(a remote server\)/);
+    expect(read('agent.yaml')).toBe(before);
+  });
+});
+
 describe('gen-agent update', () => {
   it('regenerates the project after agent.yaml is edited by hand', async () => {
     writeFileSync(

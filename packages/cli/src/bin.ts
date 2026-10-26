@@ -116,39 +116,43 @@ add
   .command('mcp')
   .description('add an MCP server to the agent, then update the project')
   .argument('<name>', 'server name, in kebab-case')
-  .requiredOption('--package <package>', 'npm or PyPI package of the server')
-  .requiredOption('--version <version>', 'exact version of the package')
-  .addOption(new Option('--runtime <runtime>', 'how the server runs').choices(['node', 'python']).default('node'))
+  .option('--package <package>', 'npm or PyPI package of a server the agent starts')
+  .option('--version <version>', 'exact version of the package')
+  .addOption(new Option('--runtime <runtime>', 'how the server runs (default: node)').choices(['node', 'python']))
   .addOption(
-    new Option('--sandbox <sandbox>', 'in a throwaway Docker container, or on the machine')
-      .choices(['docker', 'none'])
-      .default('docker'),
+    new Option('--sandbox <sandbox>', 'in a throwaway Docker container (default), or on the machine').choices([
+      'docker',
+      'none',
+    ]),
   )
   .option('--arg <arg...>', 'argument of the server')
   .option('--env <name...>', 'name of an environment variable the server gets')
+  .option('--url <url>', 'URL of a remote server, over Streamable HTTP')
+  .option('--token-env <name>', 'environment variable holding the bearer token of the remote server')
   .option('--dir <dir>', 'project directory', '.')
   .action(
     async (
       name: string,
       options: {
-        package: string;
-        version: string;
-        runtime: 'node' | 'python';
-        sandbox: 'docker' | 'none';
+        package?: string;
+        version?: string;
+        runtime?: 'node' | 'python';
+        sandbox?: 'docker' | 'none';
         arg?: string[];
         env?: string[];
+        url?: string;
+        tokenEnv?: string;
         dir: string;
       },
     ) => {
-      const command: AddMcpOptions = {
-        name,
-        package: options.package,
-        version: options.version,
-        runtime: options.runtime,
-        sandbox: options.sandbox,
-        dir: options.dir,
-        cwd: process.cwd(),
-      };
+      const command: AddMcpOptions = { name, dir: options.dir, cwd: process.cwd() };
+      if (options.package !== undefined) {
+        Object.assign(command, { package: options.package, runtime: options.runtime ?? 'node' });
+      }
+      if (options.version !== undefined) command.version = options.version;
+      if (options.sandbox !== undefined) command.sandbox = options.sandbox;
+      if (options.url !== undefined) command.url = options.url;
+      if (options.tokenEnv !== undefined) command.tokenEnv = options.tokenEnv;
       if (options.arg !== undefined) command.args = options.arg;
       if (options.env !== undefined) command.env = options.env;
       process.exitCode = await addMcpCommand(command, terminal);

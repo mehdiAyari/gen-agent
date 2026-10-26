@@ -289,7 +289,18 @@
       "args": "Arguments",
       "argsHint": "Separated by spaces",
       "env": "Environment variables",
-      "envHint": "Names only: the values stay in the environment"
+      "envHint": "Names only: the values stay in the environment",
+      "kind": "Server",
+      "kindLocal": "Started by the agent",
+      "kindRemote": "Remote",
+      "url": "URL",
+      "urlHint": "Streamable HTTP; https (http only for localhost).",
+      "tokenEnv": "Token variable",
+      "tokenEnvHint": "Environment variable holding the token; empty for none.",
+      "tokenHeader": "Token header",
+      "tokenHeaderHint": "Empty: Authorization: Bearer.",
+      "network": "Network access",
+      "networkHint": "Off: the container cannot reach anything. On for servers that call an API (GitHub, Slack…)."
     }
   },
   "gallery": {

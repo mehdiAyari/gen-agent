@@ -6,9 +6,9 @@ import { toast } from 'sonner';
 
 import { emptyMcpServer, type AgentForm } from '@/lib/agent-form';
 import { Button } from '@/components/ui/button';
-import { FieldDescription, FieldGroup, FieldLegend, FieldSet } from '@/components/ui/field';
+import { FieldDescription, FieldError, FieldGroup, FieldLegend, FieldSet } from '@/components/ui/field';
 
-import { ChoiceField, controlId, TextField } from './form-controls';
+import { ChoiceField, controlId, SwitchField, TextField } from './form-controls';
 
 type McpForm = AgentForm['mcp'][number];
 
@@ -66,6 +66,7 @@ export function McpFields({ form, errorOf, onChange }: McpFieldsProps) {
                 <Trash2Icon aria-hidden="true" />
               </Button>
               <FieldGroup>
+                <FieldError>{errorOf(path)}</FieldError>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <TextField
                     path={`${path}.name`}
@@ -80,86 +81,159 @@ export function McpFields({ form, errorOf, onChange }: McpFieldsProps) {
                     placeholder="files…"
                   />
                   <ChoiceField
-                    path={`${path}.runtime`}
-                    label={t('runtime')}
-                    value={server.runtime}
-                    options={['node', 'python'] as const}
-                    labels={{ node: 'Node (npx)', python: 'Python (uvx)' }}
-                    onValueChange={(runtime) => {
-                      updateServer(index, { runtime });
+                    path={`${path}.kind`}
+                    label={t('kind')}
+                    value={server.kind}
+                    options={['local', 'remote'] as const}
+                    labels={{ local: t('kindLocal'), remote: t('kindRemote') }}
+                    onValueChange={(kind) => {
+                      updateServer(index, { kind });
                     }}
                   />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem]">
-                  <TextField
-                    path={`${path}.package`}
-                    label={t('package')}
-                    value={server.package}
-                    error={errorOf(`${path}.package`)}
-                    onValueChange={(name) => {
-                      updateServer(index, { package: name });
-                    }}
-                    autoComplete="off"
-                    spellCheck={false}
-                    className="font-mono"
-                    placeholder="@modelcontextprotocol/server-filesystem…"
-                  />
-                  <TextField
-                    path={`${path}.version`}
-                    label={t('version')}
-                    hint={t('versionHint')}
-                    value={server.version}
-                    error={errorOf(`${path}.version`)}
-                    onValueChange={(version) => {
-                      updateServer(index, { version });
-                    }}
-                    autoComplete="off"
-                    spellCheck={false}
-                    className="font-mono"
-                    placeholder="2.0.0…"
-                  />
-                </div>
-                <ChoiceField
-                  path={`${path}.sandbox`}
-                  label={t('sandbox')}
-                  hint={server.sandbox === 'docker' ? t('sandboxDockerHint') : t('sandboxNoneHint')}
-                  value={server.sandbox}
-                  options={['docker', 'none'] as const}
-                  labels={{ docker: t('sandboxDocker'), none: t('sandboxNone') }}
-                  onValueChange={(sandbox) => {
-                    updateServer(index, { sandbox });
-                  }}
-                />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <TextField
-                    path={`${path}.args`}
-                    label={t('args')}
-                    hint={t('argsHint')}
-                    value={server.args}
-                    error={errorOf(`${path}.args`)}
-                    onValueChange={(args) => {
-                      updateServer(index, { args });
-                    }}
-                    autoComplete="off"
-                    spellCheck={false}
-                    className="font-mono"
-                    placeholder="/srv/documents…"
-                  />
-                  <TextField
-                    path={`${path}.env`}
-                    label={t('env')}
-                    hint={t('envHint')}
-                    value={server.env}
-                    error={errorOf(`${path}.env`)}
-                    onValueChange={(env) => {
-                      updateServer(index, { env });
-                    }}
-                    autoComplete="off"
-                    spellCheck={false}
-                    className="font-mono"
-                    placeholder="GITHUB_TOKEN…"
-                  />
-                </div>
+                {server.kind === 'remote' ? (
+                  <>
+                    <TextField
+                      path={`${path}.url`}
+                      label={t('url')}
+                      hint={t('urlHint')}
+                      value={server.url}
+                      error={errorOf(`${path}.url`)}
+                      onValueChange={(url) => {
+                        updateServer(index, { url });
+                      }}
+                      type="url"
+                      autoComplete="off"
+                      spellCheck={false}
+                      className="font-mono"
+                      placeholder="https://mcp.example.org/mcp…"
+                    />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <TextField
+                        path={`${path}.auth.env`}
+                        label={t('tokenEnv')}
+                        hint={t('tokenEnvHint')}
+                        value={server.tokenEnv}
+                        error={errorOf(`${path}.auth.env`)}
+                        onValueChange={(tokenEnv) => {
+                          updateServer(index, { tokenEnv });
+                        }}
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="font-mono"
+                        placeholder="DOCS_TOKEN…"
+                      />
+                      <TextField
+                        path={`${path}.auth.name`}
+                        label={t('tokenHeader')}
+                        hint={t('tokenHeaderHint')}
+                        value={server.tokenHeader}
+                        error={errorOf(`${path}.auth.name`)}
+                        onValueChange={(tokenHeader) => {
+                          updateServer(index, { tokenHeader });
+                        }}
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="font-mono"
+                        placeholder="Authorization…"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <ChoiceField
+                      path={`${path}.runtime`}
+                      label={t('runtime')}
+                      value={server.runtime}
+                      options={['node', 'python'] as const}
+                      labels={{ node: 'Node (npx)', python: 'Python (uvx)' }}
+                      onValueChange={(runtime) => {
+                        updateServer(index, { runtime });
+                      }}
+                    />
+                    <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem]">
+                      <TextField
+                        path={`${path}.package`}
+                        label={t('package')}
+                        value={server.package}
+                        error={errorOf(`${path}.package`)}
+                        onValueChange={(name) => {
+                          updateServer(index, { package: name });
+                        }}
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="font-mono"
+                        placeholder="@modelcontextprotocol/server-filesystem…"
+                      />
+                      <TextField
+                        path={`${path}.version`}
+                        label={t('version')}
+                        hint={t('versionHint')}
+                        value={server.version}
+                        error={errorOf(`${path}.version`)}
+                        onValueChange={(version) => {
+                          updateServer(index, { version });
+                        }}
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="font-mono"
+                        placeholder="2.0.0…"
+                      />
+                    </div>
+                    <ChoiceField
+                      path={`${path}.sandbox`}
+                      label={t('sandbox')}
+                      hint={server.sandbox === 'docker' ? t('sandboxDockerHint') : t('sandboxNoneHint')}
+                      value={server.sandbox}
+                      options={['docker', 'none'] as const}
+                      labels={{ docker: t('sandboxDocker'), none: t('sandboxNone') }}
+                      onValueChange={(sandbox) => {
+                        updateServer(index, { sandbox });
+                      }}
+                    />
+                    {server.sandbox === 'docker' ? (
+                      <SwitchField
+                        path={`${path}.network`}
+                        label={t('network')}
+                        hint={t('networkHint')}
+                        checked={server.network}
+                        onCheckedChange={(network) => {
+                          updateServer(index, { network });
+                        }}
+                      />
+                    ) : null}
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <TextField
+                        path={`${path}.args`}
+                        label={t('args')}
+                        hint={t('argsHint')}
+                        value={server.args}
+                        error={errorOf(`${path}.args`)}
+                        onValueChange={(args) => {
+                          updateServer(index, { args });
+                        }}
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="font-mono"
+                        placeholder="/srv/documents…"
+                      />
+                      <TextField
+                        path={`${path}.env`}
+                        label={t('env')}
+                        hint={t('envHint')}
+                        value={server.env}
+                        error={errorOf(`${path}.env`)}
+                        onValueChange={(env) => {
+                          updateServer(index, { env });
+                        }}
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="font-mono"
+                        placeholder="GITHUB_TOKEN…"
+                      />
+                    </div>
+                  </>
+                )}
               </FieldGroup>
             </FieldSet>
           );

@@ -120,6 +120,9 @@ describe('the standard profile', () => {
       version: 2025.4.8
       runtime: node
       env: [ GITHUB_TOKEN ]
+    - name: docs
+      url: https://mcp.example.org/mcp
+      auth: { type: bearer, env: DOCS_TOKEN }
 `;
     const result = formFromYaml(yaml);
     if (!result.ok) throw new Error(result.errors.join('\n'));
@@ -133,6 +136,11 @@ describe('the standard profile', () => {
         sandbox: 'none',
         args: '/srv/docs',
         env: '',
+        kind: 'local',
+        url: '',
+        tokenEnv: '',
+        tokenHeader: '',
+        network: false,
       },
       {
         name: 'github',
@@ -142,6 +150,25 @@ describe('the standard profile', () => {
         sandbox: 'docker',
         args: '',
         env: 'GITHUB_TOKEN',
+        kind: 'local',
+        url: '',
+        tokenEnv: '',
+        tokenHeader: '',
+        network: false,
+      },
+      {
+        name: 'docs',
+        package: '',
+        version: '',
+        runtime: 'node',
+        sandbox: 'docker',
+        args: '',
+        env: '',
+        kind: 'remote',
+        url: 'https://mcp.example.org/mcp',
+        tokenEnv: 'DOCS_TOKEN',
+        tokenHeader: '',
+        network: false,
       },
     ]);
     expect(formToYaml(result.form)).toBe(yaml);

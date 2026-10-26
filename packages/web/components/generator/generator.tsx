@@ -36,7 +36,7 @@ const YamlEditor = dynamic(() => import('./yaml-editor'), {
 
 /** Form fields that show their own error; any other error is listed under the form. */
 const SHOWN_ON_FIELD =
-  /^(name|description|package|provider|model|temperature|maxTokens|systemPromptPath|memoryWindow|rateLimit|tokenBudget|retention|semanticThreshold|maxIterations|timeout|fallbackModel|routingSimple|routingComplex|ragTopK|ragChunkSize|tools\.\d+\.(name|description|url|params|auth\.env|auth\.name|maxResponseChars|approval\.expiresAfter)|tools\.\d+\.params\.\d+\.(name|description|in|apiName)|mcp\.\d+\.(name|package|version|args|env))$/;
+  /^(name|description|package|provider|model|temperature|maxTokens|systemPromptPath|memoryWindow|rateLimit|tokenBudget|retention|semanticThreshold|maxIterations|timeout|fallbackModel|routingSimple|routingComplex|ragTopK|ragChunkSize|tools\.\d+\.(name|description|url|params|auth\.env|auth\.name|maxResponseChars|approval\.expiresAfter)|tools\.\d+\.params\.\d+\.(name|description|in|apiName)|mcp\.\d+\.(name|package|version|args|env|url|auth\.env|auth\.name))$/;
 
 type Tab = 'yaml' | 'files';
 
