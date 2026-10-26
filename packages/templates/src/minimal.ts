@@ -272,6 +272,25 @@ export const minimalEntries: TemplateEntry[] = [
     output: () => 'src/test/resources/documents/leaflet.md',
   },
   {
+    template: 'docker/mcp/Dockerfile.ejs',
+    owner: 'generated',
+    each: 'mcpImage',
+    output: (_, server) => `docker/mcp/${server.name}/Dockerfile`,
+  },
+  {
+    template: 'docker/mcp/build-images.sh.ejs',
+    owner: 'generated',
+    executable: true,
+    when: (m) => m.mcpServers.some((server) => server.kind === 'local' && server.image !== undefined),
+    output: () => 'docker/mcp/build-images.sh',
+  },
+  {
+    template: 'java/generated/mcp/McpConfiguration.java.ejs',
+    owner: 'generated',
+    when: (m) => m.mcpServers.some((server) => server.kind === 'remote' && server.auth !== undefined),
+    output: (m) => main(m, 'generated/mcp/McpConfiguration.java'),
+  },
+  {
     template: 'java/generated/chat/ModelRouter.java.ejs',
     owner: 'generated',
     when: (m) => m.features.routing,

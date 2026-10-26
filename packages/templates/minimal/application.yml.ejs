@@ -60,9 +60,11 @@ spring:
 <%_ if (features.mcp) { _%>
     mcp:
       client:
+<%_   if (mcpServers.some((server) => server.kind === 'local')) { _%>
         stdio:
           connections:
-<%_   for (const server of mcpServers) { _%>
+<%_   } _%>
+<%_   for (const server of mcpServers.filter((server) => server.kind === 'local')) { _%>
             <%= server.name %>:
               command: <%= server.command %>
               args:
@@ -74,6 +76,15 @@ spring:
 <%_       for (const name of server.env) { _%>
                 <%= name %>: ${<%= name %>}
 <%_       } _%>
+<%_     } _%>
+<%_   } _%>
+<%_   if (features.remoteMcp) { _%>
+        streamable-http:
+          connections:
+<%_     for (const server of mcpServers.filter((server) => server.kind === 'remote')) { _%>
+            <%= server.name %>:
+              url: <%= server.url %>
+              endpoint: <%= yamlString(server.endpoint) %>
 <%_     } _%>
 <%_   } _%>
 <%_ } _%>
@@ -119,6 +130,13 @@ agent:
 <%_   } _%>
 <%_   if (fallback.provider === 'ollama' && !fallback.sameProvider) { _%>
     base-url: ${AGENT_FALLBACK_BASE_URL:http://localhost:11434}
+<%_   } _%>
+<%_ } _%>
+<%_ if (mcpServers.some((server) => server.kind === 'remote' && server.auth)) { _%>
+  mcp:
+<%_   for (const server of mcpServers.filter((server) => server.kind === 'remote' && server.auth)) { _%>
+    <%= server.name %>:
+      token: ${<%= server.auth.env %>}
 <%_   } _%>
 <%_ } _%>
 <%_ if (features.rag) { _%>

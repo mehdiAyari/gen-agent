@@ -257,10 +257,24 @@ is in `docker/grafana/agent-dashboard.json`<%= features.dockerCompose ? ': Compo
 | Server | Runs with | Variables it gets |
 | --- | --- | --- |
 <%_   for (const server of mcpServers) { _%>
+<%_     if (server.kind === 'remote') { _%>
+| `<%= server.name %>` | remote, at <%= server.url %><%= server.endpoint %> | <%= server.auth ? `\`${server.auth.env}\` (${server.auth.header} header)` : 'none' %> |
+<%_     } else { _%>
 | `<%= server.name %>` | <%= server.sandboxed ? 'a throwaway Docker container' : `\`${server.command}\` on this machine` %> | <%= server.env.length === 0 ? 'none' : server.env.map((name) => `\`${name}\``).join(', ') %> |
+<%_     } _%>
 <%_   } _%>
 
-Their tools are given to the model with the ones of agent.yaml. The tests do not start them.
+Their tools are given to the model with the ones of agent.yaml, through the same guards. The tests do not start them.
+<%_   if (mcpServers.some((server) => server.kind === 'local' && server.sandboxed)) { _%>
+
+Servers in a container run from an image of their own, their package installed at build time: build them once with
+`./docker/mcp/build-images.sh`. They run as a user without privileges, on a read-only file system, with no Linux
+capability and bounded memory, CPU and processes, and without the network<%= mcpServers.some((server) => server.image?.network) ? ` unless agent.yaml sets \`network: true\` (${mcpServers.filter((server) => server.image?.network).map((server) => `\`${server.name}\``).join(', ')})` : '' %>. They see none of the
+files of the agent.
+<%_   } _%>
+<%_   if (features.remoteMcp) { _%>
+What the model sends to a remote server leaves the agent<%= features.pii ? ', personal data masked' : '' %>: only connect to servers you trust.
+<%_   } _%>
 
 <%_ } _%>
 ## Test

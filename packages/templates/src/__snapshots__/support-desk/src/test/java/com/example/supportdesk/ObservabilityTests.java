@@ -20,6 +20,7 @@ import org.springframework.web.client.RestClient;
         "spring.ai.mistralai.api-key=test-key",
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org",
         "spring.ai.mcp.client.enabled=false",
+        "agent.mcp.knowledge.token=test-token",
         "agent.tools.order-status.token=test-token",
         "management.server.port=0",
     }

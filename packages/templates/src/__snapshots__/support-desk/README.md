@@ -12,6 +12,7 @@ Docker Compose starts the agent with Postgres, Redis and Keycloak:
 ```bash
 export MISTRAL_API_KEY=...   # never commit it
 export SHOP_API_TOKEN=...   # never commit it
+export KNOWLEDGE_MCP_TOKEN=...   # never commit it
 docker compose up --build
 ```
 
@@ -66,8 +67,15 @@ true: Docker Compose sends them to Grafana, at http://localhost:3000.
 | Server | Runs with | Variables it gets |
 | --- | --- | --- |
 | `time` | a throwaway Docker container | none |
+| `knowledge` | remote, at https://mcp.example.org/mcp | `KNOWLEDGE_MCP_TOKEN` (Authorization header) |
 
-Their tools are given to the model with the ones of agent.yaml. The tests do not start them.
+Their tools are given to the model with the ones of agent.yaml, through the same guards. The tests do not start them.
+
+Servers in a container run from an image of their own, their package installed at build time: build them once with
+`./docker/mcp/build-images.sh`. They run as a user without privileges, on a read-only file system, with no Linux
+capability and bounded memory, CPU and processes, and without the network. They see none of the
+files of the agent.
+What the model sends to a remote server leaves the agent: only connect to servers you trust.
 
 ## Test
 

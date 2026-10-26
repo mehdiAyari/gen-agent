@@ -1,0 +1,7 @@
+#!/bin/sh
+# Builds the images of the MCP servers the agent starts in containers: run it once, and after each new version.
+set -e
+cd "$(dirname "$0")"
+<%_ for (const server of mcpServers.filter((server) => server.kind === 'local' && server.image)) { _%>
+docker build --tag <%= server.image.tag %> <%= server.name %>
+<%_ } _%>

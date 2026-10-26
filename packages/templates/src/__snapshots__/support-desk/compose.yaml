@@ -20,6 +20,7 @@ services:
       SPRING_AI_MCP_CLIENT_ENABLED: "false"
       MISTRAL_API_KEY: ${MISTRAL_API_KEY:?export MISTRAL_API_KEY before docker compose up}
       SHOP_API_TOKEN: ${SHOP_API_TOKEN:?export SHOP_API_TOKEN before docker compose up}
+      KNOWLEDGE_MCP_TOKEN: ${KNOWLEDGE_MCP_TOKEN:?export KNOWLEDGE_MCP_TOKEN before docker compose up}
     depends_on:
       postgres:
         condition: service_healthy

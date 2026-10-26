@@ -1,0 +1,22 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.mcp;
+
+<%- imports %>
+
+<%_ const signed = mcpServers.filter((server) => server.kind === 'remote' && server.auth); _%>
+/** Signs the requests to the remote MCP servers with their token, read from the environment. */
+@<%= type('org.springframework.context.annotation.Configuration') %>(proxyBeanMethods = false)
+class McpConfiguration {
+
+    @<%= type('org.springframework.context.annotation.Bean') %>
+    <%= type('org.springframework.ai.mcp.customizer.McpClientCustomizer') %><<%= type('io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport') %>.Builder> mcpTokens(<%- signed.map((server) => `@${type('org.springframework.beans.factory.annotation.Value')}("\${agent.mcp.${server.name}.token}") String ${server.tokenField}`).join(', ') %>) {
+        // Each request is a copy of this one, with the header of its server.
+        <%= type('java.util.Map') %><String, <%= type('java.net.http.HttpRequest') %>.Builder> requests = Map.of(<%- signed.map((server) => `\n                "${server.name}", HttpRequest.newBuilder().header("${server.auth.header}", ${server.auth.kind === 'bearer' ? `"Bearer " + ${server.tokenField}` : server.tokenField})`).join(',') %>);
+        return (name, transport) -> {
+            HttpRequest.Builder request = requests.get(name);
+            if (request != null) {
+                transport.requestBuilder(request);
+            }
+        };
+    }
+}

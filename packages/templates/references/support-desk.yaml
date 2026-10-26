@@ -1,5 +1,6 @@
 # Standard profile: JDBC memory, OIDC, request and token limits, exact cache, OpenTelemetry and Prometheus, Docker
-# Compose, chat page; an authenticated HTTP tool, a Java tool and a sandboxed MCP server.
+# Compose, chat page; an authenticated HTTP tool, a Java tool and a sandboxed MCP server and a remote
+# one signed with a token.
 agent:
   name: support-desk
   description: Answers the customers of the shop, signed in through the shop's identity provider
@@ -26,3 +27,6 @@ agent:
       package: mcp-server-time
       version: 2026.10.19
       runtime: python
+    - name: knowledge
+      url: https://mcp.example.org/mcp
+      auth: { type: bearer, env: KNOWLEDGE_MCP_TOKEN }

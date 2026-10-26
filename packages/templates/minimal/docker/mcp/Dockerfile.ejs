@@ -1,0 +1,15 @@
+# The MCP server <%= item.name %>, installed at build time: it runs without the network<%= item.image.network ? ' (this one keeps it: network: true)' : '' %>,
+# as a user without privileges, on a read-only file system.
+FROM <%= item.image.base %>
+<%_ if (item.image.runtime === 'node') { _%>
+RUN mkdir /server && chown node:node /server
+USER node
+WORKDIR /server
+RUN npm install --omit=dev --no-fund --no-audit <%= item.image.package %>@<%= item.image.version %>
+<%_ } else { _%>
+RUN adduser -D -u 10001 mcp
+USER mcp
+ENV UV_TOOL_DIR=/home/mcp/tools UV_TOOL_BIN_DIR=/home/mcp/bin
+# The command of the package, at a known path.
+RUN uv tool install <%= item.image.package %>==<%= item.image.version %> && ln -s "$(ls /home/mcp/bin/* | head -n 1)" /home/mcp/start
+<%_ } _%>
