@@ -153,16 +153,18 @@ rag:
   rerank: true
 ```
 
-Any agent can also use existing MCP servers, started with `npx` or `uvx` or inside a throwaway Docker container:
+Any agent can also use existing MCP servers: remote ones over Streamable HTTP, or packages it starts, in a hardened
+container of their own by default (offline, read-only, no Linux capability, bounded memory, CPU and processes):
 
 ```yaml
 mcp:
-  - name: files
-    package: '@modelcontextprotocol/server-filesystem'
-    version: 2.0.0 # exact: latest is refused
-    runtime: node
-    args: [/srv/documents]
-    env: [] # names of the environment variables it gets, never their values
+  - name: github
+    url: https://api.githubcopilot.com/mcp/
+    auth: { type: bearer, env: GITHUB_TOKEN } # the name of the variable, never its value
+  - name: time
+    package: mcp-server-time
+    version: 2026.10.19 # exact: latest is refused
+    runtime: python # network: true for a server that calls an API
 ```
 
 ## Describe your agent

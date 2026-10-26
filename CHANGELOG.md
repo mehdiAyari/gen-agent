@@ -73,6 +73,11 @@ All notable changes to this project are documented here. The format follows
   and a Helm chart (secrets by reference, probes on the management port, non-root, read-only file system). All on by
   default in `production`.
 
+- Remote MCP servers (`mcp[].url`, Streamable HTTP), their token from an environment variable sent with every request;
+  `gen-agent add mcp --url --token-env` and the web generator too. MCP servers in containers now run from an image of
+  their own built by `docker/mcp/build-images.sh`, offline unless `network: true`, as a user without privileges, on a
+  read-only file system, with no Linux capability and bounded memory, CPU and processes.
+
 ### Fixed
 
 - A semantic cache with conversations kept in memory had no database to run on.
