@@ -8,6 +8,9 @@
     "typecheck": {
       "dependsOn": ["^build"]
     },
+    "@gen-agent/web#typecheck": {
+      "dependsOn": ["^build", "build"]
+    },
     "test": {
       "dependsOn": ["^build"]
     },

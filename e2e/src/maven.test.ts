@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -29,5 +29,14 @@ describe.each(readdirSync(references).filter((name) => name.endsWith('.yaml')))(
       stdio: 'pipe',
       encoding: 'utf8',
     });
+
+    // The Helm chart, when there is one: helm lint must pass, ingress and documents included.
+    const chart = join(project, 'helm', reference.replace('.yaml', ''));
+    if (existsSync(chart)) {
+      execFileSync('helm', ['lint', '--strict', chart, '--set', 'ingress.enabled=true'], {
+        stdio: 'pipe',
+        encoding: 'utf8',
+      });
+    }
   });
 });

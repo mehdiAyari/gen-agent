@@ -5,7 +5,8 @@
       "ignoreDependencies": ["ejs", "prettier", "prettier-plugin-java"]
     },
     "e2e": {
-      "ignoreDependencies": ["gen-agent", "@gen-agent/web"]
+      "ignoreDependencies": ["gen-agent", "@gen-agent/web"],
+      "ignoreBinaries": ["helm"]
     },
     "packages/templates": {
       "entry": ["scripts/*.js"]
