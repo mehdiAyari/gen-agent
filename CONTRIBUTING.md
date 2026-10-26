@@ -5,7 +5,8 @@ by hand: that bar applies to every change.
 
 ## Set up
 
-Node 22+, pnpm, JDK 21 (Maven is downloaded by the generated projects' wrapper).
+Node 22+, pnpm, JDK 21 (Maven is downloaded by the generated projects' wrapper), Docker, and Helm for the end-to-end
+tests, which lint the generated charts.
 
 ```bash
 pnpm install

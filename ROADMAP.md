@@ -37,7 +37,7 @@ A version is released only when all its end-to-end tests pass. Each version adds
 - [x] V4c: chat page (sign-in with the authorization code and PKCE, strict content security policy),
       `gen-agent add tool`, `gen-agent add mcp` and `gen-agent update`, which keep the user's changes
 
-## V5 — `production` profile
+## V5 — `production` profile ✅
 
 - [x] V5a: PII masking before the model and in the logs (with a correlation id), erasure endpoints (`DELETE /api/me`,
       admin `DELETE /api/users/{id}`), retention with an hourly purge, semantic cache per user (pgvector)
@@ -47,7 +47,7 @@ A version is released only when all its end-to-end tests pass. Each version adds
 - [x] V5b3: human approval of tool calls (Postgres, chat page buttons), kill switches (Redis, admin endpoints)
 - [x] V5c: RAG in pgvector (documents folder and admin uploads, Apache Tika, reranking by the model), documents treated
       as untrusted data
-- [ ] V5d: evaluations and red teaming, generated CI workflow, Grafana dashboard, Helm chart
+- [x] V5d: evaluations and red teaming on Ollama, generated CI workflow, Grafana dashboard, Helm chart
 
 ## Later
 

@@ -66,6 +66,13 @@ All notable changes to this project are documented here. The format follows
   conversation, optional reranking by the model, passages that hold prompt injection dropped. Postgres now runs
   whenever a feature needs it, even with conversations in memory.
 
+- Quality and operations: `./mvnw verify -Pevals` scores the whole agent on Ollama, against `evals/golden.yaml` (words
+  that must or must not appear, and a criterion judged by the model) and a red team of attacks in English and French;
+  a generated GitHub Actions workflow runs the tests, then the evaluations with cached Ollama models. A Grafana
+  dashboard provisioned into `otel-lgtm` (requests, model calls and tokens, tools, guard refusals, circuit breakers),
+  and a Helm chart (secrets by reference, probes on the management port, non-root, read-only file system). All on by
+  default in `production`.
+
 ### Fixed
 
 - A semantic cache with conversations kept in memory had no database to run on.
