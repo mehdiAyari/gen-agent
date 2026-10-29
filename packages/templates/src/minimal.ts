@@ -2,19 +2,57 @@ import type { GenerationModel, TemplateEntry } from '@gen-agent/core';
 
 const main = (m: GenerationModel, path: string): string => `src/main/java/${m.project.basePackagePath}/${path}`;
 const test = (m: GenerationModel, path: string): string => `src/test/java/${m.project.basePackagePath}/${path}`;
+const maven = (m: GenerationModel): boolean => m.build.tool === 'maven';
+const gradle = (m: GenerationModel): boolean => m.build.tool === 'gradle';
 
 /** Files of the `minimal` profile and their owners (docs/adr/0001-separate-generated-and-user-code.md). */
 export const minimalEntries: TemplateEntry[] = [
-  { template: 'pom.xml.ejs', owner: 'merged', output: () => 'pom.xml' },
   { template: 'gitignore.ejs', owner: 'merged', output: () => '.gitignore' },
+  { template: 'pom.xml.ejs', owner: 'merged', when: maven, output: () => 'pom.xml' },
   // Maven Wrapper 3.3.4 (Apache 2.0), copied as distributed; pins Maven 3.9.16 and checks its SHA-256.
-  { template: 'maven-wrapper/mvnw', owner: 'generated', raw: true, executable: true, output: () => 'mvnw' },
-  { template: 'maven-wrapper/mvnw.cmd', owner: 'generated', raw: true, output: () => 'mvnw.cmd' },
+  {
+    template: 'maven-wrapper/mvnw',
+    owner: 'generated',
+    raw: true,
+    executable: true,
+    when: maven,
+    output: () => 'mvnw',
+  },
+  { template: 'maven-wrapper/mvnw.cmd', owner: 'generated', raw: true, when: maven, output: () => 'mvnw.cmd' },
   {
     template: 'maven-wrapper/maven-wrapper.properties',
     owner: 'generated',
     raw: true,
+    when: maven,
     output: () => '.mvn/wrapper/maven-wrapper.properties',
+  },
+  { template: 'build.gradle.kts.ejs', owner: 'merged', when: gradle, output: () => 'build.gradle.kts' },
+  { template: 'settings.gradle.kts.ejs', owner: 'merged', when: gradle, output: () => 'settings.gradle.kts' },
+  // Gradle Wrapper 9.8.2 (Apache 2.0), as `gradle wrapper` writes it, its jar checked against the published checksum;
+  // the properties pin the SHA-256 of the distribution.
+  {
+    template: 'gradle-wrapper/gradlew',
+    owner: 'generated',
+    raw: true,
+    executable: true,
+    when: gradle,
+    output: () => 'gradlew',
+  },
+  { template: 'gradle-wrapper/gradlew.bat', owner: 'generated', raw: true, when: gradle, output: () => 'gradlew.bat' },
+  {
+    template: 'gradle-wrapper/gradle-wrapper.jar',
+    owner: 'generated',
+    raw: true,
+    binary: true,
+    when: gradle,
+    output: () => 'gradle/wrapper/gradle-wrapper.jar',
+  },
+  {
+    template: 'gradle-wrapper/gradle-wrapper.properties',
+    owner: 'generated',
+    raw: true,
+    when: gradle,
+    output: () => 'gradle/wrapper/gradle-wrapper.properties',
   },
   { template: 'README.md.ejs', owner: 'merged', output: () => 'README.md' },
   { template: 'Dockerfile.ejs', owner: 'merged', when: (m) => m.features.dockerCompose, output: () => 'Dockerfile' },

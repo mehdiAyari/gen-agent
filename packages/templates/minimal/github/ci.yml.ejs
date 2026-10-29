@@ -14,9 +14,9 @@ jobs:
         with:
           distribution: temurin
           java-version: "<%= agent.java %>"
-          cache: maven
+          cache: <%= build.tool %>
       # The fake model answers: no provider is called<%= features.postgres || features.redis ? '; Testcontainers starts the services in Docker' : '' %>.
-      - run: ./mvnw -B verify
+      - run: <%= build.tool === 'gradle' ? './gradlew --no-daemon build' : './mvnw -B verify' %>
 
   evals:
     needs: test
@@ -29,7 +29,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "<%= agent.java %>"
-          cache: maven
+          cache: <%= build.tool %>
       - name: Cache the Ollama models
         uses: actions/cache@v6
         with:
@@ -44,10 +44,10 @@ jobs:
 <%_ if (features.vectorStore) { _%>
           ollama pull nomic-embed-text
 <%_ } _%>
-      - run: ./mvnw -B verify -Pevals
+      - run: <%= build.tool === 'gradle' ? './gradlew --no-daemon test -Pevals' : './mvnw -B verify -Pevals' %>
       - name: Keep the report
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: evals-report
-          path: target/evals-report.md
+          path: <%= build.output %>/evals-report.md

@@ -7,12 +7,12 @@ Spring Boot 4.1.1, Spring AI 2.0.1, Java 21.
 
 ## Run
 
-Java 21 is the only requirement: `./mvnw` downloads Maven (checked against its SHA-256) on first use.
+Java 21 is the only requirement: `./gradlew` downloads Gradle (checked against its SHA-256) on first use.
 
 Start [Ollama](https://ollama.com) and pull the models (`ollama pull qwen2.5:3b`, `ollama pull nomic-embed-text`), then:
 
 ```bash
-./mvnw spring-boot:run
+./gradlew bootRun
 ```
 
 Talk to the agent:
@@ -37,7 +37,7 @@ between `<document>` tags, never as instructions, and are not kept in the conver
 ## Test
 
 ```bash
-./mvnw verify
+./gradlew build
 ```
 
 The tests use a fake model: they never call ollama and cost nothing.

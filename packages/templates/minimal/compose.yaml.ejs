@@ -38,7 +38,7 @@ services:
 <%_ } _%>
 <%_ if (mcpServers.some((server) => server.sandboxed)) { _%>
       # Sandboxed MCP servers run with docker, which the container of the agent does not have:
-      # run the agent with ./mvnw spring-boot:run to use their tools, or set sandbox: none in agent.yaml.
+      # run the agent with <%= build.run %> to use their tools, or set sandbox: none in agent.yaml.
       SPRING_AI_MCP_CLIENT_ENABLED: "false"
 <%_ } _%>
 <%_ for (const secret of secrets) { _%>

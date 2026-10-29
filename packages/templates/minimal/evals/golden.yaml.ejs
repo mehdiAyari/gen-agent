@@ -1,4 +1,4 @@
-# The reference set of <%= project.artifactId %>: ./mvnw verify -Pevals asks each question to the agent, on Ollama, and
+# The reference set of <%= project.artifactId %>: <%= build.evals %> asks each question to the agent, on Ollama, and
 # scores its answer. A case passes when the answer holds every word of mustContain, none of mustNotContain (case is
 # ignored) and, judged yes or no by the model, meets its criterion. The run fails below the threshold.
 # Write the questions your users ask, with what a good answer must do.

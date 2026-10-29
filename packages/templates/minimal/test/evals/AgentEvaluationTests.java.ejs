@@ -4,9 +4,9 @@ package <%= project.basePackage %>.evals;
 <%- imports %>
 
 /**
- * Scores the agent on a real model, Ollama, never in a plain ./mvnw verify: run ./mvnw verify -Pevals. Each case of
+ * Scores the agent on a real model, Ollama, never in a plain <%= build.verify %>: run <%= build.evals %>. Each case of
  * <%= evals.dataset ?? 'the reference set' %> is asked to the whole agent, guards included<%= features.redTeam ? ', then the red team attacks it' : '' %>; the report
- * goes to target/evals-report.md.
+ * goes to <%= build.output %>/evals-report.md.
  */
 @<%= type('org.junit.jupiter.api.Tag') %>("evals")
 <%_ const properties = [
@@ -159,7 +159,7 @@ class AgentEvaluationTests {
                 + results.stream()
                         .map(result -> "| %s | %s | %s |".formatted(result.passed() ? "pass" : "FAIL", result.name().replace("|", "\\|"), result.detail().replace("|", "\\|")))
                         .collect(<%= type('java.util.stream.Collectors') %>.joining("\n")));
-        Files.writeString(Path.of("target", "evals-report.md"), "# Evaluations of <%= project.artifactId %>\n\n" + String.join("\n\n", report) + "\n");
+        Files.writeString(Path.of("<%= build.output %>", "evals-report.md"), "# Evaluations of <%= project.artifactId %>\n\n" + String.join("\n\n", report) + "\n");
         System.out.println(report.getLast());
         return score;
     }

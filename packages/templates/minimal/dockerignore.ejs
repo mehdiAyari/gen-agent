@@ -1,4 +1,7 @@
-target/
+<%= build.output %>/
+<%_ if (build.tool === 'gradle') { _%>
+.gradle/
+<%_ } _%>
 .git/
 .idea/
 .vscode/

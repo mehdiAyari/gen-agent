@@ -21,9 +21,6 @@
     <properties>
         <java.version><%= agent.java %></java.version>
         <spring-ai.version><%= versions.springAi %></spring-ai.version>
-<%_ if (features.limits) { _%>
-        <bucket4j.version><%= versions.bucket4j %></bucket4j.version>
-<%_ } _%>
 <%_ if (features.evals) { _%>
         <!-- The evaluations call a real model: only ./mvnw verify -Pevals runs them. -->
         <excludedGroups>evals</excludedGroups>
@@ -31,172 +28,24 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webmvc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-<%_ if (features.httpTools) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-restclient</artifactId>
-        </dependency>
-<%_ } _%>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId><%= provider.starter %></artifactId>
-        </dependency>
-<%_ if (fallback && !fallback.sameProvider) { _%>
-        <dependency>
-            <!-- The model of the fallback provider, without its auto-configuration: one ChatModel bean only. -->
-            <groupId>org.springframework.ai</groupId>
-            <artifactId><%= fallback.module %></artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (features.resilience) { _%>
-        <dependency>
-            <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-spring-boot4</artifactId>
-            <version><%= versions.resilience4j %></version>
-        </dependency>
-<%_ } _%>
-<%_ if (features.jdbcMemory) { _%>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-chat-memory-repository-jdbc</artifactId>
-        </dependency>
-<%_ } else if (features.postgres) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jdbc</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (features.postgres) { _%>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-<%_ } _%>
-<%_ if (features.erasure || features.retention || features.approval || features.rag || features.feedback) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-flyway</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-database-postgresql</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (features.vectorStore) { _%>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-pgvector-store</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (features.rag) { _%>
-        <dependency>
-            <!-- Reads the documents of the knowledge base: PDF, Word, PowerPoint, HTML, Markdown, text… -->
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-tika-document-reader</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (features.oidc) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (features.redis) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (features.limits) { _%>
-        <dependency>
-            <groupId>com.bucket4j</groupId>
-            <artifactId>bucket4j_jdk17-lettuce</artifactId>
-            <version>${bucket4j.version}</version>
-        </dependency>
-<%_ } _%>
-<%_ if (features.mcp) { _%>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-mcp-client</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (features.otel || features.prometheus) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (features.otel) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-opentelemetry</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (features.prometheus) { _%>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-<%_ } _%>
+<%_ dependencies.forEach((dependency, index) => { _%>
+<%_   if (dependency.scope === 'test' && dependencies[index - 1]?.scope !== 'test') { _%>
 
+<%_   } _%>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webmvc-test</artifactId>
-            <scope>test</scope>
+<%_   if (dependency.comment) { _%>
+            <!-- <%= dependency.comment %> -->
+<%_   } _%>
+            <groupId><%= dependency.group %></groupId>
+            <artifactId><%= dependency.artifact %></artifactId>
+<%_   if (dependency.version) { _%>
+            <version><%= dependency.version %></version>
+<%_   } _%>
+<%_   if (dependency.scope !== 'compile') { _%>
+            <scope><%= dependency.scope %></scope>
+<%_   } _%>
         </dependency>
-<%_ if (features.httpTools) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-restclient-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-<%_ } _%>
-<%_ if (features.oidc) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-<%_ } _%>
-<%_ if (features.evals && provider.id !== 'ollama' && !(fallback?.provider === 'ollama' && !fallback.sameProvider)) { _%>
-        <dependency>
-            <!-- The model of the evaluations. -->
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-ollama</artifactId>
-            <scope>test</scope>
-        </dependency>
-<%_ } _%>
-<%_ if (features.postgres || features.redis) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-testcontainers</artifactId>
-            <scope>test</scope>
-        </dependency>
-<%_ } _%>
-<%_ if (features.postgres) { _%>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-postgresql</artifactId>
-            <scope>test</scope>
-        </dependency>
-<%_ } _%>
-<%_ if (features.redis) { _%>
-        <dependency>
-            <groupId>com.redis</groupId>
-            <artifactId>testcontainers-redis</artifactId>
-            <scope>test</scope>
-        </dependency>
-<%_ } _%>
+<%_ }); _%>
     </dependencies>
 
     <dependencyManagement>

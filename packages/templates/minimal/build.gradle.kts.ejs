@@ -1,0 +1,52 @@
+plugins {
+    java
+    id("org.springframework.boot") version "<%= versions.springBoot %>"
+    id("io.spring.dependency-management") version "<%= versions.dependencyManagement %>"
+}
+
+group = "<%= project.groupId %>"
+version = "0.0.1-SNAPSHOT"
+<%_ if (agent.description) { _%>
+description = <%- javaString(agent.description).replaceAll('$', '\\$') %>
+<%_ } _%>
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(<%= agent.java %>)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.ai:spring-ai-bom:<%= versions.springAi %>")
+    }
+}
+
+dependencies {
+<%_ const configurations = { compile: 'implementation', runtime: 'runtimeOnly', test: 'testImplementation' }; _%>
+<%_ dependencies.forEach((dependency, index) => { _%>
+<%_   if (dependency.scope === 'test' && dependencies[index - 1]?.scope !== 'test') { _%>
+
+<%_   } _%>
+<%_   if (dependency.comment) { _%>
+    // <%= dependency.comment %>
+<%_   } _%>
+    <%= configurations[dependency.scope] %>("<%= dependency.group %>:<%= dependency.artifact %><%= dependency.version ? `:${dependency.version}` : '' %>")
+<%_ }); _%>
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<Test> {
+<%_ if (features.evals) { _%>
+    useJUnitPlatform {
+        // The evaluations call a real model: only ./gradlew test -Pevals runs them.
+        if (project.hasProperty("evals")) includeTags("evals") else excludeTags("evals")
+    }
+<%_ } else { _%>
+    useJUnitPlatform()
+<%_ } _%>
+}

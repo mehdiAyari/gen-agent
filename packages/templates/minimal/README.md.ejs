@@ -42,7 +42,7 @@ curl -s localhost:8080/api/chat -H 'Content-Type: application/json' -d '{"messag
 ```
 <%_   } _%>
 
-Without Docker, Java <%= agent.java %> is enough to build: `./mvnw` downloads Maven (checked against its SHA-256).
+Without Docker, Java <%= agent.java %> is enough to build: `<%= build.wrapper %>` downloads <%= build.tool === 'gradle' ? 'Gradle' : 'Maven' %> (checked against its SHA-256).
 <%_   if (services.length > 0) { _%>
 Point the agent at your own services with environment variables:
 <%_     if (features.postgres) { _%>
@@ -54,11 +54,11 @@ Point the agent at your own services with environment variables:
 <%_     if (features.oidc) { _%>
 `OIDC_ISSUER_URI` (your identity provider: Keycloak, Auth0, Entra ID…),
 <%_     } _%>
-then `./mvnw spring-boot:run`.
+then `<%= build.run %>`.
 <%_   } _%>
 <%_ } else { _%>
 
-Java <%= agent.java %> is the only requirement: `./mvnw` downloads Maven (checked against its SHA-256) on first use.
+Java <%= agent.java %> is the only requirement: `<%= build.wrapper %>` downloads <%= build.tool === 'gradle' ? 'Gradle' : 'Maven' %> (checked against its SHA-256) on first use.
 
 <%_   if (ollamaModels.length > 0) { _%>
 Start [Ollama](https://ollama.com) and pull <%= ollamaModels.length > 1 ? 'the models' : 'the model' %> (<%- ollamaModels.map((model) => `\`ollama pull ${model}\``).join(', ') %>), then:
@@ -68,7 +68,7 @@ Start [Ollama](https://ollama.com) and pull <%= ollamaModels.length > 1 ? 'the m
 <%_   for (const secret of secrets) { _%>
 export <%= secret %>=...   # never commit it
 <%_   } _%>
-./mvnw spring-boot:run
+<%= build.run %>
 ```
 
 Talk to the agent:
@@ -284,7 +284,7 @@ What the model sends to a remote server leaves the agent<%= features.pii ? ', pe
 ## Test
 
 ```bash
-./mvnw verify
+<%= build.verify %>
 ```
 
 The tests use a fake model: they never call <%= provider.id %> and cost nothing.
@@ -297,12 +297,12 @@ Docker must run: the tests start <%= [features.postgres ? 'Postgres' : '', featu
 
 ```bash
 ollama pull <%= evals.model %><%= features.vectorStore && provider.id !== 'ollama' ? ' && ollama pull nomic-embed-text' : '' %>
-./mvnw verify -Pevals
+<%= build.evals %>
 ```
 
 The whole agent answers on Ollama (`OLLAMA_BASE_URL`, `EVALS_MODEL`, <%= evals.model %> by default)<%= evals.dataset ? `: each case of \`${evals.dataset}\`
 is scored by its words and, judged by the model, by its criterion` : '' %><%= features.redTeam ? `${evals.dataset ? ';' : ':'} the red team attacks it in English and French
-and checks it neither leaks its instructions nor obeys` : '' %>. The report is in `target/evals-report.md`; the run fails below the
+and checks it neither leaks its instructions nor obeys` : '' %>. The report is in `<%= build.output %>/evals-report.md`; the run fails below the
 threshold. `.github/workflows/ci.yml` runs the tests, then the evaluations with Ollama, on every push.
 <%_ } _%>
 <%_ if (features.helm) { _%>

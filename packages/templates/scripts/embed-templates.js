@@ -10,7 +10,8 @@ const sources = Object.fromEntries(
     .filter((entry) => entry.isFile())
     .map((entry) => relative(root, join(entry.parentPath, entry.name)).split(sep).join('/'))
     .sort()
-    .map((path) => [path, readFileSync(join(root, path), 'utf8')]),
+    // Binary files (the Gradle Wrapper jar) are embedded in base64.
+    .map((path) => [path, readFileSync(join(root, path), path.endsWith('.jar') ? 'base64' : 'utf8')]),
 );
 
 writeFileSync(

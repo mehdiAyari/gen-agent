@@ -1,6 +1,8 @@
-# Minimal profile with RAG: no sign-in, conversations in memory, documents of a folder indexed in pgvector at startup.
+# Minimal profile with RAG, built with Gradle: no sign-in, conversations in memory, documents of a folder indexed in
+# pgvector at startup.
 agent:
   name: docs-helper
+  build: gradle
   description: Answers questions from the product documentation
   model:
     provider: ollama

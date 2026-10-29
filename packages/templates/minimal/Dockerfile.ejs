@@ -1,6 +1,15 @@
 # Image of the agent: built by docker compose, or with docker build -t <%= project.artifactId %> .
 FROM <%= images.jdk %> AS build
 WORKDIR /workspace
+<%_ if (build.tool === 'gradle') { _%>
+COPY gradle/ gradle/
+COPY gradlew settings.gradle.kts build.gradle.kts ./
+# Dependencies first: they are downloaded again only when build.gradle.kts changes.
+RUN ./gradlew --no-daemon --quiet dependencies > /dev/null
+COPY src/ src/
+# The tests run with ./gradlew build, where Docker is available to start their containers.
+RUN ./gradlew --no-daemon --quiet bootJar
+<%_ } else { _%>
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 # Dependencies first: they are downloaded again only when pom.xml changes.
@@ -8,6 +17,7 @@ RUN ./mvnw --batch-mode --quiet dependency:go-offline
 COPY src/ src/
 # The tests run with ./mvnw verify, where Docker is available to start their containers.
 RUN ./mvnw --batch-mode --quiet package -DskipTests
+<%_ } _%>
 
 FROM <%= images.jre %>
 <%_ const packages = [...(mcpServers.some((server) => !server.sandboxed && server.command === 'npx') ? ['nodejs', 'npm'] : []), ...(mcpServers.some((server) => !server.sandboxed && server.command === 'uvx') ? ['uv'] : [])]; _%>
@@ -19,6 +29,6 @@ RUN addgroup -S -g 10001 agent && adduser -S -u 10001 -G agent agent
 # Numeric, so that Kubernetes can check the container does not run as root.
 USER 10001
 WORKDIR /app
-COPY --from=build /workspace/target/<%= project.artifactId %>-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /workspace/<%= build.jar %> app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

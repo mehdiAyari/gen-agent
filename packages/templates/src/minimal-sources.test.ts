@@ -11,7 +11,7 @@ it('embeds exactly the files of minimal/ (run "pnpm build" after changing a temp
     readdirSync(root, { recursive: true, withFileTypes: true })
       .filter((entry) => entry.isFile())
       .map((entry) => relative(root, join(entry.parentPath, entry.name)).split(sep).join('/'))
-      .map((path) => [path, readFileSync(join(root, path), 'utf8')]),
+      .map((path) => [path, readFileSync(join(root, path), path.endsWith('.jar') ? 'base64' : 'utf8')]),
   );
 
   expect(MINIMAL_SOURCES).toEqual(onDisk);
