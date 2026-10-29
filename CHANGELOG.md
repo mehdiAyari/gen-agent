@@ -78,8 +78,15 @@ All notable changes to this project are documented here. The format follows
   their own built by `docker/mcp/build-images.sh`, offline unless `network: true`, as a user without privileges, on a
   read-only file system, with no Linux capability and bounded memory, CPU and processes.
 
+- The rest of the format: `memory.type: redis` (a repository on plain Redis lists), `cacheTtl` on HTTP tools (results
+  in Redis per user), `observability.feedback` (thumbs on the answers, counted, traced and kept in Postgres) and
+  `build: gradle` (Kotlin DSL and the Gradle Wrapper 9.8.2, checksum-verified). Every dependency is listed once, for
+  Maven and Gradle alike.
+- Test coverage of every package (`pnpm coverage`), kept by the CI; a short README, the details in `docs/guide.md`.
+
 ### Fixed
 
+- The Helm chart had no Dockerfile to build its image without Docker Compose (found on a kind cluster).
 - A semantic cache with conversations kept in memory had no database to run on.
 - An empty answer of the model is never cached.
 - `gdpr.erasureEndpoint` needs `memory.type: jdbc` (conversations are found per user in Postgres); `production` only

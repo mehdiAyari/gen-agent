@@ -49,6 +49,12 @@ A version is released only when all its end-to-end tests pass. Each version adds
       as untrusted data
 - [x] V5d: evaluations and red teaming on Ollama, generated CI workflow, Grafana dashboard, Helm chart
 
+## Finishing ✅
+
+- [x] The whole `agent.yaml` format generated: Redis memory, cached tool results, feedback, Gradle
+- [x] Tried for real: RAG with a PDF and admin uploads, an isolated Node MCP server, the Helm chart on kind
+- [x] Test coverage measured in CI, a README that reads in 30 seconds
+
 ## Later
 
-- [ ] `gen-agent upgrade`, plugins, multi-agents and A2A, scheduled agents, multimodal, "describe your agent", Helm chart
+- [ ] `gen-agent upgrade`, plugins, multi-agents and A2A, scheduled agents, multimodal, "describe your agent"

@@ -5,23 +5,33 @@ by hand: that bar applies to every change.
 
 ## Set up
 
-Node 22+, pnpm, JDK 21 (Maven is downloaded by the generated projects' wrapper), Docker, and Helm for the end-to-end
-tests, which lint the generated charts.
+Node 22+, pnpm, JDK 21 (Maven and Gradle are downloaded by the wrappers of the generated projects), Docker, Helm, and
+Google Chrome for the end-to-end tests.
 
 ```bash
 pnpm install
 pnpm lint && pnpm knip && pnpm typecheck && pnpm test
-pnpm e2e   # generates the reference projects, runs ./mvnw verify on each, and installs the packed CLI
+pnpm coverage   # the unit tests with their coverage, per package
+pnpm e2e        # builds the reference projects (./mvnw verify or ./gradlew build) and lints their Helm charts,
+                # then drives the web generator and the packed CLI
 ```
+
+The end-to-end tests build the reference projects and an agent made from the official Petstore spec, download
+projects from the web generator (one after an OpenAPI import), check they are identical to the CLI output and build
+them, drive `gen-agent mcp` from the packed npm package with an MCP client, and check the pages with
+[axe](https://github.com/dequelabs/axe-core).
 
 ## How the code is organized
 
-| Package              | Role                                                                 |
-| -------------------- | -------------------------------------------------------------------- |
-| `packages/core`      | `agent.yaml` schema (Zod) and rules, normalized model, renderer      |
-| `packages/templates` | EJS templates per profile, reference agents and their file snapshots |
-| `packages/cli`       | the `gen-agent` command, published as one bundled package            |
-| `e2e`                | Maven builds of the reference projects, packaging test               |
+| Package               | Role                                                                    |
+| --------------------- | ----------------------------------------------------------------------- |
+| `packages/core`       | `agent.yaml` schema (Zod) and rules, normalized model, renderer         |
+| `packages/templates`  | EJS templates, reference agents and their file snapshots                |
+| `packages/openapi`    | OpenAPI 3 operations to HTTP tools (Node and browser)                   |
+| `packages/cli`        | the `gen-agent` command, published as one bundled package               |
+| `packages/mcp-server` | gen-agent as an MCP server, bundled in the CLI as `gen-agent mcp`       |
+| `packages/web`        | the web generator (Next.js static export, English and French)           |
+| `e2e`                 | builds of the reference projects, Playwright tests of the web generator |
 
 Design decisions are recorded in [`docs/adr`](docs/adr).
 
