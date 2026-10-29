@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/field';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
-import { controlId, SwitchField, TextField } from './form-controls';
+import { ChoiceField, controlId, SwitchField, TextField } from './form-controls';
 import { McpFields } from './mcp-fields';
 import { OpenApiDialog } from './openapi-dialog';
 import { ProfileFields } from './profile-fields';
@@ -116,6 +116,16 @@ export function AgentFields({ form, errorOf, onChange, onVisit }: AgentFieldsPro
             autoComplete="off"
             spellCheck={false}
             className="font-mono"
+          />
+          <ChoiceField
+            path="build"
+            label={t('agent.build')}
+            value={form.build}
+            options={['maven', 'gradle'] as const}
+            labels={{ maven: 'Maven', gradle: 'Gradle (Kotlin DSL)' }}
+            onValueChange={(build) => {
+              update({ build });
+            }}
           />
         </FieldGroup>
       </FieldSet>

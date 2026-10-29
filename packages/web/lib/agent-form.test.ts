@@ -411,6 +411,15 @@ describe('the production profile', () => {
     expect(formToYaml(result.form)).toBe(yaml);
   });
 
+  it('builds with Gradle when asked', () => {
+    const yaml = 'agent:\n  name: desk\n  build: gradle\n  model:\n    provider: ollama\n    name: m\n';
+    const result = formFromYaml(yaml);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+
+    expect(result.form.build).toBe('gradle');
+    expect(formToYaml(result.form)).toBe(yaml);
+  });
+
   it('keeps conversations in Redis', () => {
     const yaml = 'agent:\n  name: desk\n  model:\n    provider: ollama\n    name: m\n  memory:\n    type: redis\n';
     const result = formFromYaml(yaml);

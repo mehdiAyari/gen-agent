@@ -35,8 +35,12 @@ export async function projectZip(form: AgentForm): Promise<ProjectZip> {
   const root = project.name;
   const zip = new JSZip();
   for (const file of project.files) {
-    // UNIX permissions only survive with platform UNIX: keeps ./mvnw runnable after unzip.
-    zip.file(`${root}/${file.path}`, file.content, file.executable === true ? { unixPermissions: 0o755 } : {});
+    // UNIX permissions only survive with platform UNIX: keeps ./mvnw runnable after unzip. The Gradle Wrapper jar is
+    // binary, in base64.
+    zip.file(`${root}/${file.path}`, file.content, {
+      ...(file.executable === true ? { unixPermissions: 0o755 } : {}),
+      ...(file.encoding === 'base64' ? { base64: true } : {}),
+    });
   }
   zip.file(`${root}/agent.yaml`, project.yaml);
 

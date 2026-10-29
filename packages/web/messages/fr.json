@@ -46,7 +46,8 @@
       "nameHint": "en kebab-case, c’est aussi le dossier du projet",
       "description": "Description",
       "package": "Package Java",
-      "packageHint": "Vide : com.example.{name}"
+      "packageHint": "Vide : com.example.{name}",
+      "build": "Build"
     },
     "model": {
       "legend": "Modèle",

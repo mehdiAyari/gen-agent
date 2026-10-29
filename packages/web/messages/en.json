@@ -46,7 +46,8 @@
       "nameHint": "kebab-case, also the project folder",
       "description": "Description",
       "package": "Java package",
-      "packageHint": "Empty: com.example.{name}"
+      "packageHint": "Empty: com.example.{name}",
+      "build": "Build"
     },
     "model": {
       "legend": "Model",

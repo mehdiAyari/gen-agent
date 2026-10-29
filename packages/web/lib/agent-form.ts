@@ -123,6 +123,7 @@ export interface AgentForm {
   summarize: boolean;
   /** An administrator switches the agent or a tool off at once: needs oidc. */
   killSwitches: boolean;
+  build: 'maven' | 'gradle';
   /** Answers grounded in the documents of a shared knowledge base. */
   rag: boolean;
   /** Passages per question; empty for 4. */
@@ -130,7 +131,7 @@ export interface AgentForm {
   /** Tokens per passage; empty for 500. */
   ragChunkSize: string;
   ragRerank: boolean;
-  /** ./mvnw verify -Pevals scores the agent on Ollama. */
+  /** ./mvnw verify -Pevals (./gradlew test -Pevals) scores the agent on Ollama. */
   evals: boolean;
   /** The reference set; empty for none. */
   evalsDataset: string;
@@ -289,6 +290,7 @@ export function defaultForm(): AgentForm {
     routingSimple: '',
     routingComplex: '',
     summarize: false,
+    build: 'maven',
     rag: false,
     ragTopK: '',
     ragChunkSize: '',
@@ -321,6 +323,7 @@ export function formToYaml(form: AgentForm): string {
   const agent: Record<string, unknown> = { name: form.name };
   if (present(form.description)) agent.description = form.description;
   if (present(form.package)) agent.package = form.package;
+  if (form.build === 'gradle') agent.build = 'gradle';
   if (form.profile !== 'minimal') agent.profile = form.profile;
   agent.model = model;
   const equipment = addedByCore(form);
@@ -549,6 +552,7 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     routingComplex: agent.model.routing?.complex ?? '',
     summarize: agent.memory.summarize ?? false,
     killSwitches: agent.security?.killSwitches ?? false,
+    build: agent.build,
     evals: agent.evals !== undefined,
     evalsDataset: agent.evals?.dataset ?? '',
     redTeam: agent.evals?.redTeam ?? false,

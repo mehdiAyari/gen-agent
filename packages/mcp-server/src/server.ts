@@ -28,7 +28,7 @@ const INSTRUCTIONS = `gen-agent generates Spring AI agents (Spring Boot, Java 21
 Workflow: write the agent.yaml (its JSON Schema is the resource gen-agent://schema/agent.json), check it with
 validate_agent, turn an existing API into tools with import_openapi, look at the files with preview_project, then
 write the project with generate_project. API keys never go in agent.yaml: only environment variable names.
-The generated project builds and tests with ./mvnw verify, without calling any model.`;
+The generated project builds and tests with ./mvnw verify (./gradlew build with build: gradle), without calling any model.`;
 
 const yamlInput = z.string().describe('Content of the agent.yaml file');
 
@@ -177,7 +177,7 @@ export function createGenAgentServer(options: ServerOptions): McpServer {
       title: 'Generate the project',
       description:
         'Writes the Spring AI project and its agent.yaml into a new or empty directory of the workspace. Never ' +
-        'overwrites a file. The project runs with ./mvnw spring-boot:run and tests with ./mvnw verify.',
+        'overwrites a file. The project runs with ./mvnw spring-boot:run and tests with ./mvnw verify (./gradlew bootRun and ./gradlew build with Gradle).',
       inputSchema: {
         yaml: yamlInput,
         directory: z.string().describe('Project directory, relative to the workspace; new or empty'),
@@ -197,18 +197,19 @@ export function createGenAgentServer(options: ServerOptions): McpServer {
       writeFileSync(join(target, 'agent.yaml'), yaml);
       for (const file of project.files) {
         mkdirSync(dirname(join(target, file.path)), { recursive: true });
-        writeFileSync(join(target, file.path), file.content, file.executable === true ? { mode: 0o755 } : {});
+        const bytes = file.encoding === 'base64' ? Buffer.from(file.content, 'base64') : file.content;
+        writeFileSync(join(target, file.path), bytes, file.executable === true ? { mode: 0o755 } : {});
       }
 
-      const { provider, secrets } = buildModel(project.file);
+      const { secrets, ollamaModels, build } = buildModel(project.file);
       const shown = relative(root, target) || '.';
       const text = [
         `Created ${project.file.agent.name} in ${shown} (${String(project.files.length + 1)} files). To run it:`,
         `  cd ${shown}`,
-        ...(provider.apiKeyEnv === undefined ? [`  ollama pull ${provider.model}`] : []),
+        ...ollamaModels.map((model) => `  ollama pull ${model}`),
         ...secrets.map((secret) => `  export ${secret}=...`),
-        '  ./mvnw spring-boot:run',
-        'To test it without calling a model: ./mvnw verify',
+        `  ${build.run}`,
+        `To test it without calling a model: ${build.verify}`,
       ].join('\n');
       return {
         content: [{ type: 'text', text }],

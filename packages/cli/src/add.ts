@@ -6,7 +6,7 @@ import { resolveOpenApi } from '@gen-agent/openapi';
 import { generateProject } from '@gen-agent/templates';
 import { isMap, isSeq, parseDocument, YAMLMap, YAMLSeq, type Document } from 'yaml';
 
-import type { Output } from './commands.js';
+import { bytesOf, type Output } from './commands.js';
 import { VERSION } from './version.js';
 
 interface ProjectOptions {
@@ -140,15 +140,21 @@ async function updateProject(
 
   const files = await generateProject(resolved.file, VERSION);
   const previous = JSON.parse(readFileSync(manifestPath, 'utf8')) as Manifest;
+  // Binary files are compared, and written, in base64.
+  const binary = new Set(files.filter((file) => file.encoding === 'base64').map((file) => file.path));
   const actions = await planUpdate(files, previous, (path) => {
     const absolute = join(directory, path);
-    return existsSync(absolute) ? readFileSync(absolute, 'utf8') : undefined;
+    return existsSync(absolute) ? readFileSync(absolute, binary.has(path) ? 'base64' : 'utf8') : undefined;
   });
 
   const executable = new Set(files.filter((file) => file.executable === true).map((file) => file.path));
   const write = (path: string, content: string, mode?: number): void => {
     mkdirSync(dirname(join(directory, path)), { recursive: true });
-    writeFileSync(join(directory, path), content, mode === undefined ? {} : { mode });
+    writeFileSync(
+      join(directory, path),
+      bytesOf({ content, ...(binary.has(path) ? { encoding: 'base64' as const } : {}) }),
+      mode === undefined ? {} : { mode },
+    );
   };
   for (const action of actions) {
     if (action.kind === 'write') write(action.path, action.content, executable.has(action.path) ? 0o755 : undefined);

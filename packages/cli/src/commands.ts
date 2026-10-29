@@ -140,10 +140,10 @@ async function generateFromSource(
   beforeWrite?.(directory);
   for (const file of files) {
     mkdirSync(dirname(join(directory, file.path)), { recursive: true });
-    writeFileSync(join(directory, file.path), file.content, file.executable === true ? { mode: 0o755 } : {});
+    writeFileSync(join(directory, file.path), bytesOf(file), file.executable === true ? { mode: 0o755 } : {});
   }
 
-  const { secrets, features, ollamaModels, mcpServers } = buildModel(config);
+  const { secrets, features, ollamaModels, mcpServers, build } = buildModel(config);
   out.info(
     [
       `Created ${config.agent.name} in ${shown} (${String(files.length)} files). Next steps:`,
@@ -155,7 +155,7 @@ async function generateFromSource(
         : []),
       ...secrets.map((secret) => `  export ${secret}=...`),
       // With Compose, the agent starts with its database, Redis and identity provider.
-      features.dockerCompose ? '  docker compose up --build' : '  ./mvnw spring-boot:run',
+      features.dockerCompose ? '  docker compose up --build' : `  ${build.run}`,
     ].join('\n'),
   );
   return 0;
@@ -173,4 +173,9 @@ function isEmptyOrMissing(directory: string): boolean {
 function specsOf(source: string): string[] {
   const result = validateAgentYaml(source);
   return result.ok ? (result.config.agent.openapi ?? []).map((entry) => entry.spec) : [];
+}
+
+/** What to write for a generated file: its text, or its bytes when it is binary (the Gradle Wrapper jar). */
+export function bytesOf(file: { content: string; encoding?: 'base64' }): string | Buffer {
+  return file.encoding === 'base64' ? Buffer.from(file.content, 'base64') : file.content;
 }
