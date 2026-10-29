@@ -90,6 +90,7 @@ add
   .option('--method <method>', 'method of an HTTP tool (default GET)')
   .option('--description <text>', 'what the tool does: the model reads it to decide when to call it')
   .option('--param <spec...>', 'parameter as name:type[:required], e.g. orderId:string:required')
+  .option('--approval', 'each call waits for the approval of the user who asked')
   .option('--dir <dir>', 'project directory', '.')
   .action(
     async (
@@ -100,6 +101,7 @@ add
         method?: string;
         description?: string;
         param?: string[];
+        approval?: boolean;
         dir: string;
       },
     ) => {
@@ -108,6 +110,7 @@ add
       if (options.method !== undefined) command.method = options.method;
       if (options.description !== undefined) command.description = options.description;
       if (options.param !== undefined) command.params = options.param;
+      if (options.approval === true) command.approval = true;
       process.exitCode = await addToolCommand(command, terminal);
     },
   );

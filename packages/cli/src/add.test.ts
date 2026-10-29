@@ -69,6 +69,27 @@ describe('gen-agent add tool', () => {
     expect(out.text()).toMatch(/README\.md\.gen-agent-new/);
   });
 
+  it('adds a tool whose calls wait for the approval of the user', async () => {
+    const created = await newCommand(
+      { name: 'leave-desk', profile: 'standard', provider: 'ollama', model: 'llama3.1', tools: [] },
+      { cwd },
+      new RecordingOutput(),
+    );
+    expect(created).toBe(0);
+
+    const options = { name: 'book-day-off', type: 'java', approval: true, dir: 'leave-desk', cwd } as const;
+    expect(await addToolCommand(options, out)).toBe(0);
+    expect(readFileSync(join(cwd, 'leave-desk/agent.yaml'), 'utf8')).toMatch(/approval:\n\s+required: true/);
+  });
+
+  it('refuses approval where users do not sign in, and changes nothing', async () => {
+    const before = read('agent.yaml');
+
+    expect(await addToolCommand({ name: 'cancel', type: 'java', approval: true, dir: 'shop-bot', cwd }, out)).toBe(1);
+    expect(out.text()).toMatch(/approval/);
+    expect(read('agent.yaml')).toBe(before);
+  });
+
   it('refuses a name the agent already has, and changes nothing', async () => {
     const before = read('agent.yaml');
 

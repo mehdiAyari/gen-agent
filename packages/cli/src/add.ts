@@ -23,6 +23,8 @@ export interface AddToolOptions extends ProjectOptions {
   description?: string;
   /** name:type[:required], e.g. orderId:string:required. */
   params?: string[];
+  /** Each call waits for the approval of the user who asked. */
+  approval?: boolean;
 }
 
 /** A server the agent starts (package, version, runtime) or a remote one (url, its token in tokenEnv). */
@@ -53,6 +55,7 @@ export async function addToolCommand(options: AddToolOptions, out: Output): Prom
       ...(options.type === 'http' && options.method !== undefined ? { method: options.method.toUpperCase() } : {}),
       ...(options.type === 'http' ? { url: options.url ?? '' } : {}),
       ...(params.length > 0 ? { params } : {}),
+      ...(options.approval === true ? { approval: { required: true } } : {}),
     };
     const node = document.createNode(tool) as YAMLMap;
     const list = node.get('params');
