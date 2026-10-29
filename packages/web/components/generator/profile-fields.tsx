@@ -43,8 +43,8 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
             path="memoryType"
             label={t('memory')}
             value={form.memoryType}
-            options={['in-memory', 'jdbc'] as const}
-            labels={{ 'in-memory': t('memoryInMemory'), jdbc: t('memoryJdbc') }}
+            options={['in-memory', 'jdbc', 'redis'] as const}
+            labels={{ 'in-memory': t('memoryInMemory'), jdbc: t('memoryJdbc'), redis: 'Redis' }}
             onValueChange={(memoryType) => {
               // Only conversations kept in Postgres are purged, or erased per user.
               update(memoryType === 'jdbc' ? { memoryType } : { memoryType, retention: '', erasure: false });

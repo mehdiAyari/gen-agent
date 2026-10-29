@@ -410,6 +410,15 @@ describe('the production profile', () => {
     expect(formToYaml(result.form)).toBe(yaml);
   });
 
+  it('keeps conversations in Redis', () => {
+    const yaml = 'agent:\n  name: desk\n  model:\n    provider: ollama\n    name: m\n  memory:\n    type: redis\n';
+    const result = formFromYaml(yaml);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+
+    expect(result.form.memoryType).toBe('redis');
+    expect(formToYaml(result.form)).toBe(yaml);
+  });
+
   it('limits any agent when asked, and reports limits that are not valid on their field', () => {
     expect(formToYaml({ ...defaultForm(), maxIterations: '5', timeout: '20s' })).toContain(
       'limits:\n    maxIterations: 5\n    timeout: 20s\n',

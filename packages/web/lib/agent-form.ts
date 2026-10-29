@@ -75,7 +75,7 @@ export interface AgentForm {
   allowNonEuProviders: boolean;
   tools: ToolForm[];
   profile: Profile;
-  memoryType: 'in-memory' | 'jdbc';
+  memoryType: 'in-memory' | 'jdbc' | 'redis';
   /** oidc: every request needs a JWT; conversations belong to their user. */
   auth: 'none' | 'oidc';
   /** 30/min; empty for none. Only with oidc: limits are counted per user. */
@@ -509,7 +509,7 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     euOnly: agent.gdpr?.euOnly ?? false,
     allowNonEuProviders: agent.gdpr?.allowNonEuProviders ?? false,
     profile: agent.profile,
-    memoryType: agent.memory.type === 'jdbc' ? 'jdbc' : 'in-memory',
+    memoryType: agent.memory.type,
     auth: agent.security?.auth ?? 'none',
     rateLimit: agent.security?.rateLimit ?? '',
     tokenBudget: agent.security?.tokenBudget ?? '',

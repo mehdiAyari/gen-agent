@@ -297,6 +297,12 @@ export const minimalEntries: TemplateEntry[] = [
     output: (m) => main(m, 'generated/chat/ModelRouter.java'),
   },
   {
+    template: 'java/generated/memory/RedisChatMemoryRepository.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.redisMemory,
+    output: (m) => main(m, 'generated/memory/RedisChatMemoryRepository.java'),
+  },
+  {
     template: 'java/generated/memory/SummarizingChatMemory.java.ejs',
     owner: 'generated',
     when: (m) => m.features.summarize,

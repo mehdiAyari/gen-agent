@@ -203,6 +203,7 @@ agent:
       httpTools: true,
       javaTools: true,
       jdbcMemory: false,
+      redisMemory: false,
       oidc: false,
       limits: false,
       dockerCompose: false,
@@ -605,6 +606,19 @@ agent:
     );
     expect(local.evals).toEqual({ dataset: 'evals/cases.yaml', redTeam: false, model: 'qwen2.5:3b' });
     expect(local.features).toMatchObject({ evals: true, redTeam: false, helm: false, grafanaDashboard: false });
+  });
+
+  it('keeps conversations in Redis when asked, Redis running for them alone', () => {
+    const redis = buildModel(
+      parse('agent:\n  name: desk\n  model: { provider: ollama, name: m }\n  memory: { type: redis }\n'),
+    );
+
+    expect(redis.features).toMatchObject({ redisMemory: true, redis: true, jdbcMemory: false, postgres: false });
+    expect(
+      unsupportedFeatures(
+        parse('agent:\n  name: d\n  model: { provider: ollama, name: m }\n  memory: { type: redis }\n'),
+      ),
+    ).toEqual([]);
   });
 
   it('limits the tool calls of an agent that only asks for it', () => {

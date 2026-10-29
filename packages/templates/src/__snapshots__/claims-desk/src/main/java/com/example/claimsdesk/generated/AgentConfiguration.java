@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -22,10 +22,10 @@ import org.springframework.context.annotation.Configuration;
 class AgentConfiguration {
 
     @Bean
-    ChatMemory chatMemory(ChatModel chatModel, AgentProperties properties) {
+    ChatMemory chatMemory(ChatMemoryRepository repository, ChatModel chatModel, AgentProperties properties) {
         // Older messages are summarized by the model of simple messages instead of being forgotten.
         return new SummarizingChatMemory(
-            new InMemoryChatMemoryRepository(),
+            repository,
             chatModel,
             properties.memory().window(),
             properties.routing().simple()

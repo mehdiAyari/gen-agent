@@ -30,6 +30,8 @@ export interface GenerationModel {
     javaTools: boolean;
     /** Conversations kept in Postgres through Spring AI's JDBC repository. */
     jdbcMemory: boolean;
+    /** Conversations kept in Redis lists. */
+    redisMemory: boolean;
     /** Requests carry a JWT from an OIDC provider; conversations belong to their user. */
     oidc: boolean;
     /** Request rate and token budget per user, counted in Redis. */
@@ -529,11 +531,13 @@ export function buildModel(file: AgentFile): GenerationModel {
       httpTools: agent.tools.some((tool) => tool.type === 'http'),
       javaTools: agent.tools.some((tool) => tool.type === 'java'),
       jdbcMemory: agent.memory.type === 'jdbc',
+      redisMemory: agent.memory.type === 'redis',
       oidc,
       limits: requests !== undefined || tokens !== undefined,
       dockerCompose: agent.deploy?.includes('docker-compose') ?? false,
       cache,
-      redis: requests !== undefined || tokens !== undefined || cache || pii || killSwitches,
+      redis:
+        requests !== undefined || tokens !== undefined || cache || pii || killSwitches || agent.memory.type === 'redis',
       otel: agent.observability?.otel === true,
       prometheus: agent.observability?.metrics === 'prometheus',
       mcp: mcpServers.length > 0,
@@ -722,10 +726,6 @@ export function unsupportedFeatures(file: AgentFile): string[] {
   add(
     agent.springAi !== SUPPORTED_SPRING_AI,
     `agent.springAi: ${agent.springAi} is not supported, this version of gen-agent generates Spring AI ${SUPPORTED_SPRING_AI}`,
-  );
-  add(
-    agent.memory.type === 'redis',
-    'agent.memory.type: "redis" arrives in a later version (in-memory and jdbc are generated)',
   );
   agent.tools.forEach((tool, index) => {
     if (tool.type === 'http') {

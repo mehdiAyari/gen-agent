@@ -1,0 +1,84 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.memory;
+
+<%- imports %>
+
+/**
+ * Conversations in Redis, one list of messages per conversation: they survive restarts and every instance of the agent
+ * shares them. Plain lists, so that any Redis runs it, without modules. Like Spring AI's JDBC repository, it keeps the
+ * text of user, assistant and system messages, not the tool calls in between.
+ */
+@<%= type('org.springframework.stereotype.Component') %>
+class RedisChatMemoryRepository implements <%= type('org.springframework.ai.chat.memory.ChatMemoryRepository') %> {
+
+    private static final String PREFIX = "memory:";
+
+    /** A message as stored: its type and its text. */
+    record StoredMessage(String type, String text) {}
+
+    private final <%= type('org.springframework.data.redis.core.StringRedisTemplate') %> redis;
+
+    private final <%= type('tools.jackson.databind.json.JsonMapper') %> json;
+
+    RedisChatMemoryRepository(StringRedisTemplate redis, JsonMapper json) {
+        this.redis = redis;
+        this.json = json;
+    }
+
+    @Override
+    public <%= type('java.util.List') %><String> findConversationIds() {
+        List<String> ids = new <%= type('java.util.ArrayList') %><>();
+        try (<%= type('org.springframework.data.redis.core.Cursor') %><String> keys = redis.scan(<%= type('org.springframework.data.redis.core.ScanOptions') %>.scanOptions().match(PREFIX + "*").build())) {
+            keys.forEachRemaining(key -> ids.add(key.substring(PREFIX.length())));
+        }
+        return ids;
+    }
+
+    @Override
+    public List<<%= type('org.springframework.ai.chat.messages.Message') %>> findByConversationId(String conversationId) {
+        List<String> stored = redis.opsForList().range(PREFIX + conversationId, 0, -1);
+        return stored == null ? List.of() : stored.stream().map(this::toMessage).toList();
+    }
+
+    @Override
+    public void saveAll(String conversationId, List<Message> messages) {
+        List<String> stored = messages.stream()
+                .filter(message -> switch (message.getMessageType()) {
+                    case USER, SYSTEM -> true;
+                    case ASSISTANT -> !((<%= type('org.springframework.ai.chat.messages.AssistantMessage') %>) message).hasToolCalls();
+                    case TOOL -> false;
+                })
+                .map(message -> json.writeValueAsString(new StoredMessage(message.getMessageType().name(), message.getText())))
+                .toList();
+        String key = PREFIX + conversationId;
+        // The whole conversation at once: a reader never sees it half written.
+        redis.execute(new <%= type('org.springframework.data.redis.core.SessionCallback') %><Object>() {
+            @Override
+            public <K, V> Object execute(<%= type('org.springframework.data.redis.core.RedisOperations') %><K, V> operations) {
+                @SuppressWarnings("unchecked")
+                RedisOperations<String, String> strings = (RedisOperations<String, String>) operations;
+                strings.multi();
+                strings.delete(key);
+                if (!stored.isEmpty()) {
+                    strings.opsForList().rightPushAll(key, stored);
+                }
+                return strings.exec();
+            }
+        });
+    }
+
+    @Override
+    public void deleteByConversationId(String conversationId) {
+        redis.delete(PREFIX + conversationId);
+    }
+
+    private Message toMessage(String stored) {
+        StoredMessage message = json.readValue(stored, StoredMessage.class);
+        return switch (<%= type('org.springframework.ai.chat.messages.MessageType') %>.valueOf(message.type())) {
+            case USER -> new <%= type('org.springframework.ai.chat.messages.UserMessage') %>(message.text());
+            case SYSTEM -> new <%= type('org.springframework.ai.chat.messages.SystemMessage') %>(message.text());
+            case ASSISTANT -> new AssistantMessage(message.text());
+            case TOOL -> throw new IllegalStateException("Tool messages are never stored");
+        };
+    }
+}

@@ -31,7 +31,7 @@ Point the agent at your own services with environment variables:
 then `./mvnw spring-boot:run`.
 
 Send back the returned `conversationId` with the next message to continue the same conversation (the last
-20 messages are kept in memory).
+20 messages are kept in Redis).
 Conversations belong to the user of the token: another user gets 404 for them.
 Every reply carries `"aiGenerated": true`, so clients can tell users they are talking to an AI (EU AI Act).
 

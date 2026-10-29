@@ -79,7 +79,7 @@ curl -s localhost:8080/api/chat -H 'Content-Type: application/json' -d '{"messag
 <%_ } _%>
 
 Send back the returned `conversationId` with the next message to continue the same conversation (the last
-<%= memory.window %> messages are kept<%= features.jdbcMemory ? ' in Postgres' : ' in memory' %>).
+<%= memory.window %> messages are kept<%= features.jdbcMemory ? ' in Postgres' : features.redisMemory ? ' in Redis' : ' in memory' %>).
 <%_ if (features.oidc) { _%>
 Conversations belong to the user of the token: another user gets 404 for them.
 <%_ } _%>
