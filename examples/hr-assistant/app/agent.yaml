@@ -1,0 +1,20 @@
+agent:
+  name: hr-assistant
+  description: Tells employees how many days off they have left and books them
+  profile: standard
+  model:
+    provider: ollama
+    name: qwen2.5:7b
+    temperature: 0
+  interface: [ rest, chat-ui ]
+  tools:
+    - name: remaining-days-off
+      type: java
+      description: Days off the signed-in employee has left this year
+    - name: book-day-off
+      type: java
+      description: Books a day off for the signed-in employee, on a date written YYYY-MM-DD
+      params:
+        - { name: date, type: string, required: true }
+      approval:
+        required: true

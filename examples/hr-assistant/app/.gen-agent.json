@@ -1,0 +1,273 @@
+{
+  "generator": {
+    "name": "gen-agent",
+    "version": "0.1.0"
+  },
+  "config": {
+    "agent": {
+      "name": "hr-assistant",
+      "description": "Tells employees how many days off they have left and books them",
+      "profile": "standard",
+      "java": 21,
+      "build": "maven",
+      "springAi": "2.0.1",
+      "model": {
+        "provider": "ollama",
+        "name": "qwen2.5:7b",
+        "temperature": 0
+      },
+      "prompt": {
+        "system": "prompts/system.md",
+        "aiDisclosure": true
+      },
+      "memory": {
+        "window": 20,
+        "type": "jdbc"
+      },
+      "tools": [
+        {
+          "name": "remaining-days-off",
+          "description": "Days off the signed-in employee has left this year",
+          "params": [],
+          "type": "java"
+        },
+        {
+          "name": "book-day-off",
+          "description": "Books a day off for the signed-in employee, on a date written YYYY-MM-DD",
+          "params": [
+            {
+              "name": "date",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "approval": {
+            "required": true
+          },
+          "type": "java"
+        }
+      ],
+      "interface": [
+        "rest",
+        "chat-ui"
+      ],
+      "security": {
+        "auth": "oidc",
+        "rateLimit": "30/min",
+        "tokenBudget": "100000/day"
+      },
+      "cache": {
+        "exact": "redis"
+      },
+      "observability": {
+        "otel": true,
+        "metrics": "prometheus"
+      },
+      "deploy": [
+        "docker-compose"
+      ]
+    }
+  },
+  "files": {
+    ".dockerignore": {
+      "owner": "merged",
+      "sha256": "ca8ce5585bdeb09dc8799257f351f1c86380558bea95f34decc9b414685e58f0"
+    },
+    ".gitignore": {
+      "owner": "merged",
+      "sha256": "8bd33d61dffb07d6b6cf5ba7166e9c53175d4369c94cc229105eb64c69c03798"
+    },
+    ".mvn/wrapper/maven-wrapper.properties": {
+      "owner": "generated",
+      "sha256": "9e702bcd7e68ba1cace0a3382a7082e6e1e1b321688a7a3fbf4d5ae7eb0af533"
+    },
+    "Dockerfile": {
+      "owner": "merged",
+      "sha256": "9293656ce7eaf416dd9b180b8c17bf5fac8b88ba7b27cd2bb6b346ceaec35025"
+    },
+    "README.md": {
+      "owner": "merged",
+      "sha256": "bb2f4c7cb8066986632524a7fef5993406621b1835658e966e9bd7a90886ad93"
+    },
+    "compose.yaml": {
+      "owner": "merged",
+      "sha256": "1556cbeb4608977afcb0a85dc9b11e5b1fb110811767408e3cd8b40ccb45fe62"
+    },
+    "docker/keycloak/realm-agent.json": {
+      "owner": "merged",
+      "sha256": "dcea441008fe9b5d6d06cd366d0c686adcb02ee596a2722ffb2b4d5e7441ae9f"
+    },
+    "mvnw": {
+      "owner": "generated",
+      "sha256": "cae96cef89ebea3531221f4ae17c23cf8edf67d00eae8306d4186ae1bbed4d02"
+    },
+    "mvnw.cmd": {
+      "owner": "generated",
+      "sha256": "46eedb8419bd14fe70d5bb2916d7b6f51806e51b39d5b76a42610384ca929c1c"
+    },
+    "pom.xml": {
+      "owner": "merged",
+      "sha256": "7dc2a78c84412d06c9c045609c93a66cfe454a5337e23a209e747fdda9e8d1f3"
+    },
+    "src/main/java/com/example/hrassistant/HrAssistantApplication.java": {
+      "owner": "merged",
+      "sha256": "0e48f2bfb3a95448770c08ba5afcaec73e613bd9ba445f4a28752df4eff6ab31"
+    },
+    "src/main/java/com/example/hrassistant/generated/AgentConfiguration.java": {
+      "owner": "generated",
+      "sha256": "3c9cde147b32917a9a6fa1bd7cfe209eb2181a435b72008521577a1c60765372"
+    },
+    "src/main/java/com/example/hrassistant/generated/AgentProperties.java": {
+      "owner": "generated",
+      "sha256": "9dd47b1bc5033d97829851f64c6aba46cb41b0bc8a5dcd8cbc9c69f29e3ff915"
+    },
+    "src/main/java/com/example/hrassistant/generated/approval/ApprovalUnavailableException.java": {
+      "owner": "generated",
+      "sha256": "6f88fd1dcc9c0162e4c1b6aafe045d60c90c17269aaecfa2854cb6dabf4c3f21"
+    },
+    "src/main/java/com/example/hrassistant/generated/approval/Approvals.java": {
+      "owner": "generated",
+      "sha256": "fe92314f8ea5d9746a798d2901d4959442476975fc7872e35d9ac76b6b7ee0d7"
+    },
+    "src/main/java/com/example/hrassistant/generated/approval/PendingApproval.java": {
+      "owner": "generated",
+      "sha256": "add18fee66b409c876696cd8f82d050de914693548614264e8d610fbdac3ae07"
+    },
+    "src/main/java/com/example/hrassistant/generated/cache/ReplyCache.java": {
+      "owner": "generated",
+      "sha256": "55d33cd9f730bf2dae13329957e82588df5532d437f5fabccf2680ab18160fae"
+    },
+    "src/main/java/com/example/hrassistant/generated/chat/ApprovalController.java": {
+      "owner": "generated",
+      "sha256": "45c0d3834722fa2d1622435fcfa64a96765736d10d36603622cda67e391c90ce"
+    },
+    "src/main/java/com/example/hrassistant/generated/chat/ChatController.java": {
+      "owner": "generated",
+      "sha256": "a969ea09ec3f755fa26770e30d34e22907662baf6f88397e028ef0728441cb56"
+    },
+    "src/main/java/com/example/hrassistant/generated/chat/ChatExceptionHandler.java": {
+      "owner": "generated",
+      "sha256": "fc82a8831d07fbd9209e0345b35dc2be5c8c171513bd841304dfc8ae2cfc8fff"
+    },
+    "src/main/java/com/example/hrassistant/generated/chat/ChatMessageRequest.java": {
+      "owner": "generated",
+      "sha256": "0fd828497cdb00dcc41560042c685f43db99e8f59545be2ccf7fd748fd85ad92"
+    },
+    "src/main/java/com/example/hrassistant/generated/chat/ChatMessageResponse.java": {
+      "owner": "generated",
+      "sha256": "ea5c873e9ecf0b0850f8695a183e27e527d801f2b832eb0ec7de81f43aca6a53"
+    },
+    "src/main/java/com/example/hrassistant/generated/chat/ChatService.java": {
+      "owner": "generated",
+      "sha256": "64cb240eca42a161bf9346b6c209f59e2db6694baa19eb88ae3d3635be2d1892"
+    },
+    "src/main/java/com/example/hrassistant/generated/chat/UnknownConversationException.java": {
+      "owner": "generated",
+      "sha256": "d84b493a65006a11afd28ca8d52a42b5a9a5cab9ef92cc5afc399a49b817fca0"
+    },
+    "src/main/java/com/example/hrassistant/generated/limits/LimitExceededException.java": {
+      "owner": "generated",
+      "sha256": "d4fc6e3c0602a7056a344965ec29403df81f5bd17e5a4594cf01da2e790e7327"
+    },
+    "src/main/java/com/example/hrassistant/generated/limits/LimitsConfiguration.java": {
+      "owner": "generated",
+      "sha256": "f981aa60c362826ba7b9b45642f42a26c4ba05961ef380fe489062232cebe409"
+    },
+    "src/main/java/com/example/hrassistant/generated/limits/UsageLimits.java": {
+      "owner": "generated",
+      "sha256": "b92758572c09cccbb68624bddcbf4a6d0f60ec90266db4f15a56acc7cd5e5126"
+    },
+    "src/main/java/com/example/hrassistant/generated/security/SecurityConfiguration.java": {
+      "owner": "generated",
+      "sha256": "1e95c3d319903e661d175e9f07da329dd0c0241570f1289318a287b94d634aa7"
+    },
+    "src/main/java/com/example/hrassistant/generated/tool/BookDayOffHandler.java": {
+      "owner": "generated",
+      "sha256": "15d54cc5f8c3ed82f93d66b004f0e19bc855ee19810d809472c987d548be55c6"
+    },
+    "src/main/java/com/example/hrassistant/generated/tool/BookDayOffTool.java": {
+      "owner": "generated",
+      "sha256": "5503acac99cc19785de36e482462d65e8290525704afc89646785af3adecc471"
+    },
+    "src/main/java/com/example/hrassistant/generated/tool/GuardedToolCallback.java": {
+      "owner": "generated",
+      "sha256": "f36846dfe50b13fa3f40be21eaad7ffb399eab1cbc4021a7a2ab2b338eeba5a7"
+    },
+    "src/main/java/com/example/hrassistant/generated/tool/RemainingDaysOffHandler.java": {
+      "owner": "generated",
+      "sha256": "33d1c6ac8a796baa1db7267b8920219c4876cc3b21806da0fe37987d6f483ff1"
+    },
+    "src/main/java/com/example/hrassistant/generated/tool/RemainingDaysOffTool.java": {
+      "owner": "generated",
+      "sha256": "e2deb47bff93ee4deb9ea4060e1bcaba42ab7c8e9da9d92c1fb45273fa93db03"
+    },
+    "src/main/java/com/example/hrassistant/generated/tool/ToolGuard.java": {
+      "owner": "generated",
+      "sha256": "d5c5aeafe2bb5ececcbf6c07a3bd9f58e48dc5747a389a7ec1a1653a2b117d42"
+    },
+    "src/main/java/com/example/hrassistant/generated/ui/ChatUiController.java": {
+      "owner": "generated",
+      "sha256": "0d71e877ae02b028e9d951553c1d9c43b1236aceb4ab5e56f7086ea2a4aca19d"
+    },
+    "src/main/java/com/example/hrassistant/tool/DefaultBookDayOffHandler.java": {
+      "owner": "user",
+      "sha256": "55e852f36d4a59597f5570450d88679d0b61cad9bb69a8f53294e5e39a5a6351"
+    },
+    "src/main/java/com/example/hrassistant/tool/DefaultRemainingDaysOffHandler.java": {
+      "owner": "user",
+      "sha256": "bbffe2dab84d72f1d0001350e58734e6f3403711eaf2d9d8ab3a21775b2804c9"
+    },
+    "src/main/resources/application.yml": {
+      "owner": "merged",
+      "sha256": "55fcf359d6b8ac5f2ac31754d7aed2c8db3658c83a623d98130f3ada7c8a5d41"
+    },
+    "src/main/resources/db/migration/V2__agent_approval.sql": {
+      "owner": "generated",
+      "sha256": "f408d81a0d96504e2b52723026db51cd4c248e85011ba7780411a3bda55f66c8"
+    },
+    "src/main/resources/prompts/system.md": {
+      "owner": "user",
+      "sha256": "7fbf7e00da8bb560e69ec59bc866e776970eda39e48ad593cc6fa54b1228a0c7"
+    },
+    "src/main/resources/static/chat.css": {
+      "owner": "merged",
+      "sha256": "d7ef692f0beec9597eb3795cad1ac8a14876dcedc890a47553e9589ca2d74b6a"
+    },
+    "src/main/resources/static/chat.js": {
+      "owner": "merged",
+      "sha256": "a80d5bb055de40c30cb8b52952d93d39ea0893c733e1cfabb5b0460d17e508f3"
+    },
+    "src/main/resources/static/index.html": {
+      "owner": "merged",
+      "sha256": "7c268ba8f9ad650ec27679a2010c545b048496050681ece538d5af6a07a27155"
+    },
+    "src/test/java/com/example/hrassistant/HrAssistantApplicationTests.java": {
+      "owner": "merged",
+      "sha256": "a8b40e7449d810d61ce1568b9ab934de5296971f1714f189b6018f55b065e3cf"
+    },
+    "src/test/java/com/example/hrassistant/ObservabilityTests.java": {
+      "owner": "generated",
+      "sha256": "c08d13a9c118e222bf12c60c32aa09c19b38bcd7021134b78a2a393853704a8f"
+    },
+    "src/test/java/com/example/hrassistant/generated/TestcontainersConfiguration.java": {
+      "owner": "generated",
+      "sha256": "60014b6d14cbf0f67306fd2f925c07f134cbe6cdf2473eb962f7404bc388cb2a"
+    },
+    "src/test/java/com/example/hrassistant/generated/chat/ChatControllerTests.java": {
+      "owner": "generated",
+      "sha256": "5333d08fc0204233ec22e7fdcb9c229c23c278c735cabb8200ccd04c4ba03943"
+    },
+    "src/test/java/com/example/hrassistant/generated/tool/BookDayOffToolTests.java": {
+      "owner": "generated",
+      "sha256": "5fda5daac3998619c86a707e90aa01214d38df19f8c97f8121d20baa7050c8b7"
+    },
+    "src/test/java/com/example/hrassistant/generated/tool/RemainingDaysOffToolTests.java": {
+      "owner": "generated",
+      "sha256": "e8593c8138a7d165054f6d616a237ae67d3d8895dc92e31840e5e55b801f0f46"
+    },
+    "src/test/java/com/example/hrassistant/generated/tool/ToolGuardTests.java": {
+      "owner": "generated",
+      "sha256": "3b7420a65242da0c283e77c9b90857affc678984d784f5504eb4339838dd18ff"
+    }
+  }
+}

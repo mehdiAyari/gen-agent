@@ -1,0 +1,67 @@
+# The agent and the services it needs, for a local run: docker compose up --build
+# Sign in as demo / demo through Keycloak (http://localhost:8180, admin / admin): see README.md.
+services:
+  agent:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/agent
+      DATABASE_USERNAME: agent
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-agent}
+      REDIS_URL: redis://redis:6379
+      # Tokens are issued for the address users sign in at; inside Compose, the keys are fetched from keycloak.
+      OIDC_ISSUER_URI: http://localhost:8180/realms/agent
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI: http://keycloak:8080/realms/agent/protocol/openid-connect/certs
+      # Ollama runs on the host: ollama pull qwen2.5:7b
+      SPRING_AI_OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OTLP_ENABLED: "true"
+      OTLP_ENDPOINT: http://lgtm:4318
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_DB: agent
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-agent}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent -d agent"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:8.10.2-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: start-dev --import-realm
+    ports:
+      - "8180:8080"
+    environment:
+      KC_HOSTNAME: http://localhost:8180
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
+
+  # Grafana with Tempo (traces), Prometheus (metrics) and Loki: http://localhost:3000
+  lgtm:
+    image: grafana/otel-lgtm:0.38.0
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres-data:

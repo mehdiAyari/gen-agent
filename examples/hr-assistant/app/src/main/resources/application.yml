@@ -1,0 +1,69 @@
+spring:
+  application:
+    name: hr-assistant
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/agent}
+    username: ${DATABASE_USERNAME:agent}
+    password: ${DATABASE_PASSWORD}
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Only tokens of this issuer are accepted; its keys are found through its OIDC discovery document.
+          issuer-uri: ${OIDC_ISSUER_URI}
+  ai:
+    ollama:
+      chat:
+        model: qwen2.5:7b
+        temperature: 0
+    chat:
+      memory:
+        repository:
+          jdbc:
+            # Creates the table of Spring AI's chat memory when it does not exist yet.
+            initialize-schema: always
+
+agent:
+  system-prompt: classpath:prompts/system.md
+  chat-ui:
+    # Public client of the chat page at the OIDC provider: authorization code with PKCE, no secret.
+    client-id: ${OIDC_CLIENT_ID:agent-client}
+  memory:
+    window: 20
+  limits:
+    requests: 30
+    requests-period: 1m
+    tokens: 100000
+    tokens-period: 1d
+  cache:
+    # How long a first answer is reused for the same question of the same user.
+    ttl: 1h
+
+management:
+  server:
+    # Health and metrics on their own port, kept off the public one.
+    port: ${MANAGEMENT_PORT:8081}
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      otlp:
+        # Sent to an OpenTelemetry collector when OTLP_ENABLED is true: docker compose starts one, with Grafana.
+        enabled: ${OTLP_ENABLED:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTLP_ENABLED:false}
+        url: ${OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
