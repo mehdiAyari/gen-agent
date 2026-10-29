@@ -21,7 +21,7 @@ contribution rules in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 ## The golden rule
 
 Generated Java must read like code a good Spring developer wrote by hand: constructor injection, records for DTOs,
-`@ConfigurationProperties`, sorted imports, no dead code. Details: the `template-authoring` skill.
+`@ConfigurationProperties`, sorted imports, no dead code. Details: [`docs/template-authoring.md`](docs/template-authoring.md).
 
 ## Way of working
 
@@ -32,10 +32,10 @@ Generated Java must read like code a good Spring developer wrote by hand: constr
 
 ## Skills
 
-`template-authoring` (in `.claude/skills/`) covers everything that produces generated code. Optional public skills
-that fit the project: `spring-boot-skill` (sivaprasadreddy/sivalabs-agent-skills), `frontend-design`
-(anthropics/skills), `vercel-react-best-practices`, `web-design-guidelines` (vercel-labs/agent-skills) and `shadcn`
-(shadcn-ui/ui), pinned in `skills-lock.json`. Where a skill and this file disagree, this file wins:
+Optional public agent skills that fit the project, pinned in `skills-lock.json`: `spring-boot-skill`
+(sivaprasadreddy/sivalabs-agent-skills), `frontend-design` (anthropics/skills), `vercel-react-best-practices`,
+`web-design-guidelines` (vercel-labs/agent-skills) and `shadcn` (shadcn-ui/ui). Where a skill and this file disagree,
+this file wins:
 
 - `spring-boot-skill` organizes code by business module; here the `…generated` package separation comes first, then
   features inside it. Its Spotless, JaCoCo and git-commit-id plugins are not generated.

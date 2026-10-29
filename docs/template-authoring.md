@@ -1,12 +1,3 @@
----
-name: template-authoring
-description: >
-  Use when writing or changing anything that produces code in a generated project: EJS templates in
-  packages/templates, the render pipeline in packages/core, or the reference snapshots. The generated
-  Java must read as if a good Spring developer wrote it by hand — sorted imports, no dead code, useful
-  comments, no trace of templating.
----
-
 # Template authoring
 
 The generated project is the product. A reviewer opening any generated file must not be able to tell it
@@ -14,7 +5,7 @@ came out of a template. Read this before touching `packages/templates/**` or the
 
 ## The bar
 
-Ask of every generated file: *would a senior Spring developer have written exactly this by hand?*
+Ask of every generated file: _would a senior Spring developer have written exactly this by hand?_
 
 - Constructor injection only, `final` fields, no `@Autowired` on fields.
 - Records for DTOs and for `@ConfigurationProperties`.
@@ -45,7 +36,7 @@ Ask of every generated file: *would a senior Spring developer have written exact
 
 ## Comments
 
-- Comments explain *why* or point the developer to the next step; they never paraphrase the code.
+- Comments explain _why_ or point the developer to the next step; they never paraphrase the code.
 - Javadoc on public types of the generated API (what the type is for, how to extend it).
 - Generated-owned files start with one short ownership note so the developer knows not to edit them
   (example: `// Managed by gen-agent: changes here are overwritten. Extend PoserCongeToolBase instead.`).

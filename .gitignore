@@ -8,6 +8,5 @@ e2e/output/
 e2e/test-results/
 e2e/playwright-report/
 
-# Public agent skills, installed locally
-.claude/skills/*
-!.claude/skills/template-authoring/
+# Local coding assistant settings and skills
+.claude/
