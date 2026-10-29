@@ -12,9 +12,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -28,17 +28,22 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
+      # The end-to-end tests lint the Helm charts of the generated projects.
+      - uses: azure/setup-helm@v5
+        with:
+          version: v4.3.1
       - run: pnpm install --frozen-lockfile
-      # Maven builds of the reference projects, then the web generator in the runner's Google Chrome.
+      # Maven builds of the reference projects (Testcontainers runs in the runner's Docker), then the web generator in
+      # the runner's Google Chrome.
       - run: pnpm e2e

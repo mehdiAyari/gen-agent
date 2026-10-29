@@ -723,7 +723,10 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     agent.springAi !== SUPPORTED_SPRING_AI,
     `agent.springAi: ${agent.springAi} is not supported, this version of gen-agent generates Spring AI ${SUPPORTED_SPRING_AI}`,
   );
-  add(agent.memory.type === 'redis', 'agent.memory.type: "redis" arrives in V5 (in-memory and jdbc are generated)');
+  add(
+    agent.memory.type === 'redis',
+    'agent.memory.type: "redis" arrives in a later version (in-memory and jdbc are generated)',
+  );
   agent.tools.forEach((tool, index) => {
     if (tool.type === 'http') {
       add(tool.cacheTtl, `agent.tools.${String(index)}.cacheTtl: caching tool results arrives in a later version`);
