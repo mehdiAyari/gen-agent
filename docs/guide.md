@@ -72,6 +72,7 @@ Grow the project later without losing your changes:
 
 ```bash
 gen-agent add tool order-status --url 'https://shop.example.org/orders/{orderId}' --param orderId:string:required
+gen-agent add tool cancel-order --type java --param orderId:string:required --approval   # each call waits for the user
 gen-agent add mcp files --package @modelcontextprotocol/server-filesystem --version 2.0.0 --arg /srv/docs
 gen-agent update        # after editing agent.yaml by hand
 ```
@@ -87,6 +88,11 @@ export MISTRAL_API_KEY=...              # or OPENAI_API_KEY, ANTHROPIC_API_KEY; 
 ./mvnw spring-boot:run
 curl -s localhost:8080/api/chat -H 'Content-Type: application/json' -d '{"message": "Hello"}'
 ```
+
+An agent that needs Postgres or Redis without Docker Compose (a `minimal` agent with RAG, for instance) runs with
+`./mvnw spring-boot:test-run` (`./gradlew bootTestRun`): its services start in Docker, as in its tests.
+
+Complete agents, with the commands that made them and the code written by hand, are in [`examples/`](../examples).
 
 ## Profiles
 

@@ -8,3 +8,4 @@ packages/web/.next/
 packages/web/out/
 packages/web/next-env.d.ts
 **/coverage/
+examples/*/app/

@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: petstore-assistant
+  ai:
+    ollama:
+      chat:
+        model: qwen2.5:7b
+        temperature: 0
+
+agent:
+  system-prompt: classpath:prompts/system.md
+  memory:
+    window: 20
+  tools:
+    find-pets-by-status:
+      url: https://petstore3.swagger.io/api/v3/pet/findByStatus
+      token: ${PETSTORE_TOKEN}
+      max-response-chars: 20000
+    get-pet-by-id:
+      url: "https://petstore3.swagger.io/api/v3/pet/{petId}"
+      token: ${PETSTORE_API_KEY}
+      max-response-chars: 20000

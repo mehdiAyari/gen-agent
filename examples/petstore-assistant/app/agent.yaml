@@ -1,0 +1,11 @@
+agent:
+  name: petstore-assistant
+  description: Helps the customers of the pet store find a pet
+  model:
+    provider: ollama
+    name: qwen2.5:7b
+    temperature: 0
+  openapi:
+    - spec: specs/petstore.json
+      include: [ findPetsByStatus, getPetById ]
+      baseUrl: https://petstore3.swagger.io/api/v3

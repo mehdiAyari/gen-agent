@@ -83,9 +83,16 @@ All notable changes to this project are documented here. The format follows
   `build: gradle` (Kotlin DSL and the Gradle Wrapper 9.8.2, checksum-verified). Every dependency is listed once, for
   Maven and Gradle alike.
 - Test coverage of every package (`pnpm coverage`), kept by the CI; a short README, the details in `docs/guide.md`.
+- Examples in `examples/`: complete agents with the commands that made them (`make.sh`), the code written by hand
+  afterwards and a recording of a real run on Ollama; the end-to-end tests check each one still matches its commands.
+- `gen-agent add tool --approval`: the calls of the new tool wait for the approval of the user who asked.
 
 ### Fixed
 
+- An agent that needs Postgres or Redis without Docker Compose had nothing to start them: it now runs with
+  `./mvnw spring-boot:test-run` (`./gradlew bootTestRun`), its services in Docker as in its tests (found while writing
+  the examples).
+- `gen-agent generate --output` outside the current directory printed a `../..` path: it prints the absolute one.
 - The Helm chart had no Dockerfile to build its image without Docker Compose (found on a kind cluster).
 - A semantic cache with conversations kept in memory had no database to run on.
 - An empty answer of the model is never cached.
