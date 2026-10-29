@@ -19,6 +19,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Type-aware linting reads the types the packages build into dist/.
+      - run: pnpm build
       - run: pnpm lint
       - run: pnpm knip
       - run: pnpm typecheck

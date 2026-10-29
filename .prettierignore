@@ -1,5 +1,4 @@
 pnpm-lock.yaml
-.claude/
 **/dist/
 **/.turbo/
 **/__snapshots__/

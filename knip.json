@@ -12,7 +12,7 @@
       "entry": ["scripts/*.js"]
     }
   },
-  "ignore": [".claude/**", "packages/templates/minimal/**", "packages/templates/src/__snapshots__/**"],
+  "ignore": ["packages/templates/minimal/**", "packages/templates/src/__snapshots__/**"],
   "ignoreIssues": {
     "packages/web/components/ui/**": ["exports", "types"]
   }

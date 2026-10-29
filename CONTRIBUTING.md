@@ -9,7 +9,8 @@ Node 22+, pnpm, JDK 21 (Maven and Gradle are downloaded by the wrappers of the g
 Google Chrome for the end-to-end tests.
 
 ```bash
-pnpm install
+pnpm install    # also installs the Git hooks
+pnpm build      # type-aware linting reads the types of the built packages
 pnpm lint && pnpm knip && pnpm typecheck && pnpm test
 pnpm coverage   # the unit tests with their coverage, per package
 pnpm e2e        # builds the reference projects (./mvnw verify or ./gradlew build) and lints their Helm charts,
