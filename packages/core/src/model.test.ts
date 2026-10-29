@@ -209,6 +209,7 @@ agent:
       oidc: false,
       limits: false,
       dockerCompose: false,
+      devServices: false,
       cache: false,
       redis: false,
       otel: false,
@@ -655,6 +656,18 @@ agent:
     ).toBe(true);
   });
 
+  it('starts the services in Docker for a run when Compose does not', () => {
+    const rag = 'agent:\n  name: desk\n  model: { provider: ollama, name: m }\n  rag: { enabled: true }\n';
+
+    expect(buildModel(parse(rag)).features.devServices).toBe(true);
+    expect(buildModel(parse(rag.replace('name: desk', 'name: desk\n  profile: standard'))).features.devServices).toBe(
+      false,
+    );
+    expect(
+      buildModel(parse('agent:\n  name: desk\n  model: { provider: ollama, name: m }\n')).features.devServices,
+    ).toBe(false);
+  });
+
   it('builds with Maven by default, or with Gradle', () => {
     const maven = buildModel(parse('agent:\n  name: desk\n  model: { provider: ollama, name: m }\n'));
     const gradle = buildModel(parse('agent:\n  name: desk\n  build: gradle\n  model: { provider: ollama, name: m }\n'));
@@ -664,7 +677,13 @@ agent:
       verify: './mvnw verify',
       jar: 'target/desk-0.0.1-SNAPSHOT.jar',
     });
-    expect(gradle.build).toMatchObject({ tool: 'gradle', verify: './gradlew build', run: './gradlew bootRun' });
+    expect(maven.build.testRun).toBe('./mvnw spring-boot:test-run');
+    expect(gradle.build).toMatchObject({
+      tool: 'gradle',
+      verify: './gradlew build',
+      run: './gradlew bootRun',
+      testRun: './gradlew bootTestRun',
+    });
     expect(gradle.dependencies.map((dependency) => dependency.artifact)).toEqual([
       'spring-boot-starter-webmvc',
       'spring-boot-starter-validation',

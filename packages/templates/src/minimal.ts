@@ -437,6 +437,12 @@ export const minimalEntries: TemplateEntry[] = [
     output: (m) => test(m, 'ObservabilityTests.java'),
   },
   {
+    template: 'test/TestApplication.java.ejs',
+    owner: 'generated',
+    when: (m) => m.features.devServices,
+    output: (m) => test(m, `Test${m.project.applicationClass}.java`),
+  },
+  {
     template: 'test/generated/TestcontainersConfiguration.java.ejs',
     owner: 'generated',
     when: (m) => m.features.postgres || m.features.redis,

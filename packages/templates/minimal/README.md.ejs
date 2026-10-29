@@ -68,8 +68,13 @@ Start [Ollama](https://ollama.com) and pull <%= ollamaModels.length > 1 ? 'the m
 <%_   for (const secret of secrets) { _%>
 export <%= secret %>=...   # never commit it
 <%_   } _%>
-<%= build.run %>
+<%= features.devServices ? build.testRun : build.run %>
 ```
+<%_   if (features.devServices) { _%>
+
+`<%= build.testRun %>` starts <%= services.join(' and ') %> in Docker, as the tests do, and stops <%= services.length > 1 ? 'them' : 'it' %> with the agent. Against your
+own <%= services.length > 1 ? 'services' : 'database' %>, set <%- [features.postgres ? '`DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`' : '', features.redis ? '`REDIS_URL`' : ''].filter(Boolean).join(' and ') %>, then run `<%= build.run %>`.
+<%_   } _%>
 
 Talk to the agent:
 

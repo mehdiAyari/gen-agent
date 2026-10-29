@@ -12,8 +12,11 @@ Java 21 is the only requirement: `./gradlew` downloads Gradle (checked against i
 Start [Ollama](https://ollama.com) and pull the models (`ollama pull qwen2.5:3b`, `ollama pull nomic-embed-text`), then:
 
 ```bash
-./gradlew bootRun
+./gradlew bootTestRun
 ```
+
+`./gradlew bootTestRun` starts Postgres in Docker, as the tests do, and stops it with the agent. Against your
+own database, set `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, then run `./gradlew bootRun`.
 
 Talk to the agent:
 

@@ -38,6 +38,8 @@ export interface GenerationModel {
     tool: 'maven' | 'gradle';
     verify: string;
     run: string;
+    /** Runs the agent with its services started by Testcontainers. */
+    testRun: string;
     evals: string;
     /** The executable jar, relative to the project. */
     jar: string;
@@ -60,6 +62,8 @@ export interface GenerationModel {
     /** Request rate and token budget per user, counted in Redis. */
     limits: boolean;
     dockerCompose: boolean;
+    /** Without Compose, the services the agent needs start in Docker for a run, as in the tests (`build.testRun`). */
+    devServices: boolean;
     /** First answers of a conversation kept in Redis per user, unless a tool was called. */
     cache: boolean;
     /** Redis is needed: for the limits or the cache. */
@@ -332,6 +336,7 @@ function buildOf(name: string, tool: 'maven' | 'gradle'): GenerationModel['build
         tool,
         verify: './gradlew build',
         run: './gradlew bootRun',
+        testRun: './gradlew bootTestRun',
         evals: './gradlew test -Pevals',
         jar: `build/libs/${name}-0.0.1-SNAPSHOT.jar`,
         output: 'build',
@@ -341,6 +346,7 @@ function buildOf(name: string, tool: 'maven' | 'gradle'): GenerationModel['build
         tool,
         verify: './mvnw verify',
         run: './mvnw spring-boot:run',
+        testRun: './mvnw spring-boot:test-run',
         evals: './mvnw verify -Pevals',
         jar: `target/${name}-0.0.1-SNAPSHOT.jar`,
         output: 'target',
@@ -433,6 +439,7 @@ function mcpServerOf(server: NonNullable<AgentDefinition['mcp']>[number], agentN
         };
   }
   const tag = `${agentName}-mcp-${server.name}:${version}`;
+
   return {
     kind: 'local',
     name: server.name,
@@ -568,6 +575,22 @@ export function buildModel(file: AgentFile): GenerationModel {
       ? undefined
       : PROVIDERS[fallback.provider].apiKeyEnv;
 
+  const redis =
+    requests !== undefined ||
+    tokens !== undefined ||
+    cache ||
+    pii ||
+    killSwitches ||
+    agent.memory.type === 'redis' ||
+    cachedTools.length > 0;
+  const postgres =
+    agent.memory.type === 'jdbc' ||
+    agent.observability?.feedback === true ||
+    embeddings ||
+    agent.gdpr?.erasureEndpoint === true ||
+    agent.memory.retention !== undefined ||
+    approvalTools.length > 0;
+  const dockerCompose = agent.deploy?.includes('docker-compose') ?? false;
   const model: Omit<GenerationModel, 'dependencies' | 'build'> = {
     agent,
     project: {
@@ -594,16 +617,10 @@ export function buildModel(file: AgentFile): GenerationModel {
       redisMemory: agent.memory.type === 'redis',
       oidc,
       limits: requests !== undefined || tokens !== undefined,
-      dockerCompose: agent.deploy?.includes('docker-compose') ?? false,
+      dockerCompose,
+      devServices: (postgres || redis) && !dockerCompose,
       cache,
-      redis:
-        requests !== undefined ||
-        tokens !== undefined ||
-        cache ||
-        pii ||
-        killSwitches ||
-        agent.memory.type === 'redis' ||
-        cachedTools.length > 0,
+      redis,
       otel: agent.observability?.otel === true,
       prometheus: agent.observability?.metrics === 'prometheus',
       mcp: mcpServers.length > 0,
@@ -621,13 +638,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       retention: agent.memory.retention !== undefined,
       semanticCache: semantic !== undefined,
       vectorStore: embeddings,
-      postgres:
-        agent.memory.type === 'jdbc' ||
-        agent.observability?.feedback === true ||
-        embeddings ||
-        agent.gdpr?.erasureEndpoint === true ||
-        agent.memory.retention !== undefined ||
-        approvalTools.length > 0,
+      postgres,
       rag: ragEnabled,
       injectionDetection,
       outputGuard: agent.security?.outputGuard === true,
@@ -710,6 +721,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       ),
     ],
   };
+
   return { ...model, dependencies: dependenciesOf(model), build: buildOf(agent.name, agent.build) };
 }
 

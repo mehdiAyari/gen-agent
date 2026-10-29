@@ -1,0 +1,14 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.basePackage %>;
+
+<%- imports %>
+
+/** Runs the agent with its <%= [features.postgres ? 'Postgres' : '', features.redis ? 'Redis' : ''].filter(Boolean).join(' and ') %> started in Docker, as the tests do: {@code <%= build.testRun %>}. */
+public class Test<%= project.applicationClass %> {
+
+    public static void main(String[] args) {
+        <%= type('org.springframework.boot.SpringApplication') %>.from(<%= project.applicationClass %>::main)
+                .with(<%= type(project.generatedPackage + '.TestcontainersConfiguration') %>.class)
+                .run(args);
+    }
+}

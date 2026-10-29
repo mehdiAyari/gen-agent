@@ -129,7 +129,9 @@ async function generateFromSource(
   }
 
   const directory = resolve(options.cwd, options.output ?? config.agent.name);
-  const shown = relative(options.cwd, directory) || '.';
+  // Inside the current directory, as typed; elsewhere, where it is.
+  const fromCwd = relative(options.cwd, directory);
+  const shown = fromCwd.startsWith('..') ? directory : fromCwd || '.';
   if (!isEmptyOrMissing(directory)) {
     out.error(`${shown} is not empty: choose another directory with --output (gen-agent never overwrites files)`);
     return 1;
@@ -155,7 +157,7 @@ async function generateFromSource(
         : []),
       ...secrets.map((secret) => `  export ${secret}=...`),
       // With Compose, the agent starts with its database, Redis and identity provider.
-      features.dockerCompose ? '  docker compose up --build' : `  ${build.run}`,
+      features.dockerCompose ? '  docker compose up --build' : `  ${features.devServices ? build.testRun : build.run}`,
     ].join('\n'),
   );
   return 0;

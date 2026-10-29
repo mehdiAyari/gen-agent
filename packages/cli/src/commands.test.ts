@@ -93,6 +93,21 @@ describe('gen-agent generate --from', () => {
     expect(out.text()).toMatch(/export MISTRAL_API_KEY=\.\.\.\n {2}docker compose up --build/);
   });
 
+  it('runs an agent that needs Postgres without Compose with its database in Docker', async () => {
+    writeFileSync(
+      join(cwd, 'agent.yaml'),
+      agentYaml
+        .replace('  tools:', '  rag: { enabled: true }\n  tools:')
+        .replace('provider: mistral\n    name: mistral-small-latest', 'provider: ollama\n    name: qwen2.5:3b'),
+    );
+
+    expect(await generateCommand({ from: 'agent.yaml', cwd }, out)).toBe(0);
+    expect(out.text()).toMatch(/\n {2}\.\/mvnw spring-boot:test-run$/);
+    expect(
+      existsSync(join(cwd, 'weather-bot/src/test/java/com/example/weatherbot/TestWeatherBotApplication.java')),
+    ).toBe(true);
+  });
+
   it('pulls the embedding model of the semantic cache with Ollama', async () => {
     writeFileSync(
       join(cwd, 'agent.yaml'),
@@ -132,6 +147,16 @@ describe('gen-agent generate --from', () => {
 
     expect(code).toBe(0);
     expect(existsSync(join(cwd, 'out/bot/src/main/resources/application.yml'))).toBe(true);
+  });
+
+  it('shows an --output outside the current directory as an absolute path', async () => {
+    writeFileSync(join(cwd, 'agent.yaml'), agentYaml);
+    const elsewhere = join(mkdtempSync(join(tmpdir(), 'gen-agent-out-')), 'bot');
+
+    const code = await generateCommand({ from: 'agent.yaml', output: elsewhere, cwd }, out);
+
+    expect(code).toBe(0);
+    expect(out.text()).toContain(`cd ${elsewhere}`);
   });
 
   it('reports validation errors with the file and the line, and writes nothing', async () => {
