@@ -22,7 +22,12 @@ jobs:
       - run: pnpm lint
       - run: pnpm knip
       - run: pnpm typecheck
-      - run: pnpm test
+      # The unit tests, with their coverage (packages/*/coverage, lcov for any coverage service).
+      - run: pnpm coverage
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: packages/*/coverage/
 
   e2e:
     needs: check

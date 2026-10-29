@@ -9,3 +9,4 @@ packages/templates/src/minimal-sources.ts
 packages/web/.next/
 packages/web/out/
 packages/web/next-env.d.ts
+**/coverage/

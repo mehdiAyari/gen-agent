@@ -18,7 +18,8 @@
   "scripts": {
     "build": "node scripts/embed-templates.js && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "coverage": "vitest run --coverage --coverage.include='src/**/*.ts' --coverage.exclude=src/minimal-sources.ts --coverage.reporter=text-summary --coverage.reporter=lcov --coverage.reporter=json-summary"
   },
   "dependencies": {
     "@gen-agent/core": "workspace:*"

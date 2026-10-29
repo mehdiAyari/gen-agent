@@ -24,7 +24,8 @@
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --noEmit -p tsconfig.build.json && esbuild src/bin.ts --bundle --platform=node --format=esm --target=node22 --external:@clack/prompts --external:@modelcontextprotocol/sdk --external:commander --external:ejs --external:prettier --external:prettier-plugin-java --external:yaml --external:zod --outfile=dist/bin.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "coverage": "vitest run --coverage --coverage.include='src/**/*.ts' --coverage.reporter=text-summary --coverage.reporter=lcov --coverage.reporter=json-summary"
   },
   "dependencies": {
     "@clack/prompts": "^1.8.1",

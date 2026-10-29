@@ -20,7 +20,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "schema": "tsc -p tsconfig.build.json && node scripts/write-schema.js && prettier --write schema/agent.schema.json"
+    "schema": "tsc -p tsconfig.build.json && node scripts/write-schema.js && prettier --write schema/agent.schema.json",
+    "coverage": "vitest run --coverage --coverage.include='src/**/*.ts' --coverage.reporter=text-summary --coverage.reporter=lcov --coverage.reporter=json-summary"
   },
   "dependencies": {
     "ejs": "^7.0.2",

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "coverage": "vitest run --coverage --coverage.include='lib/**/*.ts' --coverage.reporter=text-summary --coverage.reporter=lcov --coverage.reporter=json-summary"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
