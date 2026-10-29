@@ -15,7 +15,7 @@ class ChatUiController {
         @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuer,
         @Value("${agent.chat-ui.client-id}") String clientId
     ) {
-        this.settings = new ChatUiSettings("oidc", issuer, clientId);
+        this.settings = new ChatUiSettings("oidc", issuer, clientId, false);
     }
 
     @GetMapping("/chat-config.json")
@@ -27,6 +27,7 @@ class ChatUiController {
      * @param auth how users sign in: oidc, or none
      * @param issuer the OIDC provider the page signs users in with
      * @param clientId the public client of the page at that provider
+     * @param feedback whether the page shows thumbs up and down under the answers
      */
-    record ChatUiSettings(String auth, String issuer, String clientId) {}
+    record ChatUiSettings(String auth, String issuer, String clientId, boolean feedback) {}
 }

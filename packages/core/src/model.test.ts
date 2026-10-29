@@ -214,6 +214,7 @@ agent:
       mcp: false,
       remoteMcp: false,
       toolCache: false,
+      feedback: false,
       trackToolCalls: false,
       guardTools: false,
       chatUi: false,
@@ -638,6 +639,20 @@ agent:
     expect(cached.cachedTools).toEqual([{ name: 'rates', ttl: '10m' }]);
   });
 
+  it('keeps the feedback of users on the answers, in Postgres', () => {
+    const rated = buildModel(
+      parse(
+        'agent:\n  name: desk\n  model: { provider: ollama, name: m }\n  observability: { otel: true, feedback: true }\n',
+      ),
+    );
+
+    expect(rated.features).toMatchObject({ feedback: true, postgres: true });
+    expect(
+      buildModel(parse('agent:\n  name: v\n  profile: production\n  model: { provider: ollama, name: m }\n')).features
+        .feedback,
+    ).toBe(true);
+  });
+
   it('limits the tool calls of an agent that only asks for it', () => {
     const limited = buildModel(
       parse(`
@@ -679,7 +694,6 @@ describe('unsupportedFeatures', () => {
       expect.arrayContaining([
         'agent.springAi: 1.0.0 is not supported, this version of gen-agent generates Spring AI 2.0.1',
         'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
-        'agent.observability.feedback: feedback buttons arrive in a later version',
       ]),
     );
   });

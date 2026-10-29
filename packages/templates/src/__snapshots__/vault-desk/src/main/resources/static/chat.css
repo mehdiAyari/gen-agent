@@ -180,3 +180,11 @@ button:disabled {
   display: flex;
   gap: 0.5rem;
 }
+
+#messages .feedback {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}

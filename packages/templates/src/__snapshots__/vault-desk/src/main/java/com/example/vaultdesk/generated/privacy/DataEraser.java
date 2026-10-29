@@ -4,6 +4,7 @@ package com.example.vaultdesk.generated.privacy;
 import com.example.vaultdesk.generated.approval.Approvals;
 import com.example.vaultdesk.generated.cache.ReplyCache;
 import com.example.vaultdesk.generated.cache.SemanticCache;
+import com.example.vaultdesk.generated.feedback.Feedbacks;
 import com.example.vaultdesk.generated.limits.UsageLimits;
 import com.example.vaultdesk.generated.tool.ToolGuard;
 import java.util.List;
@@ -33,6 +34,8 @@ public class DataEraser {
 
     private final ToolGuard toolGuard;
 
+    private final Feedbacks feedbacks;
+
     DataEraser(
         Conversations conversations,
         ChatMemory chatMemory,
@@ -41,7 +44,8 @@ public class DataEraser {
         SemanticCache semanticCache,
         UsageLimits usageLimits,
         Approvals approvals,
-        ToolGuard toolGuard
+        ToolGuard toolGuard,
+        Feedbacks feedbacks
     ) {
         this.conversations = conversations;
         this.chatMemory = chatMemory;
@@ -51,6 +55,7 @@ public class DataEraser {
         this.usageLimits = usageLimits;
         this.approvals = approvals;
         this.toolGuard = toolGuard;
+        this.feedbacks = feedbacks;
     }
 
     /** Returns the number of conversations erased. */
@@ -62,6 +67,7 @@ public class DataEraser {
         usageLimits.forget(userId);
         approvals.forget(userId);
         toolGuard.forget(userId);
+        feedbacks.forget(userId);
         return keys.size();
     }
 

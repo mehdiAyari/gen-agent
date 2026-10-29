@@ -468,13 +468,11 @@ describe('formFromYaml', () => {
   });
 
   it('explains what the web generator cannot handle yet', () => {
-    const result = formFromYaml(
-      'agent:\n  name: big\n  model: { provider: mistral, name: m }\n  observability: { feedback: true }\n',
-    );
+    const result = formFromYaml('agent:\n  name: big\n  springAi: 1.0.0\n  model: { provider: mistral, name: m }\n');
 
     expect(result).toEqual({
       ok: false,
-      errors: ['agent.observability.feedback: feedback buttons arrive in a later version'],
+      errors: ['agent.springAi: 1.0.0 is not supported, this version of gen-agent generates Spring AI 2.0.1'],
     });
   });
 

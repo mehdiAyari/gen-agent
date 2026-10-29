@@ -50,6 +50,8 @@ export interface GenerationModel {
     remoteMcp: boolean;
     /** Some HTTP tools keep their results in Redis, per user, for their cacheTtl. */
     toolCache: boolean;
+    /** Users rate answers up or down: counted, traced and kept in Postgres. */
+    feedback: boolean;
     /** Tools report their calls, so that answers built from live data are not cached. */
     trackToolCalls: boolean;
     /** Every tool goes through ToolGuard: calls recorded, personal data restored in arguments and masked in results. */
@@ -558,6 +560,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       mcp: mcpServers.length > 0,
       remoteMcp: mcpServers.some((server) => server.kind === 'remote'),
       toolCache: cachedTools.length > 0,
+      feedback: agent.observability?.feedback === true,
       trackToolCalls: cache && hasTools,
       guardTools:
         (cache || pii || injectionDetection || killSwitches || approvalTools.length > 0 || cachedTools.length > 0) &&
@@ -571,6 +574,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       vectorStore: embeddings,
       postgres:
         agent.memory.type === 'jdbc' ||
+        agent.observability?.feedback === true ||
         embeddings ||
         agent.gdpr?.erasureEndpoint === true ||
         agent.memory.retention !== undefined ||
@@ -750,6 +754,5 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     agent.openapi,
     'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
   );
-  add(agent.observability?.feedback, 'agent.observability.feedback: feedback buttons arrive in a later version');
   return issues;
 }

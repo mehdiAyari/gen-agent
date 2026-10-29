@@ -1,6 +1,10 @@
 spring:
   application:
     name: claims-desk
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/agent}
+    username: ${DATABASE_USERNAME:agent}
+    password: ${DATABASE_PASSWORD}
   data:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}

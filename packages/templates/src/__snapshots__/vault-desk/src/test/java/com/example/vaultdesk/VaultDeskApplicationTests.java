@@ -712,6 +712,35 @@ class VaultDeskApplicationTests {
         );
     }
 
+    @Autowired
+    JdbcClient jdbc;
+
+    @Test
+    void keepsWhatUsersThinkOfTheAnswers() {
+        assertThat(
+            feedback("{\"conversationId\": \"c-feedback\", \"rating\": \"DOWN\", \"comment\": \"Wrong amount\"}")
+        ).hasStatus(HttpStatus.NO_CONTENT);
+        assertThat(
+            jdbc
+                .sql("SELECT count(*) FROM agent_feedback WHERE conversation_id = 'c-feedback' AND rating = 'DOWN'")
+                .query(Long.class)
+                .single()
+        ).isEqualTo(1);
+        assertThat(feedback("{\"conversationId\": \"c-feedback\", \"rating\": \"MAYBE\"}")).hasStatus(
+            HttpStatus.BAD_REQUEST
+        );
+    }
+
+    private MvcTestResult feedback(String body) {
+        return mockMvc
+            .post()
+            .uri("/api/feedback")
+            .with(jwt().jwt(token -> token.subject("rita")))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body)
+            .exchange();
+    }
+
     private MvcTestResult ask(String message) {
         return post("ada", "{\"message\": \"" + message + "\"}");
     }

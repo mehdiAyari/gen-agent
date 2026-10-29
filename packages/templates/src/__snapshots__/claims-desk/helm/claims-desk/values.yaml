@@ -8,12 +8,15 @@ image:
   tag: "0.0.1-SNAPSHOT"
   pullPolicy: IfNotPresent
 
-# Secrets by reference only: a Secret you create, with the keys ANTHROPIC_API_KEY, OPENAI_API_KEY.
-#   kubectl create secret generic claims-desk-secrets --from-literal=ANTHROPIC_API_KEY=... --from-literal=OPENAI_API_KEY=...
+# Secrets by reference only: a Secret you create, with the keys ANTHROPIC_API_KEY, OPENAI_API_KEY, DATABASE_PASSWORD.
+#   kubectl create secret generic claims-desk-secrets --from-literal=ANTHROPIC_API_KEY=... --from-literal=OPENAI_API_KEY=... --from-literal=DATABASE_PASSWORD=...
 existingSecret: claims-desk-secrets
 
 # Settings of the agent, as environment variables (application.yml reads them).
 env:
+  # Postgres, run apart from the chart.
+  DATABASE_URL: jdbc:postgresql://postgres:5432/agent
+  DATABASE_USERNAME: agent
   REDIS_URL: redis://redis:6379
   OIDC_ISSUER_URI: https://login.example.org/realms/agent
   OTLP_ENABLED: "true"

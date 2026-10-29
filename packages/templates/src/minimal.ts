@@ -271,6 +271,18 @@ export const minimalEntries: TemplateEntry[] = [
     when: (m) => m.features.rag && m.features.injectionDetection,
     output: () => 'src/test/resources/documents/leaflet.md',
   },
+  ...['Feedbacks', 'FeedbackController'].map((name): TemplateEntry => ({
+    template: `java/generated/feedback/${name}.java.ejs`,
+    owner: 'generated',
+    when: (m) => m.features.feedback,
+    output: (m) => main(m, `generated/feedback/${name}.java`),
+  })),
+  {
+    template: 'resources/db/V4__agent_feedback.sql.ejs',
+    owner: 'generated',
+    when: (m) => m.features.feedback,
+    output: () => 'src/main/resources/db/migration/V4__agent_feedback.sql',
+  },
   {
     template: 'docker/mcp/Dockerfile.ejs',
     owner: 'generated',

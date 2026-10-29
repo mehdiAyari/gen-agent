@@ -28,6 +28,9 @@ if (tools.length > 0 || features.mcp) {
 if (features.injectionDetection || features.outputGuard) {
   add('Guard refusals per minute', 'short', [[`sum by (reason) (rate(agent_guard_refusals_total{${service}}[$__rate_interval])) * 60`, '{{reason}}']], 'Messages refused as prompt injection, answers refused as leaks.');
 }
+if (features.feedback) {
+  add('Feedback per hour', 'short', [[`sum by (rating) (rate(agent_feedback_total{${service}}[$__rate_interval])) * 3600`, '{{rating}}']], 'Thumbs up and down on the answers: agent_feedback in Postgres holds the comments.');
+}
 if (features.resilience) {
   add('Circuit breakers', 'short', [[`max by (name, state) (resilience4j_circuitbreaker_state{${service}}) == 1`, '{{name}}: {{state}}']], 'The state of the breaker of each model: closed is healthy.', true);
 }

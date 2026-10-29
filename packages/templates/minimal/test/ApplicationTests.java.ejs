@@ -582,6 +582,31 @@ class <%= project.applicationClass %>Tests {
     }
 <%_   } _%>
 <%_ } _%>
+<%_ if (features.feedback) { _%>
+
+    @<%= type('org.springframework.beans.factory.annotation.Autowired') %>
+    <%= type('org.springframework.jdbc.core.simple.JdbcClient') %> jdbc;
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void keepsWhatUsersThinkOfTheAnswers() {
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(feedback("{\"conversationId\": \"c-feedback\", \"rating\": \"DOWN\", \"comment\": \"Wrong amount\"}"))
+                .hasStatus(<%= type('org.springframework.http.HttpStatus') %>.NO_CONTENT);
+        assertThat(jdbc.sql("SELECT count(*) FROM agent_feedback WHERE conversation_id = 'c-feedback' AND rating = 'DOWN'").query(Long.class).single())
+                .isEqualTo(1);
+        assertThat(feedback("{\"conversationId\": \"c-feedback\", \"rating\": \"MAYBE\"}")).hasStatus(HttpStatus.BAD_REQUEST);
+    }
+
+    private <%= type('org.springframework.test.web.servlet.assertj.MvcTestResult') %> feedback(String body) {
+        return mockMvc.post()
+                .uri("/api/feedback")
+<%_   if (features.oidc) { _%>
+                .with(<%= staticImport('org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt') %>().jwt(token -> token.subject("rita")))
+<%_   } _%>
+                .contentType(<%= type('org.springframework.http.MediaType') %>.APPLICATION_JSON)
+                .content(body)
+                .exchange();
+    }
+<%_ } _%>
 <%_ if (features.injectionDetection || features.outputGuard || features.requestTimeout || features.resilience || routing || features.summarize || features.rag) { _%>
 
     private <%= type('org.springframework.test.web.servlet.assertj.MvcTestResult') %> ask(String message) {

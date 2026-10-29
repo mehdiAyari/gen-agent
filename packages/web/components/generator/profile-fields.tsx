@@ -426,6 +426,15 @@ export function ProfileFields({ form, errorOf, onChange }: ProfileFieldsProps) {
           />
         ) : null}
         <SwitchField
+          path="feedback"
+          label={t('feedback')}
+          hint={t('feedbackHint')}
+          checked={form.feedback}
+          onCheckedChange={(feedback) => {
+            update({ feedback });
+          }}
+        />
+        <SwitchField
           path="evals"
           label={t('evals')}
           hint={t('evalsHint')}

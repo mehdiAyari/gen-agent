@@ -1,0 +1,48 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.feedback;
+
+<%- imports %>
+
+/** A thumb up or down on an answer, and why. */
+@<%= type('org.springframework.web.bind.annotation.RestController') %>
+@<%= type('org.springframework.web.bind.annotation.RequestMapping') %>("/api/feedback")
+class FeedbackController {
+
+    /**
+     * @param conversationId the conversation of the answer
+     * @param rating UP or DOWN
+     * @param comment what was wrong or right, optional
+     */
+    record FeedbackRequest(
+            @<%= type('jakarta.validation.constraints.NotBlank') %> String conversationId,
+            @<%= type('jakarta.validation.constraints.NotNull') %> Feedbacks.Rating rating,
+            @<%= type('jakarta.validation.constraints.Size') %>(max = 2000) String comment) {}
+
+    private final Feedbacks feedbacks;
+<%_ if (features.pii) { _%>
+
+    private final <%= type(`${project.generatedPackage}.privacy.PersonalData`) %> personalData;
+
+    FeedbackController(Feedbacks feedbacks, PersonalData personalData) {
+        this.feedbacks = feedbacks;
+        this.personalData = personalData;
+    }
+<%_ } else { _%>
+
+    FeedbackController(Feedbacks feedbacks) {
+        this.feedbacks = feedbacks;
+    }
+<%_ } _%>
+
+    @<%= type('org.springframework.web.bind.annotation.PostMapping') %>
+    @<%= type('org.springframework.web.bind.annotation.ResponseStatus') %>(<%= type('org.springframework.http.HttpStatus') %>.NO_CONTENT)
+    void rate(@<%= type('jakarta.validation.Valid') %> @<%= type('org.springframework.web.bind.annotation.RequestBody') %> FeedbackRequest request<%- features.oidc ? `, @${type('org.springframework.security.core.annotation.AuthenticationPrincipal')} ${type('org.springframework.security.oauth2.jwt.Jwt')} user` : '' %>) {
+<%_ if (features.pii) { _%>
+        // The comment is kept with its personal data masked, under a key of its own.
+        String comment = request.comment() == null ? null : personalData.mask("feedback:" + request.conversationId(), request.comment());
+<%_ } else { _%>
+        String comment = request.comment();
+<%_ } _%>
+        feedbacks.record(<%= features.oidc ? 'user.getSubject()' : '"anonymous"' %>, request.conversationId(), request.rating(), comment);
+    }
+}

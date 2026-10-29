@@ -81,7 +81,7 @@
             <scope>runtime</scope>
         </dependency>
 <%_ } _%>
-<%_ if (features.erasure || features.retention || features.approval || features.rag) { _%>
+<%_ if (features.erasure || features.retention || features.approval || features.rag || features.feedback) { _%>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-flyway</artifactId>

@@ -259,6 +259,47 @@
       ]
     },
     {
+      "type": "timeseries",
+      "title": "Feedback per hour",
+      "description": "Thumbs up and down on the answers: agent_feedback in Postgres holds the comments.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (rating) (rate(agent_feedback_total{service_name=\"vault-desk\"}[$__rate_interval])) * 3600",
+          "legendFormat": "{{rating}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
       "type": "stat",
       "title": "Circuit breakers",
       "description": "The state of the breaker of each model: closed is healthy.",
@@ -269,7 +310,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
+        "x": 12,
         "y": 24
       },
       "fieldConfig": {

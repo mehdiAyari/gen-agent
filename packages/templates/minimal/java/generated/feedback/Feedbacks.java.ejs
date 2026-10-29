@@ -1,0 +1,64 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.feedback;
+
+<%- imports %>
+
+/**
+ * What users think of the answers: counted in {@code agent.feedback} by rating<%= features.otel ? ', added to the trace of the request' : '' %>,
+ * and kept in the {@code agent_feedback} table to read the answers rated down.
+ */
+@<%= type('org.springframework.stereotype.Component') %>
+public class Feedbacks {
+
+    private final <%= type('org.springframework.jdbc.core.simple.JdbcClient') %> jdbc;
+<%_ if (features.otel || features.prometheus) { _%>
+
+    private final <%= type('io.micrometer.core.instrument.MeterRegistry') %> meterRegistry;
+<%_ } _%>
+<%_ if (features.otel) { _%>
+
+    private final <%= type('io.micrometer.tracing.Tracer') %> tracer;
+<%_ } _%>
+
+    Feedbacks(<%- ['JdbcClient jdbc', ...(features.otel || features.prometheus ? ['MeterRegistry meterRegistry'] : []), ...(features.otel ? ['Tracer tracer'] : [])].join(', ') %>) {
+        this.jdbc = jdbc;
+<%_ if (features.otel || features.prometheus) { _%>
+        this.meterRegistry = meterRegistry;
+<%_ } _%>
+<%_ if (features.otel) { _%>
+        this.tracer = tracer;
+<%_ } _%>
+    }
+
+    public void record(String userId, String conversationId, Rating rating, String comment) {
+        jdbc.sql("""
+                        INSERT INTO agent_feedback (user_id, conversation_id, rating, comment, created_at)
+                        VALUES (:user, :conversation, :rating, :comment, now())
+                        """)
+                .param("user", userId)
+                .param("conversation", conversationId)
+                .param("rating", rating.name())
+                .param("comment", comment)
+                .update();
+<%_ if (features.otel || features.prometheus) { _%>
+        meterRegistry.counter("agent.feedback", "rating", rating.name().toLowerCase(<%= type('java.util.Locale') %>.ROOT)).increment();
+<%_ } _%>
+<%_ if (features.otel) { _%>
+        <%= type('io.micrometer.tracing.Span') %> span = tracer.currentSpan();
+        if (span != null) {
+            span.tag("agent.conversation", conversationId).event("feedback " + rating.name().toLowerCase(Locale.ROOT));
+        }
+<%_ } _%>
+    }
+<%_ if (features.erasure) { _%>
+
+    public void forget(String userId) {
+        jdbc.sql("DELETE FROM agent_feedback WHERE user_id = :user").param("user", userId).update();
+    }
+<%_ } _%>
+
+    public enum Rating {
+        UP,
+        DOWN
+    }
+}

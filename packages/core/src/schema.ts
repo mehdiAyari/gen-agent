@@ -348,7 +348,7 @@ const equipped = agent.transform((definition) => {
     observability: definition.observability ?? {
       otel: true,
       metrics: 'prometheus' as const,
-      ...(production ? { grafanaDashboard: true } : {}),
+      ...(production ? { grafanaDashboard: true, feedback: true } : {}),
     },
     deploy:
       definition.deploy ?? (production ? ['docker-compose' as const, 'helm' as const] : ['docker-compose' as const]),

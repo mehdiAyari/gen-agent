@@ -136,14 +136,21 @@ const FAILURES = {
   503: 'The agent is switched off for now. Try again later.',
 };
 
-/** Posts to the agent and returns its reply; undefined when the user must sign in again. */
-async function post(path, body) {
+/** JSON headers, with the token of the user; undefined when they must sign in again. */
+async function requestHeaders() {
   const headers = { 'Content-Type': 'application/json' };
   if (oidc) {
     const token = await accessToken();
-    if (token === undefined) return showSignedIn(false);
+    if (token === undefined) return undefined;
     headers.Authorization = `Bearer ${token}`;
   }
+  return headers;
+}
+
+/** Posts to the agent and returns its reply; undefined when the user must sign in again. */
+async function post(path, body) {
+  const headers = await requestHeaders();
+  if (headers === undefined) return showSignedIn(false);
   const response = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
   if (response.status === 401) {
     sessionStorage.removeItem('tokens');
@@ -169,8 +176,38 @@ function showReply(pending, reply) {
   else {
     pending.textContent = reply.reply;
     pending.className = 'agent';
+    if (config.feedback) showFeedback(pending, reply.conversationId);
   }
   for (const approval of reply.approvals ?? []) showApproval(approval);
+}
+
+/** Thumbs up and down under an answer: the agent keeps them to improve. */
+function showFeedback(item, conversation) {
+  const actions = document.createElement('div');
+  actions.className = 'feedback';
+  for (const [label, rating] of [
+    ['Good answer', 'UP'],
+    ['Bad answer', 'DOWN'],
+  ]) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = rating === 'UP' ? '👍' : '👎';
+    button.setAttribute('aria-label', label);
+    button.addEventListener('click', async () => {
+      for (const other of actions.querySelectorAll('button')) other.disabled = true;
+      const headers = await requestHeaders();
+      if (headers === undefined) return showSignedIn(false);
+      const response = await fetch('api/feedback', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ conversationId: conversation, rating }),
+      });
+      if (response.ok) actions.replaceChildren('Thanks for your feedback');
+      else fail('Your feedback could not be saved. Try again later.');
+    });
+    actions.append(button);
+  }
+  item.append(actions);
 }
 
 function showApproval(approval) {

@@ -39,6 +39,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
@@ -428,6 +429,35 @@ class ClaimsDeskApplicationTests {
         }
 
         assertThat(chatModel.lastPrompt().getContents()).contains("Summary of the earlier conversation");
+    }
+
+    @Autowired
+    JdbcClient jdbc;
+
+    @Test
+    void keepsWhatUsersThinkOfTheAnswers() {
+        assertThat(
+            feedback("{\"conversationId\": \"c-feedback\", \"rating\": \"DOWN\", \"comment\": \"Wrong amount\"}")
+        ).hasStatus(HttpStatus.NO_CONTENT);
+        assertThat(
+            jdbc
+                .sql("SELECT count(*) FROM agent_feedback WHERE conversation_id = 'c-feedback' AND rating = 'DOWN'")
+                .query(Long.class)
+                .single()
+        ).isEqualTo(1);
+        assertThat(feedback("{\"conversationId\": \"c-feedback\", \"rating\": \"MAYBE\"}")).hasStatus(
+            HttpStatus.BAD_REQUEST
+        );
+    }
+
+    private MvcTestResult feedback(String body) {
+        return mockMvc
+            .post()
+            .uri("/api/feedback")
+            .with(jwt().jwt(token -> token.subject("rita")))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body)
+            .exchange();
     }
 
     private MvcTestResult ask(String message) {

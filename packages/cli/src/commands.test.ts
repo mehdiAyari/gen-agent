@@ -145,15 +145,12 @@ describe('gen-agent generate --from', () => {
   });
 
   it('refuses what this version cannot generate yet, with the version that brings it', async () => {
-    writeFileSync(
-      join(cwd, 'agent.yaml'),
-      agentYaml.replace('  tools:', '  observability: { feedback: true }\n  tools:'),
-    );
+    writeFileSync(join(cwd, 'agent.yaml'), agentYaml.replace('  tools:', '  springAi: 1.0.0\n  tools:'));
 
     const code = await generateCommand({ from: 'agent.yaml', cwd }, out);
 
     expect(code).toBe(1);
-    expect(out.text()).toMatch(/agent.observability.feedback: feedback buttons arrive in a later version/);
+    expect(out.text()).toMatch(/agent.springAi: 1.0.0 is not supported/);
     expect(existsSync(join(cwd, 'weather-bot'))).toBe(false);
   });
 

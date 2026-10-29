@@ -269,7 +269,9 @@
       "redTeam": "Red team",
       "redTeamHint": "The same run attacks the agent in English and French, and checks it neither leaks its instructions nor obeys.",
       "helm": "Helm chart",
-      "helmHint": "Deploys the agent on Kubernetes: secrets by reference, external services, probes on the management port, non-root."
+      "helmHint": "Deploys the agent on Kubernetes: secrets by reference, external services, probes on the management port, non-root.",
+      "feedback": "Feedback on answers",
+      "feedbackHint": "Thumbs up and down under the answers, counted in the metrics and kept in Postgres to read the bad ones."
     },
     "mcp": {
       "legend": "MCP servers",

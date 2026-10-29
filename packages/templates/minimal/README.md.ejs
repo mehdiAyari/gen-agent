@@ -245,6 +245,10 @@ Health and metrics answer on port 8081 (`MANAGEMENT_PORT`), not on the public on
 Traces and metrics of every conversation (model calls, tools, tokens) go to OpenTelemetry when `OTLP_ENABLED` is
 true<%= features.dockerCompose ? ': Docker Compose sends them to Grafana, at http://localhost:3000' : ' (`OTLP_ENDPOINT`, http://localhost:4318 by default)' %>.
 <%_   } _%>
+<%_   if (features.feedback) { _%>
+Users rate answers with `POST /api/feedback` (`conversationId`, `rating` UP or DOWN, an optional `comment`)<%= features.chatUi ? ', the thumbs of the chat page' : '' %>:
+counted in `agent.feedback`<%= features.otel ? ', added to the trace of the request' : '' %>, and kept in the `agent_feedback` table to read the answers rated down.
+<%_   } _%>
 <%_   if (features.grafanaDashboard) { _%>
 The dashboard of the agent (requests, model calls and tokens by model<%= tools.length > 0 || features.mcp ? ', tool calls' : '' %><%= features.injectionDetection || features.outputGuard ? ', guard refusals' : '' %><%= features.resilience ? ', circuit breakers' : '' %>)
 is in `docker/grafana/agent-dashboard.json`<%= features.dockerCompose ? ': Compose provisions it into Grafana' : ': import it into your Grafana' %>.

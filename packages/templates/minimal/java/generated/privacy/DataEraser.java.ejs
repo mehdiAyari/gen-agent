@@ -37,6 +37,10 @@ public class DataEraser {
 
     private final <%= type(`${project.generatedPackage}.tool.ToolGuard`) %> toolGuard;
 <%_ } _%>
+<%_ if (features.feedback) { _%>
+
+    private final <%= type(`${project.generatedPackage}.feedback.Feedbacks`) %> feedbacks;
+<%_ } _%>
 
     DataEraser(<%- [
       'Conversations conversations',
@@ -47,6 +51,7 @@ public class DataEraser {
       ...(features.limits ? ['UsageLimits usageLimits'] : []),
       ...(features.approval ? ['Approvals approvals'] : []),
       ...(features.toolCache ? ['ToolGuard toolGuard'] : []),
+      ...(features.feedback ? ['Feedbacks feedbacks'] : []),
     ].join(', ') %>) {
         this.conversations = conversations;
         this.chatMemory = chatMemory;
@@ -68,6 +73,9 @@ public class DataEraser {
 <%_ if (features.toolCache) { _%>
         this.toolGuard = toolGuard;
 <%_ } _%>
+<%_ if (features.feedback) { _%>
+        this.feedbacks = feedbacks;
+<%_ } _%>
     }
 
     /** Returns the number of conversations erased. */
@@ -88,6 +96,9 @@ public class DataEraser {
 <%_ } _%>
 <%_ if (features.toolCache) { _%>
         toolGuard.forget(userId);
+<%_ } _%>
+<%_ if (features.feedback) { _%>
+        feedbacks.forget(userId);
 <%_ } _%>
         return keys.size();
     }

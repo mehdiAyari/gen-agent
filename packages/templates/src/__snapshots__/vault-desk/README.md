@@ -138,6 +138,8 @@ and answered with 504.
 Health and metrics answer on port 8081 (`MANAGEMENT_PORT`), not on the public one: `/actuator/health`, `/actuator/prometheus`.
 Traces and metrics of every conversation (model calls, tools, tokens) go to OpenTelemetry when `OTLP_ENABLED` is
 true: Docker Compose sends them to Grafana, at http://localhost:3000.
+Users rate answers with `POST /api/feedback` (`conversationId`, `rating` UP or DOWN, an optional `comment`), the thumbs of the chat page:
+counted in `agent.feedback`, added to the trace of the request, and kept in the `agent_feedback` table to read the answers rated down.
 The dashboard of the agent (requests, model calls and tokens by model, tool calls, guard refusals, circuit breakers)
 is in `docker/grafana/agent-dashboard.json`: Compose provisions it into Grafana.
 

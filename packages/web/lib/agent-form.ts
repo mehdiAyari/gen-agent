@@ -139,6 +139,8 @@ export interface AgentForm {
   grafanaDashboard: boolean;
   /** A Helm chart: needs the management port. */
   helm: boolean;
+  /** Thumbs up and down on the answers: kept in Postgres. */
+  feedback: boolean;
 }
 
 interface McpForm {
@@ -207,6 +209,7 @@ type Equipment = Pick<
   | 'redTeam'
   | 'grafanaDashboard'
   | 'helm'
+  | 'feedback'
 >;
 
 const DEFAULT_THRESHOLD = String(PRODUCTION_DEFAULTS.semanticThreshold);
@@ -243,6 +246,7 @@ function addedByCore(form: Pick<AgentForm, 'profile' | 'auth' | 'provider' | 'me
     redTeam: production,
     grafanaDashboard: production,
     helm: production,
+    feedback: production,
   };
 }
 
@@ -415,10 +419,17 @@ export function formToYaml(form: AgentForm): string {
       ...(form.semanticCache ? { semantic: { threshold: numberOrText(form.semanticThreshold), scope: 'user' } } : {}),
     };
   }
-  if (form.observability !== equipment.observability || form.grafanaDashboard !== equipment.grafanaDashboard) {
-    agent.observability = form.observability
-      ? { otel: true, metrics: 'prometheus', ...(form.grafanaDashboard ? { grafanaDashboard: true } : {}) }
-      : { otel: false, metrics: 'none' };
+  if (
+    form.observability !== equipment.observability ||
+    form.grafanaDashboard !== equipment.grafanaDashboard ||
+    form.feedback !== equipment.feedback
+  ) {
+    agent.observability = {
+      ...(form.observability
+        ? { otel: true, metrics: 'prometheus', ...(form.grafanaDashboard ? { grafanaDashboard: true } : {}) }
+        : { otel: false, metrics: 'none' }),
+      ...(form.feedback ? { feedback: true } : {}),
+    };
   }
 
   // Core keeps the limits agent.yaml sets and adds the others: only the changed ones are written.
@@ -543,6 +554,7 @@ function fromConfig({ agent }: AgentFile): AgentForm {
     redTeam: agent.evals?.redTeam ?? false,
     grafanaDashboard: agent.observability?.grafanaDashboard ?? false,
     helm: agent.deploy?.includes('helm') ?? false,
+    feedback: agent.observability?.feedback ?? false,
     rag: agent.rag?.enabled ?? false,
     ragTopK: agent.rag?.topK === undefined ? '' : String(agent.rag.topK),
     ragChunkSize: agent.rag?.chunkSize === undefined ? '' : String(agent.rag.chunkSize),

@@ -7,7 +7,7 @@ Spring Boot 4.1.1, Spring AI 2.0.1, Java 21.
 
 ## Run
 
-Docker Compose starts the agent with Redis and Keycloak:
+Docker Compose starts the agent with Postgres, Redis and Keycloak:
 
 ```bash
 export ANTHROPIC_API_KEY=...   # never commit it
@@ -26,6 +26,7 @@ curl -s localhost:8080/api/chat -H "Authorization: Bearer $TOKEN" \
 
 Without Docker, Java 21 is enough to build: `./mvnw` downloads Maven (checked against its SHA-256).
 Point the agent at your own services with environment variables:
+`DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD` (Postgres),
 `REDIS_URL`,
 `OIDC_ISSUER_URI` (your identity provider: Keycloak, Auth0, Entra ID…),
 then `./mvnw spring-boot:run`.
@@ -98,6 +99,8 @@ and answered with 504.
 Health and metrics answer on port 8081 (`MANAGEMENT_PORT`), not on the public one: `/actuator/health`, `/actuator/prometheus`.
 Traces and metrics of every conversation (model calls, tools, tokens) go to OpenTelemetry when `OTLP_ENABLED` is
 true: Docker Compose sends them to Grafana, at http://localhost:3000.
+Users rate answers with `POST /api/feedback` (`conversationId`, `rating` UP or DOWN, an optional `comment`):
+counted in `agent.feedback`, added to the trace of the request, and kept in the `agent_feedback` table to read the answers rated down.
 The dashboard of the agent (requests, model calls and tokens by model, guard refusals, circuit breakers)
 is in `docker/grafana/agent-dashboard.json`: Compose provisions it into Grafana.
 
@@ -108,7 +111,7 @@ is in `docker/grafana/agent-dashboard.json`: Compose provisions it into Grafana.
 ```
 
 The tests use a fake model: they never call anthropic and cost nothing.
-Docker must run: the tests start Redis in containers (Testcontainers).
+Docker must run: the tests start Postgres and Redis in containers (Testcontainers).
 
 ### Evaluations
 
@@ -127,11 +130,11 @@ threshold. `.github/workflows/ci.yml` runs the tests, then the evaluations with 
 `helm/claims-desk` deploys the image built from the Dockerfile:
 
 ```bash
-kubectl create secret generic claims-desk-secrets --from-literal=ANTHROPIC_API_KEY=... --from-literal=OPENAI_API_KEY=...
+kubectl create secret generic claims-desk-secrets --from-literal=ANTHROPIC_API_KEY=... --from-literal=OPENAI_API_KEY=... --from-literal=DATABASE_PASSWORD=...
 helm install claims-desk ./helm/claims-desk -f my-values.yaml
 ```
 
-Secrets are only referenced (`existingSecret`); Redis, the identity provider run apart, set in `env`
+Secrets are only referenced (`existingSecret`); Postgres, Redis, the identity provider run apart, set in `env`
 of `values.yaml`. Kubernetes probes liveness and readiness on the management port, which no Service exposes; the
 container runs as a non-root user on a read-only file system. An ingress is ready in `values.yaml` (`ingress.enabled`).
 

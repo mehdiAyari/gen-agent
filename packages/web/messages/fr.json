@@ -269,7 +269,9 @@
       "redTeam": "Red team",
       "redTeamHint": "Le même lancement attaque l’agent en anglais et en français, et vérifie qu’il ne livre pas ses instructions et n’obéit pas.",
       "helm": "Chart Helm",
-      "helmHint": "Déploie l’agent sur Kubernetes : secrets par référence, services externes, sondes sur le port de gestion, sans root."
+      "helmHint": "Déploie l’agent sur Kubernetes : secrets par référence, services externes, sondes sur le port de gestion, sans root.",
+      "feedback": "Avis sur les réponses",
+      "feedbackHint": "Pouces haut et bas sous les réponses, comptés dans les métriques et gardés dans Postgres pour relire les mauvaises."
     },
     "mcp": {
       "legend": "Serveurs MCP",
