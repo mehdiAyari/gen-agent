@@ -3,6 +3,16 @@
   "version": "0.1.0",
   "description": "Describe your agent, get a production-ready Spring AI project.",
   "license": "Apache-2.0",
+  "author": "Mehdi Ayari (https://github.com/mehdiAyari)",
+  "homepage": "https://github.com/mehdiAyari/gen-agent#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mehdiAyari/gen-agent.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/mehdiAyari/gen-agent/issues"
+  },
   "type": "module",
   "bin": {
     "gen-agent": "./dist/bin.js"

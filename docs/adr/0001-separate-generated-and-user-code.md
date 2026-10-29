@@ -62,11 +62,12 @@ Written at the root of every generated project:
   checks that this re-rendering is identical. No copy of the generated files is stored in the project.
 - Paths use `/` and are relative to the project root. Keys are sorted so the file diffs cleanly in version control.
 
-### V1 behaviour
+### Regeneration
 
-`gen-agent new` and `gen-agent generate` write into an empty (or new) directory only. Regeneration into an existing
-project belongs to `add` and `upgrade`, which will rely on the owners and fingerprints above; a conflict will be marked in
-the file and reported, never silently overwritten.
+`gen-agent new` and `gen-agent generate` write into an empty (or new) directory only. `gen-agent add` and
+`gen-agent update` regenerate an existing project with the owners and fingerprints above: generated files are
+rewritten, user files are kept, and a shared file the user changed gets the new version next to it
+(`<file>.gen-agent-new`), never silently overwritten.
 
 ## Consequences
 

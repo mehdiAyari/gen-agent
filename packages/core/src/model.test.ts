@@ -707,7 +707,7 @@ describe('unsupportedFeatures', () => {
     ).toEqual([]);
   });
 
-  it('lists what V1 cannot generate yet, with the version that brings it', () => {
+  it('lists what this version cannot generate, and why', () => {
     const example = parse(readFileSync(new URL('./__fixtures__/spec-example.yaml', import.meta.url), 'utf8'));
 
     expect(unsupportedFeatures(example)).toEqual(

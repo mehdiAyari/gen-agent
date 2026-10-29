@@ -35,7 +35,7 @@ Generated Java must read like code a good Spring developer wrote by hand: constr
 `template-authoring` (in `.claude/skills/`) covers everything that produces generated code. Optional public skills
 that fit the project: `spring-boot-skill` (sivaprasadreddy/sivalabs-agent-skills), `frontend-design`
 (anthropics/skills), `vercel-react-best-practices`, `web-design-guidelines` (vercel-labs/agent-skills) and `shadcn`
-(shadcn-ui/ui). Where a skill and this file disagree, this file wins:
+(shadcn-ui/ui), pinned in `skills-lock.json`. Where a skill and this file disagree, this file wins:
 
 - `spring-boot-skill` organizes code by business module; here the `…generated` package separation comes first, then
   features inside it. Its Spotless, JaCoCo and git-commit-id plugins are not generated.

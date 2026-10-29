@@ -1,7 +1,7 @@
 # gen-agent — Specification
 
 The design document gen-agent was built from. The format reference is [the guide](guide.md) and the JSON Schema
-(`gen-agent validate`); the order of the work is in [ROADMAP.md](../ROADMAP.md).
+(`packages/core/schema/agent.schema.json`); the order of the work is in [ROADMAP.md](../ROADMAP.md).
 
 ## Vision
 

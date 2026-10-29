@@ -1,7 +1,7 @@
 # Production profile: personal data masked and kept 30 days, PII-free logs, erasure endpoints, semantic cache in
-# pgvector (V5a); guardrails and limits (V5b1); rules routing, a fallback on Ollama, summaries (V5b2); an HTTP tool that
-# gets personal data back in its arguments; a Java tool that waits for the approval of the user, kill switches (V5b3);
-# a knowledge base with reranking (V5c).
+# pgvector; guardrails and limits; rules routing, a fallback on Ollama, summaries; an HTTP tool that gets personal data
+# back in its arguments; a Java tool that waits for the approval of the user, kill switches; a knowledge base with
+# reranking.
 agent:
   name: vault-desk
   description: Answers bank customers about their transfers

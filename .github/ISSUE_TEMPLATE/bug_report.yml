@@ -1,0 +1,24 @@
+name: Bug report
+description: Something gen-agent or a generated project does wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead (error messages, build output).
+    validations:
+      required: true
+  - type: textarea
+    id: agent
+    attributes:
+      label: agent.yaml
+      description: The smallest agent.yaml that shows the problem. Never paste secrets.
+      render: yaml
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `npx gen-agent --version`, or "web generator".
+    validations:
+      required: true

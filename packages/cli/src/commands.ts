@@ -55,7 +55,7 @@ export async function generateCommand(options: GenerateOptions, out: Output): Pr
 
 export interface NewAnswers {
   name: string;
-  /** Only `minimal` is generated in V1; other profiles are refused with the version that brings them. */
+  /** From `--profile`; minimal when not given. */
   profile?: 'minimal' | 'standard' | 'production';
   description?: string;
   provider: Provider;

@@ -1,6 +1,7 @@
 {
   "name": "@gen-agent/mcp-server",
   "version": "0.0.0",
+  "private": true,
   "description": "gen-agent as an MCP server: coding assistants validate, preview and generate Spring AI agents",
   "license": "Apache-2.0",
   "type": "module",

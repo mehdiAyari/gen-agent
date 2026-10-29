@@ -1,0 +1,16 @@
+name: Feature request
+description: Something the generated agents or gen-agent should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: The need
+      description: What you are trying to build, and what gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How it could look in agent.yaml or in the generated code.

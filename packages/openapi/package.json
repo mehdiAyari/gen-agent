@@ -1,6 +1,7 @@
 {
   "name": "@gen-agent/openapi",
   "version": "0.0.0",
+  "private": true,
   "description": "gen-agent OpenAPI import: operations of an API become HTTP tools of an agent",
   "license": "Apache-2.0",
   "type": "module",

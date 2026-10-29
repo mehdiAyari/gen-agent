@@ -9,7 +9,7 @@ describe.each(EXAMPLES)('example $id', ({ id, yaml }) => {
     const result = validateAgentYaml(yaml);
     if (!result.ok) throw new Error(JSON.stringify(result.errors));
 
-    // The specification asks for this warning on POST and DELETE tools; human approval arrives later.
+    // POST and DELETE tools without human approval are warned about; the examples keep them simple.
     for (const warning of result.warnings) expect(warning.message).toMatch(/has side effects/);
     expect(unsupportedFeatures(result.config)).toEqual([]);
     expect(result.config.agent.name).toBe(id);

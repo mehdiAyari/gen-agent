@@ -1,5 +1,8 @@
 # gen-agent
 
+[![CI](https://github.com/mehdiAyari/gen-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/mehdiAyari/gen-agent/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 > Turn an API into a Spring AI agent, or describe one: get a production-ready Spring Boot project.
 
 gen-agent is an open source generator of [Spring AI](https://spring.io/projects/spring-ai) agents, in the spirit of
@@ -43,7 +46,7 @@ remote MCP servers, Gradle instead of Maven… The [guide](docs/guide.md) shows 
 
 ## Learn more
 
-[Guide](docs/guide.md) · [Changelog](CHANGELOG.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) ·
+[Guide](docs/guide.md) · [Changelog](CHANGELOG.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
 [Architecture decisions](docs/adr/)
 
 ## License

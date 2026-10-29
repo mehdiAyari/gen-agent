@@ -1,6 +1,7 @@
 {
   "name": "@gen-agent/core",
   "version": "0.0.0",
+  "private": true,
   "description": "gen-agent engine: agent.yaml schema, normalized model and template rendering",
   "license": "Apache-2.0",
   "type": "module",

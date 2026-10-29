@@ -1,6 +1,7 @@
 {
   "name": "@gen-agent/templates",
   "version": "0.0.0",
+  "private": true,
   "description": "gen-agent templates of the generated Spring AI project",
   "license": "Apache-2.0",
   "type": "module",

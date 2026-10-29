@@ -272,11 +272,10 @@ const agent = z.strictObject({
   deploy: z.array(z.enum(['docker-compose', 'helm'])).optional(),
 });
 
-/** Schema of an `agent.yaml` file. Cross-field rules live in `rules.ts`. */
 /** Limits of the standard profile when agent.yaml sets none: enough for a person, not for a script. */
 export const STANDARD_LIMITS = { rateLimit: '30/min', tokenBudget: '100000/day' } as const;
 
-/** What production adds to standard (V5a): personal data protected, kept 30 days, a semantic cache per user. */
+/** Defaults of the production profile: conversations kept 30 days, a semantic cache per user, bounded requests, evaluations. */
 export const PRODUCTION_DEFAULTS = {
   retention: '30d',
   semanticThreshold: 0.95,
