@@ -3,7 +3,7 @@ package <%= project.generatedPackage %>.tool;
 
 <%- imports %>
 
-<%_ const startArgs = [...(features.pii || features.approval ? ['"conversation"'] : []), ...(features.approval ? ['"ada"', '"c1"'] : [])].join(', '); _%>
+<%_ const startArgs = [...(features.pii || features.approval ? ['"conversation"'] : []), ...(features.approval || features.toolCache ? ['"ada"'] : []), ...(features.approval ? ['"c1"'] : [])].join(', '); _%>
 class ToolGuardTests {
 <%_ if (features.pii) { _%>
 
@@ -18,15 +18,31 @@ class ToolGuardTests {
 
     private final <%= type(`${project.generatedPackage}.switches.KillSwitches`) %> killSwitches = <%= staticImport('org.mockito.Mockito.mock') %>(KillSwitches.class);
 <%_ } _%>
+<%_ if (features.toolCache) { _%>
 
-    private final ToolGuard guard = new ToolGuard(<%- [...(features.pii ? ['personalData'] : []), ...(features.approval ? ['approvals'] : []), ...(features.killSwitches ? ['killSwitches'] : [])].join(', ') %>);
-<%_ if (features.pii || features.approval) { _%>
+    // Redis as a map, for the cache of tool results.
+    private final <%= type('java.util.Map') %><String, String> stored = new <%= type('java.util.concurrent.ConcurrentHashMap') %><>();
+
+    private final <%= type('org.springframework.data.redis.core.StringRedisTemplate') %> redis = <%= staticImport('org.mockito.Mockito.mock') %>(StringRedisTemplate.class);
+<%_ } _%>
+
+    private final ToolGuard guard = new ToolGuard(<%- [...(features.pii ? ['personalData'] : []), ...(features.approval ? ['approvals'] : []), ...(features.killSwitches ? ['killSwitches'] : []), ...(features.toolCache ? ['redis'] : [])].join(', ') %>);
+<%_ if (features.pii || features.approval || features.toolCache) { _%>
 
     @<%= type('org.junit.jupiter.api.BeforeEach') %>
     void startARequest() {
 <%_   if (features.pii) { _%>
         <%= staticImport('org.mockito.Mockito.when') %>(personalData.restore(<%= staticImport('org.mockito.ArgumentMatchers.any') %>(), any())).thenAnswer(call -> call.getArgument(1));
         when(personalData.mask(any(), any())).thenAnswer(call -> call.getArgument(1));
+<%_   } _%>
+<%_   if (features.toolCache) { _%>
+        @SuppressWarnings("unchecked")
+        <%= type('org.springframework.data.redis.core.ValueOperations') %><String, String> values = <%= staticImport('org.mockito.Mockito.mock') %>(ValueOperations.class);
+        <%= staticImport('org.mockito.Mockito.when') %>(redis.opsForValue()).thenReturn(values);
+        when(values.get(<%= staticImport('org.mockito.ArgumentMatchers.anyString') %>())).thenAnswer(call -> stored.get(call.<String>getArgument(0)));
+        <%= staticImport('org.mockito.Mockito.doAnswer') %>(call -> stored.put(call.getArgument(0), call.getArgument(1)))
+                .when(values)
+                .set(anyString(), anyString(), <%= staticImport('org.mockito.ArgumentMatchers.any') %>(<%= type('java.time.Duration') %>.class));
 <%_   } _%>
         guard.start(<%- startArgs %>);
     }
@@ -61,6 +77,21 @@ class ToolGuardTests {
     private ToolCallback guarded(ToolCallback callback) {
         return guard.guard(new ToolCallback[] {callback})[0];
     }
+<%_ if (features.toolCache) { _%>
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void keepsTheResultOfACachedToolForTheSameUserOnly() {
+        <%= type('java.util.concurrent.atomic.AtomicInteger') %> calls = new AtomicInteger();
+        ToolCallback cached = guarded(tool(<%- javaString(cachedTools[0].name) %>, input -> "result " + calls.incrementAndGet()));
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(cached.call("{\"day\": 1}")).contains("result 1");
+        assertThat(cached.call("{\"day\": 1}")).contains("result 1");
+        assertThat(cached.call("{\"day\": 2}")).contains("result 2");
+
+        guard.start(<%- startArgs.replace('"ada"', '"bob"') %>);
+        assertThat(cached.call("{\"day\": 1}")).contains("result 3");
+    }
+<%_ } _%>
 <%_ if (features.approval) { _%>
 
     @<%= type('org.junit.jupiter.api.Test') %>
@@ -133,9 +164,9 @@ class ToolGuardTests {
         assertThat(guarded(refund).call("{\"order\": 2}")).startsWith("Refused");
         assertThat(changes).containsExactly("{\"order\": 1}");
 <%_   if (readOnlyTools.length > 0) { _%>
-        // Reading stays possible.
+        // Reading stays possible (other arguments: the result of a cached tool is kept).
         clockResult = "noon";
-        assertThat(guarded(clock).call("{}")).contains("noon");
+        assertThat(guarded(clock).call("{\"later\": true}")).contains("noon");
 <%_   } _%>
         // The next request starts clean.
         guard.start(<%- startArgs %>);

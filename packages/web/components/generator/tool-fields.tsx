@@ -192,6 +192,20 @@ export function ToolFields({ tool, index, errorOf, onChange, onRemove }: ToolFie
               autoComplete="off"
               className="tabular-nums"
             />
+            <TextField
+              path={`${path}.cacheTtl`}
+              label={t('cacheTtl')}
+              hint={t('cacheTtlHint')}
+              value={tool.cacheTtl}
+              error={errorOf(`${path}.cacheTtl`)}
+              onValueChange={(cacheTtl) => {
+                update({ cacheTtl });
+              }}
+              autoComplete="off"
+              spellCheck={false}
+              className="font-mono"
+              placeholder="10m…"
+            />
           </div>
         ) : null}
         <div className="grid items-start gap-4 sm:grid-cols-2">

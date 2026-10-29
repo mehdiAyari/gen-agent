@@ -6,15 +6,22 @@ import com.example.vaultdesk.generated.approval.PendingApproval;
 import com.example.vaultdesk.generated.guard.PromptInjection;
 import com.example.vaultdesk.generated.privacy.PersonalData;
 import com.example.vaultdesk.generated.switches.KillSwitches;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,6 +47,9 @@ public class ToolGuard {
     /** Tools whose calls wait for the approval of the user, and for how long. */
     private static final Map<String, Duration> APPROVAL = Map.of("blockCard", Duration.ofHours(1));
 
+    /** Tools whose results are kept in Redis, per user and arguments, and for how long. */
+    private static final Map<String, Duration> CACHED = Map.of("transferStatus", Duration.ofMinutes(1));
+
     private final Map<String, ToolCallback> tools = new ConcurrentHashMap<>();
 
     private final ThreadLocal<String> conversation = new ThreadLocal<>();
@@ -62,10 +72,13 @@ public class ToolGuard {
 
     private final KillSwitches killSwitches;
 
-    ToolGuard(PersonalData personalData, Approvals approvals, KillSwitches killSwitches) {
+    private final StringRedisTemplate redis;
+
+    ToolGuard(PersonalData personalData, Approvals approvals, KillSwitches killSwitches, StringRedisTemplate redis) {
         this.personalData = personalData;
         this.approvals = approvals;
         this.killSwitches = killSwitches;
+        this.redis = redis;
     }
 
     /** Before asking the model, with the conversation whose tokens the tools may see. */
@@ -142,12 +155,56 @@ public class ToolGuard {
                 ": tell them it is not done yet."
             );
         }
-        String result = delegate.apply(personalData.restore(conversation.get(), input));
+        String result = resultOf(tool, personalData.restore(conversation.get(), input), delegate);
         if (PromptInjection.detect(result)) {
             tainted.set(true);
         }
         String masked = personalData.mask(conversation.get(), result);
         // A result cannot close the tag itself to pass its text as instructions.
         return "<tool-result>\n" + masked.replace("</tool-result>", "</tool_result>") + "\n</tool-result>";
+    }
+
+    /** The result of the call, from Redis when the same user made the same call within its cacheTtl. */
+    private String resultOf(String tool, String input, UnaryOperator<String> delegate) {
+        Duration ttl = CACHED.get(tool);
+        if (ttl == null) {
+            return delegate.apply(input);
+        }
+        String key = keyPrefix(user.get()) + tool + ":" + hash(input);
+        String cached = redis.opsForValue().get(key);
+        if (cached != null) {
+            return cached;
+        }
+        String result = delegate.apply(input);
+        redis.opsForValue().set(key, result, ttl);
+        return result;
+    }
+
+    /** Forgets the cached tool results of the user. */
+    public void forget(String userId) {
+        try (
+            Cursor<String> keys = redis.scan(
+                ScanOptions.scanOptions()
+                    .match(keyPrefix(userId) + "*")
+                    .build()
+            )
+        ) {
+            keys.forEachRemaining(redis::delete);
+        }
+    }
+
+    /** Hashed: the keys hold neither the user id nor the arguments. */
+    private static String keyPrefix(String userId) {
+        return "tool:" + hash(userId) + ":";
+    }
+
+    private static String hash(String text) {
+        try {
+            return HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8))
+            );
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("Every JVM has SHA-256", impossible);
+        }
     }
 }

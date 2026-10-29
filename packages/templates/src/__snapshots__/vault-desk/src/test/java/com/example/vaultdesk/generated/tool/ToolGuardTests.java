@@ -3,7 +3,9 @@ package com.example.vaultdesk.generated.tool;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -11,15 +13,21 @@ import com.example.vaultdesk.generated.approval.Approvals;
 import com.example.vaultdesk.generated.approval.PendingApproval;
 import com.example.vaultdesk.generated.privacy.PersonalData;
 import com.example.vaultdesk.generated.switches.KillSwitches;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 class ToolGuardTests {
 
@@ -30,12 +38,24 @@ class ToolGuardTests {
 
     private final KillSwitches killSwitches = mock(KillSwitches.class);
 
-    private final ToolGuard guard = new ToolGuard(personalData, approvals, killSwitches);
+    // Redis as a map, for the cache of tool results.
+    private final Map<String, String> stored = new ConcurrentHashMap<>();
+
+    private final StringRedisTemplate redis = mock(StringRedisTemplate.class);
+
+    private final ToolGuard guard = new ToolGuard(personalData, approvals, killSwitches, redis);
 
     @BeforeEach
     void startARequest() {
         when(personalData.restore(any(), any())).thenAnswer(call -> call.getArgument(1));
         when(personalData.mask(any(), any())).thenAnswer(call -> call.getArgument(1));
+        @SuppressWarnings("unchecked")
+        ValueOperations<String, String> values = mock(ValueOperations.class);
+        when(redis.opsForValue()).thenReturn(values);
+        when(values.get(anyString())).thenAnswer(call -> stored.get(call.<String>getArgument(0)));
+        doAnswer(call -> stored.put(call.getArgument(0), call.getArgument(1)))
+            .when(values)
+            .set(anyString(), anyString(), any(Duration.class));
         guard.start("conversation", "ada", "c1");
     }
 
@@ -66,6 +86,19 @@ class ToolGuardTests {
 
     private ToolCallback guarded(ToolCallback callback) {
         return guard.guard(new ToolCallback[] { callback })[0];
+    }
+
+    @Test
+    void keepsTheResultOfACachedToolForTheSameUserOnly() {
+        AtomicInteger calls = new AtomicInteger();
+        ToolCallback cached = guarded(tool("transferStatus", input -> "result " + calls.incrementAndGet()));
+
+        assertThat(cached.call("{\"day\": 1}")).contains("result 1");
+        assertThat(cached.call("{\"day\": 1}")).contains("result 1");
+        assertThat(cached.call("{\"day\": 2}")).contains("result 2");
+
+        guard.start("conversation", "bob", "c1");
+        assertThat(cached.call("{\"day\": 1}")).contains("result 3");
     }
 
     @Test
@@ -130,9 +163,9 @@ class ToolGuardTests {
 
         assertThat(guarded(refund).call("{\"order\": 2}")).startsWith("Refused");
         assertThat(changes).containsExactly("{\"order\": 1}");
-        // Reading stays possible.
+        // Reading stays possible (other arguments: the result of a cached tool is kept).
         clockResult = "noon";
-        assertThat(guarded(clock).call("{}")).contains("noon");
+        assertThat(guarded(clock).call("{\"later\": true}")).contains("noon");
         // The next request starts clean.
         guard.start("conversation", "ada", "c1");
         assertThat(guarded(refund).call("{\"order\": 3}")).contains("refunded");

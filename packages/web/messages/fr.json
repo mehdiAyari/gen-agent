@@ -123,7 +123,9 @@
       "apiName": "Nom dans l’API",
       "approval": "Soumis à la validation de l’utilisateur",
       "approvalExpiresAfter": "La demande expire après",
-      "approvalExpiresAfterHint": "Par ex. 1h (s, m, h, d). Vide : 24h. Demande la connexion et les conversations dans Postgres."
+      "approvalExpiresAfterHint": "Par ex. 1h (s, m, h, d). Vide : 24h. Demande la connexion et les conversations dans Postgres.",
+      "cacheTtl": "Mettre les résultats en cache",
+      "cacheTtlHint": "Par ex. 10m : le même appel du même utilisateur est servi par Redis. Vide : jamais."
     },
     "preview": {
       "label": "Aperçu",

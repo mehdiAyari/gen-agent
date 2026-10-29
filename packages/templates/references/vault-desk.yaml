@@ -23,6 +23,7 @@ agent:
       description: Status of the last transfer to an IBAN
       url: https://bank.example.org/api/transfers
       auth: { type: bearer, env: BANK_API_TOKEN }
+      cacheTtl: 1m
       params:
         - { name: iban, type: string, required: true }
     - name: block-card

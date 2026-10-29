@@ -20,10 +20,16 @@ public class ToolGuard {
     /** Tools that only read data: still callable after a result that held instructions. */
     private static final <%= type('java.util.Set') %><String> READ_ONLY = Set.of(<%- readOnlyTools.map((name) => `"${name}"`).join(', ') %>);
 <%_ } _%>
+<%_ const duration = (spring) => { const [, amount, unit] = /^(\d+)([smhd])$/.exec(spring); return `${type('java.time.Duration')}.of${{ s: 'Seconds', m: 'Minutes', h: 'Hours', d: 'Days' }[unit]}(${amount})`; }; _%>
 <%_ if (features.approval) { _%>
 
     /** Tools whose calls wait for the approval of the user, and for how long. */
-    private static final <%= type('java.util.Map') %><String, <%= type('java.time.Duration') %>> APPROVAL = Map.of(<%- approvalTools.map((tool) => { const [, amount, unit] = /^(\d+)([smhd])$/.exec(tool.expiresAfter); return `"${tool.name}", Duration.of${{ s: 'Seconds', m: 'Minutes', h: 'Hours', d: 'Days' }[unit]}(${amount})`; }).join(', ') %>);
+    private static final <%= type('java.util.Map') %><String, <%= type('java.time.Duration') %>> APPROVAL = Map.of(<%- approvalTools.map((tool) => `"${tool.name}", ${duration(tool.expiresAfter)}`).join(', ') %>);
+<%_ } _%>
+<%_ if (features.toolCache) { _%>
+
+    /** Tools whose results are kept in Redis, per user and arguments, and for how long. */
+    private static final <%= type('java.util.Map') %><String, <%= type('java.time.Duration') %>> CACHED = Map.of(<%- cachedTools.map((tool) => `"${tool.name}", ${duration(tool.ttl)}`).join(', ') %>);
 <%_ } _%>
 <%_ if (features.approval || features.killSwitches) { _%>
 
@@ -33,9 +39,11 @@ public class ToolGuard {
 
     private final ThreadLocal<String> conversation = new ThreadLocal<>();
 <%_ } _%>
-<%_ if (features.approval) { _%>
+<%_ if (features.approval || features.toolCache) { _%>
 
     private final ThreadLocal<String> user = new ThreadLocal<>();
+<%_ } _%>
+<%_ if (features.approval) { _%>
 
     private final ThreadLocal<String> conversationId = new ThreadLocal<>();
 
@@ -63,7 +71,11 @@ public class ToolGuard {
 
     private final <%= type(`${project.generatedPackage}.switches.KillSwitches`) %> killSwitches;
 <%_ } _%>
-<%_ const guardDependencies = [...(features.pii ? ['PersonalData personalData'] : []), ...(features.approval ? ['Approvals approvals'] : []), ...(features.killSwitches ? ['KillSwitches killSwitches'] : [])]; _%>
+<%_ if (features.toolCache) { _%>
+
+    private final <%= type('org.springframework.data.redis.core.StringRedisTemplate') %> redis;
+<%_ } _%>
+<%_ const guardDependencies = [...(features.pii ? ['PersonalData personalData'] : []), ...(features.approval ? ['Approvals approvals'] : []), ...(features.killSwitches ? ['KillSwitches killSwitches'] : []), ...(features.toolCache ? ['StringRedisTemplate redis'] : [])]; _%>
 <%_ if (guardDependencies.length > 0) { _%>
 
     ToolGuard(<%- guardDependencies.join(', ') %>) {
@@ -74,12 +86,14 @@ public class ToolGuard {
 <%_ } _%>
 
     /** Before asking the model<%= features.pii ? ', with the conversation whose tokens the tools may see' : features.approval ? ', with the conversation calls may wait in' : '' %>. */
-    public void start(<%- [...(features.pii || features.approval ? ['String conversationKey'] : []), ...(features.approval ? ['String userId', 'String conversationId'] : [])].join(', ') %>) {
+    public void start(<%- [...(features.pii || features.approval ? ['String conversationKey'] : []), ...(features.approval || features.toolCache ? ['String userId'] : []), ...(features.approval ? ['String conversationId'] : [])].join(', ') %>) {
 <%_ if (features.pii || features.approval) { _%>
         conversation.set(conversationKey);
 <%_ } _%>
-<%_ if (features.approval) { _%>
+<%_ if (features.approval || features.toolCache) { _%>
         user.set(userId);
+<%_ } _%>
+<%_ if (features.approval) { _%>
         this.conversationId.set(conversationId);
         pending.set(new ArrayList<>());
 <%_ } _%>
@@ -161,7 +175,11 @@ public class ToolGuard {
             return "This call waits for the approval of the user until " + approval.expiresAt() + ": tell them it is not done yet.";
         }
 <%_ } _%>
+<%_ if (features.toolCache) { _%>
+        String result = resultOf(tool, <%= features.pii ? 'personalData.restore(conversation.get(), input)' : 'input' %>, delegate);
+<%_ } else { _%>
         String result = delegate.apply(<%= features.pii ? 'personalData.restore(conversation.get(), input)' : 'input' %>);
+<%_ } _%>
 <%_ if (features.injectionDetection) { _%>
         if (<%= type(`${project.generatedPackage}.guard.PromptInjection`) %>.detect(result)) {
             tainted.set(true);
@@ -177,4 +195,44 @@ public class ToolGuard {
         return <%= features.pii ? 'masked' : 'result' %>;
 <%_ } _%>
     }
+<%_ if (features.toolCache) { _%>
+
+    /** The result of the call, from Redis when the same user made the same call within its cacheTtl. */
+    private String resultOf(String tool, String input, UnaryOperator<String> delegate) {
+        Duration ttl = CACHED.get(tool);
+        if (ttl == null) {
+            return delegate.apply(input);
+        }
+        String key = keyPrefix(user.get()) + tool + ":" + hash(input);
+        String cached = redis.opsForValue().get(key);
+        if (cached != null) {
+            return cached;
+        }
+        String result = delegate.apply(input);
+        redis.opsForValue().set(key, result, ttl);
+        return result;
+    }
+<%_   if (features.erasure) { _%>
+
+    /** Forgets the cached tool results of the user. */
+    public void forget(String userId) {
+        try (<%= type('org.springframework.data.redis.core.Cursor') %><String> keys = redis.scan(<%= type('org.springframework.data.redis.core.ScanOptions') %>.scanOptions().match(keyPrefix(userId) + "*").build())) {
+            keys.forEachRemaining(redis::delete);
+        }
+    }
+<%_   } _%>
+
+    /** Hashed: the keys hold neither the user id nor the arguments. */
+    private static String keyPrefix(String userId) {
+        return "tool:" + hash(userId) + ":";
+    }
+
+    private static String hash(String text) {
+        try {
+            return <%= type('java.util.HexFormat') %>.of().formatHex(<%= type('java.security.MessageDigest') %>.getInstance("SHA-256").digest(text.getBytes(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8)));
+        } catch (<%= type('java.security.NoSuchAlgorithmException') %> impossible) {
+            throw new IllegalStateException("Every JVM has SHA-256", impossible);
+        }
+    }
+<%_ } _%>
 }

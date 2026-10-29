@@ -34,6 +34,8 @@ interface ToolForm {
   auth: { type: 'none' | 'bearer' | 'header'; env: string; header: string };
   /** HTTP tools only; empty for the default. */
   maxResponseChars: string;
+  /** HTTP tools only: 10m keeps results per user in Redis; empty for none. */
+  cacheTtl: string;
   params: ParamForm[];
   /** Each call waits for the approval of the user who asked. */
   approval: boolean;
@@ -50,6 +52,7 @@ export function emptyTool(): ToolForm {
     url: '',
     auth: { type: 'none', env: '', header: '' },
     maxResponseChars: '',
+    cacheTtl: '',
     params: [],
     approval: false,
     approvalExpiresAfter: '',
@@ -341,6 +344,7 @@ export function formToYaml(form: AgentForm): string {
         if (tool.auth.type === 'bearer') written.auth = { type: 'bearer', env: tool.auth.env };
         if (tool.auth.type === 'header') written.auth = { type: 'header', name: tool.auth.header, env: tool.auth.env };
         if (present(tool.maxResponseChars)) written.maxResponseChars = numberOrText(tool.maxResponseChars);
+        if (present(tool.cacheTtl)) written.cacheTtl = tool.cacheTtl;
       }
       if (tool.params.length > 0) {
         written.params = tool.params.map((param) => ({
@@ -571,6 +575,7 @@ function fromConfig({ agent }: AgentFile): AgentForm {
             : { type: 'header', env: tool.auth.env, header: tool.auth.name },
       maxResponseChars:
         tool.type === 'http' && tool.maxResponseChars !== undefined ? String(tool.maxResponseChars) : '',
+      cacheTtl: tool.type === 'http' ? (tool.cacheTtl ?? '') : '',
       params: tool.params.map((param) => ({
         name: param.name,
         type: param.type,

@@ -48,6 +48,8 @@ export interface GenerationModel {
     mcp: boolean;
     /** Some MCP servers are remote, reached over Streamable HTTP. */
     remoteMcp: boolean;
+    /** Some HTTP tools keep their results in Redis, per user, for their cacheTtl. */
+    toolCache: boolean;
     /** Tools report their calls, so that answers built from live data are not cached. */
     trackToolCalls: boolean;
     /** Every tool goes through ToolGuard: calls recorded, personal data restored in arguments and masked in results. */
@@ -101,6 +103,8 @@ export interface GenerationModel {
   evals: { dataset: string | undefined; redTeam: boolean; model: string } | undefined;
   /** Tools whose calls wait for approval, by their name for the model, with their Spring duration. */
   approvalTools: { name: string; expiresAfter: string }[];
+  /** HTTP tools whose results are cached, by their name for the model, with their Spring duration. */
+  cachedTools: { name: string; ttl: string }[];
   /** Names of the generated tools for the model: what an administrator switches off. */
   toolNames: string[];
   /** The model used when the first one fails; another provider is built by hand, beside Spring AI's own. */
@@ -496,6 +500,11 @@ export function buildModel(file: AgentFile): GenerationModel {
   const hasTools = agent.tools.length > 0 || mcpServers.length > 0;
   const injectionDetection = agent.security?.injectionDetection === true;
   const killSwitches = agent.security?.killSwitches === true;
+  const cachedTools = agent.tools.flatMap((tool, index) =>
+    tool.type === 'http' && tool.cacheTtl !== undefined
+      ? [{ name: tools[index]?.methodName ?? '', ttl: tool.cacheTtl }]
+      : [],
+  );
   const ragEnabled = agent.rag?.enabled === true;
   // The semantic cache and RAG both embed text with the model of the provider.
   const embeddings = semantic !== undefined || ragEnabled;
@@ -537,13 +546,22 @@ export function buildModel(file: AgentFile): GenerationModel {
       dockerCompose: agent.deploy?.includes('docker-compose') ?? false,
       cache,
       redis:
-        requests !== undefined || tokens !== undefined || cache || pii || killSwitches || agent.memory.type === 'redis',
+        requests !== undefined ||
+        tokens !== undefined ||
+        cache ||
+        pii ||
+        killSwitches ||
+        agent.memory.type === 'redis' ||
+        cachedTools.length > 0,
       otel: agent.observability?.otel === true,
       prometheus: agent.observability?.metrics === 'prometheus',
       mcp: mcpServers.length > 0,
       remoteMcp: mcpServers.some((server) => server.kind === 'remote'),
+      toolCache: cachedTools.length > 0,
       trackToolCalls: cache && hasTools,
-      guardTools: (cache || pii || injectionDetection || killSwitches || approvalTools.length > 0) && hasTools,
+      guardTools:
+        (cache || pii || injectionDetection || killSwitches || approvalTools.length > 0 || cachedTools.length > 0) &&
+        hasTools,
       chatUi: agent.interface.includes('chat-ui'),
       pii,
       logsWithoutPii: agent.gdpr?.logsWithoutPii === true,
@@ -583,6 +601,7 @@ export function buildModel(file: AgentFile): GenerationModel {
             model: agent.model.provider === 'ollama' ? agent.model.name : DEFAULT_EVALS_MODEL,
           },
     approvalTools,
+    cachedTools,
     toolNames: tools.map((tool) => tool.methodName),
     fallback: fallback === undefined ? undefined : fallbackOf(fallback, agent.model.provider),
     routing: agent.model.routing,
@@ -727,11 +746,6 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     agent.springAi !== SUPPORTED_SPRING_AI,
     `agent.springAi: ${agent.springAi} is not supported, this version of gen-agent generates Spring AI ${SUPPORTED_SPRING_AI}`,
   );
-  agent.tools.forEach((tool, index) => {
-    if (tool.type === 'http') {
-      add(tool.cacheTtl, `agent.tools.${String(index)}.cacheTtl: caching tool results arrives in a later version`);
-    }
-  });
   add(
     agent.openapi,
     'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',

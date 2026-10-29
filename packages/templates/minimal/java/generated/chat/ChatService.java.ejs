@@ -207,7 +207,7 @@ const checkAnswer = features.outputGuard ? `
                 .orElse(List.of());
 <%_   } _%>
 <%_   if (features.guardTools) { _%>
-        toolGuard.start(<%- [...(features.pii || features.approval ? ['memoryKey'] : []), ...(features.approval ? ['userId', 'conversationId'] : [])].join(', ') %>);
+        toolGuard.start(<%- [...(features.pii || features.approval ? ['memoryKey'] : []), ...(features.approval || features.toolCache ? ['userId'] : []), ...(features.approval ? ['conversationId'] : [])].join(', ') %>);
 <%_   } _%>
         <%- askOrFallBack('message', 'memoryKey') %><%- checkAnswer %>
 <%_   if (features.cache) { _%>
@@ -288,7 +288,7 @@ const checkAnswer = features.outputGuard ? `
                 .orElse(List.of());
 <%_   } _%>
 <%_   if (features.guardTools) { _%>
-        toolGuard.start(<%= features.pii ? 'conversationId' : '' %>);
+        toolGuard.start(<%- [...(features.pii ? ['conversationId'] : []), ...(features.toolCache ? ['"anonymous"'] : [])].join(', ') %>);
 <%_   } _%>
         <%- askOrFallBack('message', 'conversationId') %><%- checkAnswer %>
 <%_   if (features.pii) { _%>

@@ -12,6 +12,7 @@ const currentWeather: AgentForm['tools'][number] = {
   params: [{ name: 'latitude', type: 'number', required: true, description: 'Latitude', in: 'auto', apiName: '' }],
   auth: { type: 'none', env: '', header: '' },
   maxResponseChars: '',
+  cacheTtl: '',
   approval: false,
   approvalExpiresAfter: '',
 };

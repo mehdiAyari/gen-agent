@@ -123,7 +123,9 @@
       "apiName": "Name in the API",
       "approval": "Needs the approval of the user",
       "approvalExpiresAfter": "Approval expires after",
-      "approvalExpiresAfterHint": "e.g. 1h (s, m, h, d). Empty: 24h. Needs sign-in and conversations in Postgres."
+      "approvalExpiresAfterHint": "e.g. 1h (s, m, h, d). Empty: 24h. Needs sign-in and conversations in Postgres.",
+      "cacheTtl": "Cache the results",
+      "cacheTtlHint": "e.g. 10m: the same call of the same user is answered from Redis. Empty: never."
     },
     "preview": {
       "label": "Preview",

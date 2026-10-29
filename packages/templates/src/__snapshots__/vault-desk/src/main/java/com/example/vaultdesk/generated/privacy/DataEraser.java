@@ -5,6 +5,7 @@ import com.example.vaultdesk.generated.approval.Approvals;
 import com.example.vaultdesk.generated.cache.ReplyCache;
 import com.example.vaultdesk.generated.cache.SemanticCache;
 import com.example.vaultdesk.generated.limits.UsageLimits;
+import com.example.vaultdesk.generated.tool.ToolGuard;
 import java.util.List;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,8 @@ public class DataEraser {
 
     private final Approvals approvals;
 
+    private final ToolGuard toolGuard;
+
     DataEraser(
         Conversations conversations,
         ChatMemory chatMemory,
@@ -37,7 +40,8 @@ public class DataEraser {
         ReplyCache replyCache,
         SemanticCache semanticCache,
         UsageLimits usageLimits,
-        Approvals approvals
+        Approvals approvals,
+        ToolGuard toolGuard
     ) {
         this.conversations = conversations;
         this.chatMemory = chatMemory;
@@ -46,6 +50,7 @@ public class DataEraser {
         this.semanticCache = semanticCache;
         this.usageLimits = usageLimits;
         this.approvals = approvals;
+        this.toolGuard = toolGuard;
     }
 
     /** Returns the number of conversations erased. */
@@ -56,6 +61,7 @@ public class DataEraser {
         semanticCache.forget(userId);
         usageLimits.forget(userId);
         approvals.forget(userId);
+        toolGuard.forget(userId);
         return keys.size();
     }
 

@@ -213,6 +213,7 @@ agent:
       prometheus: false,
       mcp: false,
       remoteMcp: false,
+      toolCache: false,
       trackToolCalls: false,
       guardTools: false,
       chatUi: false,
@@ -621,6 +622,22 @@ agent:
     ).toEqual([]);
   });
 
+  it('caches the results of an HTTP tool per user, in Redis', () => {
+    const cached = buildModel(
+      parse(`
+agent:
+  name: desk
+  model: { provider: ollama, name: m }
+  tools:
+    - { name: rates, type: http, url: https://bank.example.org/rates, cacheTtl: 10m }
+    - { name: clock, type: java }
+`),
+    );
+
+    expect(cached.features).toMatchObject({ toolCache: true, redis: true, guardTools: true });
+    expect(cached.cachedTools).toEqual([{ name: 'rates', ttl: '10m' }]);
+  });
+
   it('limits the tool calls of an agent that only asks for it', () => {
     const limited = buildModel(
       parse(`
@@ -661,7 +678,6 @@ describe('unsupportedFeatures', () => {
     expect(unsupportedFeatures(dossier)).toEqual(
       expect.arrayContaining([
         'agent.springAi: 1.0.0 is not supported, this version of gen-agent generates Spring AI 2.0.1',
-        'agent.tools.0.cacheTtl: caching tool results arrives in a later version',
         'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',
         'agent.observability.feedback: feedback buttons arrive in a later version',
       ]),
