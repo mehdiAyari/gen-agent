@@ -55,11 +55,17 @@ export const minimalEntries: TemplateEntry[] = [
     output: () => 'gradle/wrapper/gradle-wrapper.properties',
   },
   { template: 'README.md.ejs', owner: 'merged', output: () => 'README.md' },
-  { template: 'Dockerfile.ejs', owner: 'merged', when: (m) => m.features.dockerCompose, output: () => 'Dockerfile' },
+  // The image of the agent, for Docker Compose and the Helm chart.
+  {
+    template: 'Dockerfile.ejs',
+    owner: 'merged',
+    when: (m) => m.features.dockerCompose || m.features.helm,
+    output: () => 'Dockerfile',
+  },
   {
     template: 'dockerignore.ejs',
     owner: 'merged',
-    when: (m) => m.features.dockerCompose,
+    when: (m) => m.features.dockerCompose || m.features.helm,
     output: () => '.dockerignore',
   },
   {
