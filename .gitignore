@@ -7,3 +7,7 @@ e2e/output/
 .DS_Store
 e2e/test-results/
 e2e/playwright-report/
+
+# Public agent skills, installed locally
+.claude/skills/*
+!.claude/skills/template-authoring/

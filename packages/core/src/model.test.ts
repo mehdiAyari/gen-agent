@@ -708,9 +708,9 @@ describe('unsupportedFeatures', () => {
   });
 
   it('lists what V1 cannot generate yet, with the version that brings it', () => {
-    const dossier = parse(readFileSync(new URL('./__fixtures__/spec-example.yaml', import.meta.url), 'utf8'));
+    const example = parse(readFileSync(new URL('./__fixtures__/spec-example.yaml', import.meta.url), 'utf8'));
 
-    expect(unsupportedFeatures(dossier)).toEqual(
+    expect(unsupportedFeatures(example)).toEqual(
       expect.arrayContaining([
         'agent.springAi: 1.0.0 is not supported, this version of gen-agent generates Spring AI 2.0.1',
         'agent.openapi: the specs must be read first: gen-agent generate does it (the web generator imports a spec with "Import OpenAPI")',

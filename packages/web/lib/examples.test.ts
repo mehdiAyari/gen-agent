@@ -9,7 +9,7 @@ describe.each(EXAMPLES)('example $id', ({ id, yaml }) => {
     const result = validateAgentYaml(yaml);
     if (!result.ok) throw new Error(JSON.stringify(result.errors));
 
-    // The dossier asks for this warning on POST and DELETE tools; human approval arrives later.
+    // The specification asks for this warning on POST and DELETE tools; human approval arrives later.
     for (const warning of result.warnings) expect(warning.message).toMatch(/has side effects/);
     expect(unsupportedFeatures(result.config)).toEqual([]);
     expect(result.config.agent.name).toBe(id);

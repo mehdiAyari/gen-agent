@@ -1,27 +1,27 @@
 agent:
   name: hr-assistant
-  description: Assistant RH interne
+  description: Internal HR assistant
   profile: production # minimal | standard | production
   java: 21
   build: maven # maven | gradle
-  springAi: 1.0.0 # version exacte, figée dans les templates
+  springAi: 1.0.0 # exact version, pinned in the templates
 
   model:
     provider: mistral # openai | anthropic | mistral | ollama
     name: mistral-large-latest
     temperature: 0.3
     maxTokens: 2000
-    routing: # petit modèle pour les tâches simples
-      strategy: rules # rules (heuristiques documentées) | classifier
+    routing: # a small model for simple tasks
+      strategy: rules # rules (documented heuristics) | classifier
       simple: mistral-small-latest
       complex: mistral-large-latest
-    fallback: # doit aussi respecter gdpr.euOnly
+    fallback: # must also respect gdpr.euOnly
       provider: ollama
       name: llama3.1
 
   prompt:
-    system: prompts/system.md # fichier versionné, jamais en dur dans le code
-    aiDisclosure: true # informer l'utilisateur qu'il parle à une IA
+    system: prompts/system.md # a versioned file, never hard-coded
+    aiDisclosure: true # tell users they are talking to an AI
 
   memory:
     type: jdbc # in-memory | jdbc | redis
@@ -30,24 +30,24 @@ agent:
     retention: 30d
 
   tools:
-    - name: meteo
+    - name: weather
       type: http
       url: https://api.open-meteo.com/v1/forecast
       cacheTtl: 10m
-    - name: poser-conge
+    - name: book-leave
       type: java
-      approval: # validation humaine
+      approval: # human approval
         required: true
-        expiresAfter: 24h # demande annulée si personne ne valide
+        expiresAfter: 24h # cancelled when nobody decides
   openapi:
-    - spec: specs/rh-api.yaml
-      include: [getConges, createConge]
+    - spec: specs/hr-api.yaml
+      include: [getLeaves, createLeave]
 
   mcp:
     - name: filesystem
       package: '@modelcontextprotocol/server-filesystem'
-      version: 1.0.0 # version exacte obligatoire, latest refusé
-      runtime: node # l'image du conteneur embarque Node
+      version: 1.0.0 # exact version required, latest refused
+      runtime: node # the container image ships Node
       sandbox: docker
 
   rag:
@@ -68,7 +68,7 @@ agent:
     exact: redis
     semantic:
       threshold: 0.95
-      scope: user # obligatoire : jamais de cache partagé entre utilisateurs
+      scope: user # required: never a cache shared between users
 
   limits:
     maxIterations: 8
@@ -78,17 +78,17 @@ agent:
     otel: true
     metrics: prometheus
     grafanaDashboard: true
-    feedback: true # boutons pouce haut / bas reliés aux traces
+    feedback: true # thumbs up / down buttons linked to traces
 
   gdpr:
-    euOnly: true # cohérent : Mistral (UE) en principal, Ollama auto-hébergé en secours
+    euOnly: true # consistent: Mistral (EU) first, self-hosted Ollama as fallback
     erasureEndpoint: true
     logsWithoutPii: true
 
   evals:
     dataset: evals/golden.yaml
     redTeam: true
-    ciModel: ollama # pas d'appel payant en CI
+    ciModel: ollama # no paid calls in CI
 
   interface: [rest, chat-ui]
   deploy: [docker-compose, helm]

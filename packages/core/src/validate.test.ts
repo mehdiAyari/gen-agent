@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { validateAgentYaml, type ValidationResult } from './validate.js';
 
-const dossierExample = readFileSync(new URL('./__fixtures__/spec-example.yaml', import.meta.url), 'utf8');
+const specExample = readFileSync(new URL('./__fixtures__/spec-example.yaml', import.meta.url), 'utf8');
 
 const defaultModel = 'model:\n  provider: mistral\n  name: mistral-small-latest\n';
 
@@ -26,7 +26,7 @@ function warningsOf(result: ValidationResult): string[] {
 describe('validateAgentYaml', () => {
   describe('valid files', () => {
     it('accepts the complete example from the project specification', () => {
-      const result = validateAgentYaml(dossierExample);
+      const result = validateAgentYaml(specExample);
 
       expect(errorsOf(result)).toEqual([]);
       expect(result.ok).toBe(true);

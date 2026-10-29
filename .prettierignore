@@ -1,5 +1,4 @@
 pnpm-lock.yaml
-docs/dossier.md
 .claude/
 **/dist/
 **/.turbo/
