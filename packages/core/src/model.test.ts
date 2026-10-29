@@ -198,6 +198,8 @@ agent:
       springAi: '2.0.1',
       bucket4j: '8.21.0',
       resilience4j: '2.4.0',
+      gradle: '9.8.2',
+      dependencyManagement: '1.1.7',
     });
     expect(model.features).toEqual({
       httpTools: true,
@@ -651,6 +653,24 @@ agent:
       buildModel(parse('agent:\n  name: v\n  profile: production\n  model: { provider: ollama, name: m }\n')).features
         .feedback,
     ).toBe(true);
+  });
+
+  it('builds with Maven by default, or with Gradle', () => {
+    const maven = buildModel(parse('agent:\n  name: desk\n  model: { provider: ollama, name: m }\n'));
+    const gradle = buildModel(parse('agent:\n  name: desk\n  build: gradle\n  model: { provider: ollama, name: m }\n'));
+
+    expect(maven.build).toMatchObject({
+      tool: 'maven',
+      verify: './mvnw verify',
+      jar: 'target/desk-0.0.1-SNAPSHOT.jar',
+    });
+    expect(gradle.build).toMatchObject({ tool: 'gradle', verify: './gradlew build', run: './gradlew bootRun' });
+    expect(gradle.dependencies.map((dependency) => dependency.artifact)).toEqual([
+      'spring-boot-starter-webmvc',
+      'spring-boot-starter-validation',
+      'spring-ai-starter-model-ollama',
+      'spring-boot-starter-webmvc-test',
+    ]);
   });
 
   it('limits the tool calls of an agent that only asks for it', () => {

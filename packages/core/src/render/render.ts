@@ -18,6 +18,8 @@ interface SingleEntry {
   each?: undefined;
   /** Copied byte for byte: no EJS, no formatting (third-party files such as the Maven Wrapper). */
   raw?: boolean;
+  /** A raw binary file, embedded in base64. */
+  binary?: boolean;
   /** Written with the executable permission (scripts). */
   executable?: boolean;
   when?: (model: GenerationModel) => boolean;
@@ -53,9 +55,11 @@ export interface TemplateSet {
 
 export interface GeneratedFile {
   path: string;
+  /** Text, or the bytes in base64 when `encoding` says so (the Gradle Wrapper jar). */
   content: string;
   owner: FileOwner;
   executable?: boolean;
+  encoding?: 'base64';
 }
 
 export const MANIFEST_PATH = '.gen-agent.json';
@@ -89,6 +93,7 @@ export async function renderProject(
             owner: entry.owner,
             content: sourceOf(templates, entry.template),
             ...(entry.executable === true ? { executable: true } : {}),
+            ...(entry.binary === true ? { encoding: 'base64' as const } : {}),
           });
         } else {
           await render(entry, entry.output(model), entry.locals?.(model) ?? {});

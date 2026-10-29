@@ -9,6 +9,7 @@ import {
   type Tool,
   type ToolParamType,
 } from './schema.js';
+import { dependenciesOf, type Dependency } from './dependencies.js';
 import { SECRET_PATTERNS } from './rules.js';
 
 /** Everything templates need, already derived: they only read this model, they never compute names. */
@@ -22,7 +23,29 @@ export interface GenerationModel {
     generatedPackage: string;
     applicationClass: string;
   };
-  versions: { springBoot: string; springAi: string; bucket4j: string; resilience4j: string };
+  versions: {
+    springBoot: string;
+    springAi: string;
+    bucket4j: string;
+    resilience4j: string;
+    gradle: string;
+    dependencyManagement: string;
+  };
+  /** Every dependency of the project, rendered by pom.xml and build.gradle.kts alike. */
+  dependencies: Dependency[];
+  /** The build tool and the commands that go with it, for the README, the Dockerfile and the CI. */
+  build: {
+    tool: 'maven' | 'gradle';
+    verify: string;
+    run: string;
+    evals: string;
+    /** The executable jar, relative to the project. */
+    jar: string;
+    /** Where the build writes: target or build. */
+    output: string;
+    /** The command a person runs, without arguments: ./mvnw or ./gradlew. */
+    wrapper: string;
+  };
   /** Docker images of the services, pinned: the same in the tests and in Docker Compose. */
   images: typeof IMAGES;
   features: {
@@ -300,6 +323,30 @@ type McpServer =
 /** Not managed by Spring Boot: checked on Maven Central (2026-10-24). */
 const BUCKET4J_VERSION = '8.21.0';
 const RESILIENCE4J_VERSION = '2.4.0';
+const GRADLE_VERSION = '9.8.2';
+const DEPENDENCY_MANAGEMENT_VERSION = '1.1.7';
+
+function buildOf(name: string, tool: 'maven' | 'gradle'): GenerationModel['build'] {
+  return tool === 'gradle'
+    ? {
+        tool,
+        verify: './gradlew build',
+        run: './gradlew bootRun',
+        evals: './gradlew test -Pevals',
+        jar: `build/libs/${name}-0.0.1-SNAPSHOT.jar`,
+        output: 'build',
+        wrapper: './gradlew',
+      }
+    : {
+        tool,
+        verify: './mvnw verify',
+        run: './mvnw spring-boot:run',
+        evals: './mvnw verify -Pevals',
+        jar: `target/${name}-0.0.1-SNAPSHOT.jar`,
+        output: 'target',
+        wrapper: './mvnw',
+      };
+}
 /** How long a call waits for approval when agent.yaml does not say: a working day and a night. */
 const DEFAULT_APPROVAL_EXPIRY = '24h';
 /** Few, short passages: precise answers and few tokens. */
@@ -521,7 +568,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       ? undefined
       : PROVIDERS[fallback.provider].apiKeyEnv;
 
-  return {
+  const model: Omit<GenerationModel, 'dependencies' | 'build'> = {
     agent,
     project: {
       artifactId: agent.name,
@@ -536,6 +583,8 @@ export function buildModel(file: AgentFile): GenerationModel {
       springAi: agent.springAi,
       bucket4j: BUCKET4J_VERSION,
       resilience4j: RESILIENCE4J_VERSION,
+      gradle: GRADLE_VERSION,
+      dependencyManagement: DEPENDENCY_MANAGEMENT_VERSION,
     },
     images: IMAGES,
     features: {
@@ -661,6 +710,7 @@ export function buildModel(file: AgentFile): GenerationModel {
       ),
     ],
   };
+  return { ...model, dependencies: dependenciesOf(model), build: buildOf(agent.name, agent.build) };
 }
 
 function toolModel(tool: Tool): ModelTool {
@@ -745,7 +795,6 @@ export function unsupportedFeatures(file: AgentFile): string[] {
     if (condition !== undefined && condition !== false) issues.push(message);
   };
 
-  add(agent.build === 'gradle', 'agent.build: Gradle arrives in a later version (V1 generates Maven)');
   add(
     agent.springAi !== SUPPORTED_SPRING_AI,
     `agent.springAi: ${agent.springAi} is not supported, this version of gen-agent generates Spring AI ${SUPPORTED_SPRING_AI}`,

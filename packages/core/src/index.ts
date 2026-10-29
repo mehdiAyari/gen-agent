@@ -1,5 +1,6 @@
 export { buildModel, DEFAULT_MAX_RESPONSE_CHARS, unsupportedFeatures } from './model.js';
 export type { GenerationModel, ModelTool, ProviderSettings, ToolParameter } from './model.js';
+export type { Dependency } from './dependencies.js';
 export { agentJsonSchema } from './json-schema.js';
 export {
   BODYLESS_METHODS,
