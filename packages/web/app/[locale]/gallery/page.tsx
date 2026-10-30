@@ -1,5 +1,5 @@
 import { validateAgentYaml, type AgentFile } from '@gen-agent/core';
-import { ArrowRightIcon } from 'lucide-react';
+import { ArrowRightIcon, ExternalLinkIcon } from 'lucide-react';
 import type { Metadata } from 'next';
 import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
@@ -13,6 +13,9 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/gallery'
   const t = await getTranslations({ locale, namespace: 'gallery' });
   return { title: t('metaTitle'), description: t('lead') };
 }
+
+/** Complete agents, with the code written by hand and a recording of a real run. */
+const EXAMPLES_URL = 'https://github.com/mehdiAyari/gen-agent/tree/main/examples';
 
 function agentOf(example: Example): AgentFile['agent'] {
   const result = validateAgentYaml(example.yaml);
@@ -72,6 +75,14 @@ export default function GalleryPage() {
           );
         })}
       </ul>
+      <aside className="flex max-w-2xl flex-col items-start gap-3 border-t pt-8">
+        <h2 className="text-xl font-semibold">{t('completeTitle')}</h2>
+        <p className="text-pretty text-muted-foreground">{t('completeLead')}</p>
+        <a href={EXAMPLES_URL} className={buttonVariants({ variant: 'outline' })}>
+          {t('completeLink')}
+          <ExternalLinkIcon data-icon="inline-end" aria-hidden="true" />
+        </a>
+      </aside>
     </main>
   );
 }

@@ -157,7 +157,7 @@
     },
     "src/test/java/com/example/petstoreassistant/PetstoreAssistantApplicationTests.java": {
       "owner": "merged",
-      "sha256": "0de742053927f93cb506a735f49a57a142b1ff5058ac22537acf7039ca83d969"
+      "sha256": "c9514d243c1d1bc0e3eedb3771c44eb10fed8f508694cdfe98195948c100680f"
     },
     "src/test/java/com/example/petstoreassistant/generated/chat/ChatControllerTests.java": {
       "owner": "generated",

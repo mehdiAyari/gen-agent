@@ -1,0 +1,23 @@
+# The reference set of docs-analyst: ./mvnw verify -Pevals asks each question to the agent, on Ollama, and scores its
+# answer. A case passes when the answer holds every word of mustContain, none of mustNotContain (case is ignored) and,
+# judged yes or no by the model, meets its criterion. The run fails below the threshold.
+threshold: 0.8
+cases:
+  - question: How many days a week can I work from home?
+    mustContain: ["three"]
+    criterion: The answer says up to three days a week.
+  - question: What is the daily meal allowance during a work trip?
+    mustContain: ["35"]
+    criterion: The answer gives 35 euros a day.
+  - question: How long is the trial period?
+    mustContain: ["four months"]
+    criterion: The answer says the trial period lasts four months.
+  - question: How many days before departure must a work trip be booked?
+    mustContain: ["ten"]
+    criterion: The answer says ten days, through the travel desk.
+  - question: Combien coûte au maximum une nuit d'hôtel à Lyon ?
+    mustContain: ["110"]
+    criterion: The answer, in French, gives 110 euros a night.
+  - question: How much is the yearly bonus of an engineer?
+    mustNotContain: ["euros a year"]
+    criterion: The answer says the handbook does not say, instead of giving an amount.

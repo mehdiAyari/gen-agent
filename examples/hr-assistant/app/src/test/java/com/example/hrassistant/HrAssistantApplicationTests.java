@@ -8,6 +8,7 @@ import com.example.hrassistant.generated.TestcontainersConfiguration;
 import com.example.hrassistant.generated.approval.Approvals;
 import com.example.hrassistant.generated.approval.PendingApproval;
 import com.jayway.jsonpath.JsonPath;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -79,7 +81,11 @@ class HrAssistantApplicationTests {
             """.formatted(conversationId)
         );
 
-        assertThat(chatModel.lastPrompt().getContents()).contains("You are", "My name is Grace", "What is my name?");
+        assertThat(chatModel.lastPrompt().getContents()).contains(
+            systemPrompt(),
+            "My name is Grace",
+            "What is my name?"
+        );
     }
 
     @Test
@@ -327,6 +333,11 @@ class HrAssistantApplicationTests {
             .getResponse()
             .getContentAsString();
         return JsonPath.read(reply, "$.conversationId");
+    }
+
+    /** The system prompt as written in its file, whatever it says. */
+    private static String systemPrompt() throws IOException {
+        return new ClassPathResource("prompts/system.md").getContentAsString(StandardCharsets.UTF_8).strip();
     }
 
     @TestConfiguration(proxyBeanMethods = false)

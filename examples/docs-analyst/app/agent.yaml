@@ -1,0 +1,12 @@
+agent:
+  name: docs-analyst
+  description: Answers the questions of employees from the handbook of the company
+  model:
+    provider: ollama
+    name: qwen2.5:7b
+    temperature: 0
+  rag:
+    enabled: true
+    rerank: true
+  evals:
+    dataset: evals/golden.yaml

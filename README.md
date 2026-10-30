@@ -23,6 +23,12 @@ cd my-assistant
 Also as a [web generator](docs/guide.md#web-generator) that runs entirely in your browser, and as an
 [MCP server](docs/guide.md#from-your-coding-assistant-mcp) for Claude Code, Cursor or any coding assistant.
 
+## Examples
+
+Four complete agents, each with the commands that made it, the code written by hand afterwards and a recording of a
+real run on Ollama: [an OpenAPI import](examples/petstore-assistant), [days off booked after approval](examples/hr-assistant),
+[answers from documents](examples/docs-analyst) and [a bank desk with the production profile](examples/bank-desk).
+
 ## What the agent comes with
 
 | Profile      | Adds                                                                                                                                                                                       |
@@ -46,7 +52,7 @@ remote MCP servers, Gradle instead of Maven… The [guide](docs/guide.md) shows 
 
 ## Learn more
 
-[Guide](docs/guide.md) · [Changelog](CHANGELOG.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
+[Guide](docs/guide.md) · [Examples](examples/) · [Changelog](CHANGELOG.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
 [Architecture decisions](docs/adr/)
 
 ## License

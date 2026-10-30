@@ -1,0 +1,158 @@
+{
+  "generator": {
+    "name": "gen-agent",
+    "version": "0.1.0"
+  },
+  "config": {
+    "agent": {
+      "name": "docs-analyst",
+      "description": "Answers the questions of employees from the handbook of the company",
+      "profile": "minimal",
+      "java": 21,
+      "build": "maven",
+      "springAi": "2.0.1",
+      "model": {
+        "provider": "ollama",
+        "name": "qwen2.5:7b",
+        "temperature": 0
+      },
+      "prompt": {
+        "system": "prompts/system.md",
+        "aiDisclosure": true
+      },
+      "memory": {
+        "window": 20,
+        "type": "in-memory"
+      },
+      "tools": [],
+      "rag": {
+        "enabled": true,
+        "rerank": true
+      },
+      "evals": {
+        "dataset": "evals/golden.yaml"
+      },
+      "interface": [
+        "rest"
+      ]
+    }
+  },
+  "files": {
+    ".github/workflows/ci.yml": {
+      "owner": "merged",
+      "sha256": "f2574733d0f80a9dd9fa1f3ee19fe4e4b9342a23003f1eebb49c9db898435471"
+    },
+    ".gitignore": {
+      "owner": "merged",
+      "sha256": "8bd33d61dffb07d6b6cf5ba7166e9c53175d4369c94cc229105eb64c69c03798"
+    },
+    ".mvn/wrapper/maven-wrapper.properties": {
+      "owner": "generated",
+      "sha256": "9e702bcd7e68ba1cace0a3382a7082e6e1e1b321688a7a3fbf4d5ae7eb0af533"
+    },
+    "README.md": {
+      "owner": "merged",
+      "sha256": "eb5767b4e508cfbcf93bc6a4706bee0b712dbe0253344373fae9db715fdb72aa"
+    },
+    "evals/golden.yaml": {
+      "owner": "user",
+      "sha256": "d4dd30fd24c0573674446ce62e87f19d31e2ccf1b6f3c5a5126008016b30c7d1"
+    },
+    "mvnw": {
+      "owner": "generated",
+      "sha256": "cae96cef89ebea3531221f4ae17c23cf8edf67d00eae8306d4186ae1bbed4d02"
+    },
+    "mvnw.cmd": {
+      "owner": "generated",
+      "sha256": "46eedb8419bd14fe70d5bb2916d7b6f51806e51b39d5b76a42610384ca929c1c"
+    },
+    "pom.xml": {
+      "owner": "merged",
+      "sha256": "0e39dae5e3580992e5ff0aae4813f2551d89cbc1dfcc52bc1b2205c67caa5779"
+    },
+    "src/main/java/com/example/docsanalyst/DocsAnalystApplication.java": {
+      "owner": "merged",
+      "sha256": "5d11eaf35f05e2ae290843655cb4228fcd446ed2a8be613b5bed85972cb42713"
+    },
+    "src/main/java/com/example/docsanalyst/generated/AgentConfiguration.java": {
+      "owner": "generated",
+      "sha256": "6adce25f6703f4351e98ee42ea469218f9f17cb5e6ad69452ac3e9727f345d60"
+    },
+    "src/main/java/com/example/docsanalyst/generated/AgentProperties.java": {
+      "owner": "generated",
+      "sha256": "1101126eba3eb701c7fbf06aae60f83021a78fd5b49282f5fb692c8ee79b9870"
+    },
+    "src/main/java/com/example/docsanalyst/generated/chat/ChatController.java": {
+      "owner": "generated",
+      "sha256": "168d36a74eac725bc50ed311461b64ef1d83e91ae8c58c177c445381776d96da"
+    },
+    "src/main/java/com/example/docsanalyst/generated/chat/ChatExceptionHandler.java": {
+      "owner": "generated",
+      "sha256": "ff1585b37fc4fb38504c1e8faf9ace10b4d233ddca0ef6a5a27d0de03460dff0"
+    },
+    "src/main/java/com/example/docsanalyst/generated/chat/ChatMessageRequest.java": {
+      "owner": "generated",
+      "sha256": "2ce4ee2d4efd668bb8d09168a732ad79869aeee2c87bb9a408f613ea7a05e6a5"
+    },
+    "src/main/java/com/example/docsanalyst/generated/chat/ChatMessageResponse.java": {
+      "owner": "generated",
+      "sha256": "7c555309a191c0a2025eec675a8436531e8e9a8604373fa3affe6c8913ab0177"
+    },
+    "src/main/java/com/example/docsanalyst/generated/chat/ChatService.java": {
+      "owner": "generated",
+      "sha256": "a66598223ab5f46028e5fc331265d9b200186b81924dc482071cf20e432b30ea"
+    },
+    "src/main/java/com/example/docsanalyst/generated/rag/DocumentFolder.java": {
+      "owner": "generated",
+      "sha256": "2ff2b1b153576176ec8c66001302df59ab413bf655e4a1c54d998c9932e8aff0"
+    },
+    "src/main/java/com/example/docsanalyst/generated/rag/DocumentStoreConfiguration.java": {
+      "owner": "generated",
+      "sha256": "a07aa57751a727361f80cda211d97fb5276f09bfaa3b6c43b5e07be1921840cb"
+    },
+    "src/main/java/com/example/docsanalyst/generated/rag/IndexedDocument.java": {
+      "owner": "generated",
+      "sha256": "9a66ffd3857cc6568a982bc107234e73130907bfe1975c9335827584b953782e"
+    },
+    "src/main/java/com/example/docsanalyst/generated/rag/KnowledgeBase.java": {
+      "owner": "generated",
+      "sha256": "e5164bf101e20b135cf148644fc0844505f4cb2eb70a5789dfaba0397dd0b108"
+    },
+    "src/main/resources/application.yml": {
+      "owner": "merged",
+      "sha256": "fb7d786b8e56ce00024cef82e6c3aef6b7f835a807ccdb566db0d6447f7c275e"
+    },
+    "src/main/resources/db/migration/V3__agent_document_source.sql": {
+      "owner": "generated",
+      "sha256": "10cc26d7ff8c835ae3e4f4d9eb964224e7fa0423425de0db2696890c8fe721b2"
+    },
+    "src/main/resources/prompts/system.md": {
+      "owner": "user",
+      "sha256": "3e048d4d91e7a0cec7bc7bb3b7799e1546487a93e37594435783aacbf8e974e7"
+    },
+    "src/test/java/com/example/docsanalyst/DocsAnalystApplicationTests.java": {
+      "owner": "merged",
+      "sha256": "eedb93ec9dcdbb5c001e0e727705a2e7c07bde5f0732883d4853887621eae2b4"
+    },
+    "src/test/java/com/example/docsanalyst/TestDocsAnalystApplication.java": {
+      "owner": "generated",
+      "sha256": "a64a5b7c27984fa9ed2b72246f4485646ca5d73ee0ce3b9b9882f532cedd15ed"
+    },
+    "src/test/java/com/example/docsanalyst/evals/AgentEvaluationTests.java": {
+      "owner": "generated",
+      "sha256": "782f70f77de24ed3bcdecde6cf9dd60f258564d2cd879bef560407dd9cf36aad"
+    },
+    "src/test/java/com/example/docsanalyst/generated/TestcontainersConfiguration.java": {
+      "owner": "generated",
+      "sha256": "2c32389be43a45148337a38a9cd8df737dafd7ed0013405a918220e1f5dda109"
+    },
+    "src/test/java/com/example/docsanalyst/generated/chat/ChatControllerTests.java": {
+      "owner": "generated",
+      "sha256": "ab36979052aa16fb9755bb0b7a803a52b7905b9306808b6e98647e49b35cafae"
+    },
+    "src/test/resources/documents/opening-hours.md": {
+      "owner": "generated",
+      "sha256": "9f3ff0a97adecd93c85e2de29a3064033b4a1fb843402544256e803909763542"
+    }
+  }
+}

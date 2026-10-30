@@ -243,7 +243,7 @@
     },
     "src/test/java/com/example/hrassistant/HrAssistantApplicationTests.java": {
       "owner": "merged",
-      "sha256": "a8b40e7449d810d61ce1568b9ab934de5296971f1714f189b6018f55b065e3cf"
+      "sha256": "507af37d60285c93843794143fa2606dd58ecd2582baae8b62efeb8cc08ba5bd"
     },
     "src/test/java/com/example/hrassistant/ObservabilityTests.java": {
       "owner": "generated",

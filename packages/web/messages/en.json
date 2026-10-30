@@ -316,6 +316,9 @@
     "tools": "{count, plural, =0 {No tool} one {# tool} other {# tools}}",
     "euOnly": "EU only",
     "toolsLabel": "Tools of {name}",
+    "completeTitle": "Complete agents",
+    "completeLead": "Four agents finished by hand on GitHub: the commands that made each one, the code written afterwards, and a recording of a real run on Ollama.",
+    "completeLink": "See them on GitHub",
     "items": {
       "support-bot": {
         "title": "Customer support",
