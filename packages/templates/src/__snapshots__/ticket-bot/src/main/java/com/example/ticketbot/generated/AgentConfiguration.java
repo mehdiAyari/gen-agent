@@ -5,6 +5,7 @@ import com.example.ticketbot.generated.tool.AddCommentTool;
 import com.example.ticketbot.generated.tool.AddCommentToolProperties;
 import com.example.ticketbot.generated.tool.CreateTicketTool;
 import com.example.ticketbot.generated.tool.CreateTicketToolProperties;
+import com.example.ticketbot.generated.tool.LoggedToolCallback;
 import com.example.ticketbot.generated.tool.ServiceStatusTool;
 import com.example.ticketbot.generated.tool.ServiceStatusToolProperties;
 import com.example.ticketbot.generated.tool.TicketStatusTool;
@@ -14,6 +15,7 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,7 +52,12 @@ class AgentConfiguration {
         return builder
             .defaultSystem(properties.systemPrompt())
             .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
-            .defaultTools(createTicketTool, ticketStatusTool, addCommentTool, serviceStatusTool)
+            // Every call is logged: the tool and how long it took, never what it was given.
+            .defaultToolCallbacks(
+                LoggedToolCallback.logged(
+                    ToolCallbacks.from(createTicketTool, ticketStatusTool, addCommentTool, serviceStatusTool)
+                )
+            )
             .build();
     }
 }

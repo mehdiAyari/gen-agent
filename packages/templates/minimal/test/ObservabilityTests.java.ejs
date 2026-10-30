@@ -39,6 +39,21 @@ class ObservabilityTests {
     }
 <%_ } _%>
 
+<%_ const counters = [
+  ...(features.injectionDetection || features.outputGuard ? ['agent_guard_refusals_total{'] : []),
+  ...(features.injectionDetection ? ['reason="injection"'] : []),
+  ...(features.outputGuard ? ['reason="leak"'] : []),
+  ...(features.feedback ? ['agent_feedback_total{', 'rating="up"', 'rating="down"'] : []),
+]; _%>
+<%_ if (features.prometheus && counters.length > 0) { _%>
+
+    @Test
+    void exposesTheCountersOfTheAgentAtZeroFromTheStart() {
+        // Prometheus counts the first increase of a counter only when the counter was there before it.
+        assertThat(get("/actuator/prometheus")).contains(<%- counters.map((counter) => javaString(counter)).join(', ') %>);
+    }
+<%_ } _%>
+
     private String get(String path) {
         return <%= type('org.springframework.web.client.RestClient') %>.create("http://localhost:" + managementPort)
                 .get()

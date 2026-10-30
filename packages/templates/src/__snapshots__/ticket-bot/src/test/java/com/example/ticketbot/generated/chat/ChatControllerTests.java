@@ -6,7 +6,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -41,6 +44,27 @@ class ChatControllerTests {
             .bodyJson()
             .extractingPath("$.reply")
             .isEqualTo("Hi!");
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void logsHowLongTheAnswerTookNeverWhatItSays(CapturedOutput output) {
+        given(chatService.reply(any())).willReturn(
+            new ChatMessageResponse("c1", "Your IBAN is FR7630006000011234567890189")
+        );
+
+        assertThat(
+            mockMvc
+                .post()
+                .uri("/api/chat")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"message": "What is my IBAN?"}
+                    """
+                )
+        ).hasStatusOk();
+        assertThat(output).contains("Answered in").doesNotContain("IBAN");
     }
 
     @Test

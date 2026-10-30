@@ -7,6 +7,8 @@ package <%= project.generatedPackage %>.chat;
 @<%= type('org.springframework.web.bind.annotation.RequestMapping') %>("/api/chat")
 class ChatController {
 
+    private static final <%= type('org.slf4j.Logger') %> log = <%= type('org.slf4j.LoggerFactory') %>.getLogger(ChatController.class);
+
     private final ChatService chatService;
 <%_ if (features.requestTimeout) { _%>
 
@@ -29,18 +31,34 @@ class ChatController {
             @<%= type('jakarta.validation.Valid') %> @<%= type('org.springframework.web.bind.annotation.RequestBody') %> ChatMessageRequest request,
             @<%= type('org.springframework.security.core.annotation.AuthenticationPrincipal') %> <%= type('org.springframework.security.oauth2.jwt.Jwt') %> user) {
 <%_ if (features.requestTimeout) { _%>
-        return requestTimeout.call(() -> chatService.reply(request, user.getSubject()));
+        long start = System.nanoTime();
+        ChatMessageResponse response = requestTimeout.call(() -> chatService.reply(request, user.getSubject()));
+        // How long the answer took, never what it says.
+        log.info("Answered in {} ms", <%= type('java.util.concurrent.TimeUnit') %>.NANOSECONDS.toMillis(System.nanoTime() - start));
+        return response;
 <%_ } else { _%>
-        return chatService.reply(request, user.getSubject());
+        long start = System.nanoTime();
+        ChatMessageResponse response = chatService.reply(request, user.getSubject());
+        // How long the answer took, never what it says.
+        log.info("Answered in {} ms", <%= type('java.util.concurrent.TimeUnit') %>.NANOSECONDS.toMillis(System.nanoTime() - start));
+        return response;
 <%_ } _%>
     }
 <%_ } else { _%>
     @<%= type('org.springframework.web.bind.annotation.PostMapping') %>
     ChatMessageResponse chat(@<%= type('jakarta.validation.Valid') %> @<%= type('org.springframework.web.bind.annotation.RequestBody') %> ChatMessageRequest request) {
 <%_ if (features.requestTimeout) { _%>
-        return requestTimeout.call(() -> chatService.reply(request));
+        long start = System.nanoTime();
+        ChatMessageResponse response = requestTimeout.call(() -> chatService.reply(request));
+        // How long the answer took, never what it says.
+        log.info("Answered in {} ms", <%= type('java.util.concurrent.TimeUnit') %>.NANOSECONDS.toMillis(System.nanoTime() - start));
+        return response;
 <%_ } else { _%>
-        return chatService.reply(request);
+        long start = System.nanoTime();
+        ChatMessageResponse response = chatService.reply(request);
+        // How long the answer took, never what it says.
+        log.info("Answered in {} ms", <%= type('java.util.concurrent.TimeUnit') %>.NANOSECONDS.toMillis(System.nanoTime() - start));
+        return response;
 <%_ } _%>
     }
 <%_ } _%>

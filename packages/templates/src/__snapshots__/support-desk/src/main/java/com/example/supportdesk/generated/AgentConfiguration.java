@@ -1,6 +1,7 @@
 // Managed by gen-agent: changes here are overwritten. Edit agent.yaml and regenerate.
 package com.example.supportdesk.generated;
 
+import com.example.supportdesk.generated.tool.LoggedToolCallback;
 import com.example.supportdesk.generated.tool.OrderStatusTool;
 import com.example.supportdesk.generated.tool.OrderStatusToolProperties;
 import com.example.supportdesk.generated.tool.RefundTool;
@@ -48,14 +49,15 @@ class AgentConfiguration {
         return builder
             .defaultSystem(properties.systemPrompt())
             .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+            // Every call is logged: the tool and how long it took, never what it was given.
             .defaultToolCallbacks(
-                toolGuard.guard(
-                    Stream.of(
-                        Arrays.stream(ToolCallbacks.from(orderStatusTool, refundTool)),
-                        mcpTools.stream().flatMap(provider -> Arrays.stream(provider.getToolCallbacks()))
+                LoggedToolCallback.logged(
+                    toolGuard.guard(
+                        Stream.concat(
+                            Arrays.stream(ToolCallbacks.from(orderStatusTool, refundTool)),
+                            mcpTools.stream().flatMap(provider -> Arrays.stream(provider.getToolCallbacks()))
+                        ).toArray(ToolCallback[]::new)
                     )
-                        .flatMap(tools -> tools)
-                        .toArray(ToolCallback[]::new)
                 )
             )
             .build();

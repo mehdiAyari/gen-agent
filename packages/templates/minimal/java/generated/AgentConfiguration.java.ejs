@@ -66,21 +66,18 @@ class AgentConfiguration {
 <%_ } else { _%>
                 .defaultAdvisors(<%= type('org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor') %>.builder(chatMemory).build())
 <%_ } _%>
-<%_ if (features.guardTools) { _%>
-                .defaultToolCallbacks(toolGuard.guard(<%= type('java.util.stream.Stream') %>.of(
-                                <%- [
-                                  ...(tools.length > 0 ? [`${type('java.util.Arrays')}.stream(${type('org.springframework.ai.support.ToolCallbacks')}.from(${tools.map((tool) => `${tool.methodName}Tool`).join(', ')}))`] : []),
-                                  ...(features.mcp ? ['mcpTools.stream().flatMap(provider -> Arrays.stream(provider.getToolCallbacks()))'] : []),
-                                ].join(',\n') %>)
-                        .flatMap(tools -> tools)
-                        .toArray(<%= type('org.springframework.ai.tool.ToolCallback') %>[]::new)))
-<%_ } else { _%>
-<%_   if (tools.length > 0) { _%>
-                .defaultTools(<%= tools.map((tool) => `${tool.methodName}Tool`).join(', ') %>)
-<%_   } _%>
-<%_   if (features.mcp) { _%>
-                .defaultToolCallbacks(mcpTools.toArray(ToolCallbackProvider[]::new))
-<%_   } _%>
+<%_ const javaTools = () => `${type('org.springframework.ai.support.ToolCallbacks')}.from(${tools.map((tool) => `${tool.methodName}Tool`).join(', ')})`;
+const mcpToolStream = () => `mcpTools.stream().flatMap(provider -> ${type('java.util.Arrays')}.stream(provider.getToolCallbacks()))`;
+const allTools = () => tools.length > 0 && features.mcp
+  ? `${type('java.util.stream.Stream')}.concat(${type('java.util.Arrays')}.stream(${javaTools()}), ${mcpToolStream()})
+                                .toArray(${type('org.springframework.ai.tool.ToolCallback')}[]::new)`
+  : tools.length > 0
+    ? javaTools()
+    : `${mcpToolStream()}.toArray(${type('org.springframework.ai.tool.ToolCallback')}[]::new)`;
+_%>
+<%_ if (tools.length > 0 || features.mcp) { _%>
+                // Every call is logged: the tool and how long it took, never what it was given.
+                .defaultToolCallbacks(<%= type(`${project.generatedPackage}.tool.LoggedToolCallback`) %>.logged(<%- features.guardTools ? `toolGuard.guard(${allTools()})` : allTools() %>))
 <%_ } _%>
                 .build();
     }

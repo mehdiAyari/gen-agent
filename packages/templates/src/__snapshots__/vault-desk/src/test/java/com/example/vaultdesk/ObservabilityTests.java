@@ -51,6 +51,19 @@ class ObservabilityTests {
         assertThat(get("/actuator/prometheus")).contains("spring_ai_chat_client");
     }
 
+    @Test
+    void exposesTheCountersOfTheAgentAtZeroFromTheStart() {
+        // Prometheus counts the first increase of a counter only when the counter was there before it.
+        assertThat(get("/actuator/prometheus")).contains(
+            "agent_guard_refusals_total{",
+            "reason=\"injection\"",
+            "reason=\"leak\"",
+            "agent_feedback_total{",
+            "rating=\"up\"",
+            "rating=\"down\""
+        );
+    }
+
     private String get(String path) {
         return RestClient.create("http://localhost:" + managementPort)
             .get()

@@ -24,6 +24,10 @@ public class Feedbacks {
     Feedbacks(JdbcClient jdbc, MeterRegistry meterRegistry, Tracer tracer) {
         this.jdbc = jdbc;
         this.meterRegistry = meterRegistry;
+        // At zero from the start: Prometheus counts the first rating only when the counter was there before it.
+        for (Rating rating : Rating.values()) {
+            meterRegistry.counter("agent.feedback", "rating", rating.name().toLowerCase(Locale.ROOT));
+        }
         this.tracer = tracer;
     }
 

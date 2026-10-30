@@ -41,6 +41,10 @@ public class Guardrails {
     Guardrails(AgentProperties properties, MeterRegistry meterRegistry) throws IOException {
         this.refusal = properties.guard().refusal();
         this.meterRegistry = meterRegistry;
+        // At zero from the start: Prometheus counts the first refusal only when the counter was there before it.
+        for (String reason : List.of("injection", "leak")) {
+            meterRegistry.counter("agent.guard.refusals", "reason", reason);
+        }
         // The lines long enough not to come up by chance in an answer.
         this.promptLines = properties
             .systemPrompt()

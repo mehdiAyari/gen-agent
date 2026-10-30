@@ -1,0 +1,40 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.tool;
+
+<%- imports %>
+
+@<%= type('org.junit.jupiter.api.extension.ExtendWith') %>(<%= type('org.springframework.boot.test.system.OutputCaptureExtension') %>.class)
+class LoggedToolCallbackTests {
+
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void logsTheToolAndItsDurationNeverItsArgumentsNorItsResult(<%= type('org.springframework.boot.test.system.CapturedOutput') %> output) {
+        <%= type('org.springframework.ai.tool.ToolCallback') %> tool = LoggedToolCallback.logged(new ToolCallback[] {tool("transfer", input -> "sent to " + input)})[0];
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(tool.call("FR7630006000011234567890189")).isEqualTo("sent to FR7630006000011234567890189");
+        assertThat(output).contains("Tool transfer answered in").doesNotContain("FR7630006000011234567890189");
+    }
+
+    @Test
+    void logsAFailureAndLetsItThrough(CapturedOutput output) {
+        ToolCallback tool = LoggedToolCallback.logged(new ToolCallback[] {tool("transfer", input -> {
+            throw new <%= type('java.lang.IllegalStateException') %>("bank down for FR7630006000011234567890189");
+        })})[0];
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThatThrownBy') %>(() -> tool.call("{}")).isInstanceOf(IllegalStateException.class);
+        assertThat(output).contains("Tool transfer failed after", "IllegalStateException").doesNotContain("FR7630006000011234567890189");
+    }
+
+    private static ToolCallback tool(String name, <%= type('java.util.function.UnaryOperator') %><String> behaviour) {
+        return new ToolCallback() {
+            @Override
+            public <%= type('org.springframework.ai.tool.definition.ToolDefinition') %> getToolDefinition() {
+                return ToolDefinition.builder().name(name).description(name).inputSchema("{}").build();
+            }
+
+            @Override
+            public String call(String toolInput) {
+                return behaviour.apply(toolInput);
+            }
+        };
+    }
+}

@@ -24,6 +24,10 @@ public class Feedbacks {
         this.jdbc = jdbc;
 <%_ if (features.otel || features.prometheus) { _%>
         this.meterRegistry = meterRegistry;
+        // At zero from the start: Prometheus counts the first rating only when the counter was there before it.
+        for (Rating rating : Rating.values()) {
+            meterRegistry.counter("agent.feedback", "rating", rating.name().toLowerCase(<%= type('java.util.Locale') %>.ROOT));
+        }
 <%_ } _%>
 <%_ if (features.otel) { _%>
         this.tracer = tracer;

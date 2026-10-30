@@ -2,6 +2,8 @@
 <%_ if (features.oidc) { _%>
 # Sign in as demo / demo through Keycloak (http://localhost:8180, admin / admin): see README.md.
 <%_ } _%>
+# Named after the agent, wherever the project lives: its containers are <%= project.artifactId %>-agent-1 and so on.
+name: <%= project.artifactId %>
 services:
   agent:
     build: .

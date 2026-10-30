@@ -443,6 +443,18 @@ export const minimalEntries: TemplateEntry[] = [
     output: (m) => test(m, `Test${m.project.applicationClass}.java`),
   },
   {
+    template: 'java/generated/tool/LoggedToolCallback.java.ejs',
+    owner: 'generated',
+    when: (m) => m.tools.length > 0 || m.features.mcp,
+    output: (m) => main(m, 'generated/tool/LoggedToolCallback.java'),
+  },
+  {
+    template: 'test/generated/tool/LoggedToolCallbackTests.java.ejs',
+    owner: 'generated',
+    when: (m) => m.tools.length > 0 || m.features.mcp,
+    output: (m) => test(m, 'generated/tool/LoggedToolCallbackTests.java'),
+  },
+  {
     template: 'test/generated/TestcontainersConfiguration.java.ejs',
     owner: 'generated',
     when: (m) => m.features.postgres || m.features.redis,

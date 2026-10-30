@@ -1,0 +1,60 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.tool;
+
+<%- imports %>
+
+/**
+ * A tool of the model whose calls are logged: the tool, how long it took and whether it failed. Never its arguments nor
+ * its result, which may hold personal data: the traces keep the whole exchange.
+ */
+public final class LoggedToolCallback implements <%= type('org.springframework.ai.tool.ToolCallback') %> {
+
+    private static final <%= type('org.slf4j.Logger') %> log = <%= type('org.slf4j.LoggerFactory') %>.getLogger(LoggedToolCallback.class);
+
+    private final ToolCallback delegate;
+
+    private LoggedToolCallback(ToolCallback delegate) {
+        this.delegate = delegate;
+    }
+
+    public static ToolCallback[] logged(ToolCallback[] tools) {
+        return <%= type('java.util.Arrays') %>.stream(tools).map(LoggedToolCallback::new).toArray(ToolCallback[]::new);
+    }
+
+    @Override
+    public <%= type('org.springframework.ai.tool.definition.ToolDefinition') %> getToolDefinition() {
+        return delegate.getToolDefinition();
+    }
+
+    @Override
+    public <%= type('org.springframework.ai.tool.metadata.ToolMetadata') %> getToolMetadata() {
+        return delegate.getToolMetadata();
+    }
+
+    @Override
+    public String call(String toolInput) {
+        return logged(() -> delegate.call(toolInput));
+    }
+
+    @Override
+    public String call(String toolInput, <%= type('org.springframework.ai.chat.model.ToolContext') %> toolContext) {
+        return logged(() -> delegate.call(toolInput, toolContext));
+    }
+
+    private String logged(<%= type('java.util.function.Supplier') %><String> call) {
+        String name = getToolDefinition().name();
+        long start = System.nanoTime();
+        try {
+            String result = call.get();
+            log.info("Tool {} answered in {} ms", name, millisSince(start));
+            return result;
+        } catch (RuntimeException e) {
+            log.warn("Tool {} failed after {} ms: {}", name, millisSince(start), e.getClass().getSimpleName());
+            throw e;
+        }
+    }
+
+    private static long millisSince(long start) {
+        return <%= type('java.util.concurrent.TimeUnit') %>.NANOSECONDS.toMillis(System.nanoTime() - start);
+    }
+}
