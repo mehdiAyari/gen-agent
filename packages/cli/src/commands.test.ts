@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { validateAgentYaml } from '@gen-agent/core';
 
-import { agentYamlFromAnswers, generateCommand, newCommand } from './commands.js';
+import { agentYamlFromAnswers, answersFromOptions, generateCommand, newCommand } from './commands.js';
 import { RecordingOutput } from './recording-output.js';
 
 let cwd: string;
@@ -216,6 +216,31 @@ describe('gen-agent new', () => {
       { name: 'refund', type: 'java' as const, description: 'Refunds an order' },
     ],
   };
+
+  it('takes the answers from the options, without questions, once the provider is given', () => {
+    expect(answersFromOptions('desk', {})).toBeUndefined();
+    expect(answersFromOptions('desk', { provider: 'mistral' })).toEqual({
+      name: 'desk',
+      provider: 'mistral',
+      model: 'mistral-small-latest',
+      tools: [],
+    });
+    expect(
+      answersFromOptions('desk', {
+        provider: 'ollama',
+        model: 'qwen2.5:7b',
+        description: 'Answers questions',
+        package: 'io.acme.desk',
+      }),
+    ).toEqual({
+      name: 'desk',
+      provider: 'ollama',
+      model: 'qwen2.5:7b',
+      description: 'Answers questions',
+      package: 'io.acme.desk',
+      tools: [],
+    });
+  });
 
   it('turns the answers into a valid agent.yaml', () => {
     const result = validateAgentYaml(agentYamlFromAnswers(answers));

@@ -29,14 +29,14 @@ agent:
         - { name: longitude, type: number, required: true }
 ```
 
-| Command                            | What it does                                                      |
-| ---------------------------------- | ----------------------------------------------------------------- |
-| `gen-agent new <name>`             | asks a few questions, writes agent.yaml and generates the project |
-| `gen-agent generate --from <file>` | generates the project of an agent.yaml                            |
-| `gen-agent import openapi <spec>`  | adds the operations of an OpenAPI 3 spec as HTTP tools            |
-| `gen-agent add tool` / `add mcp`   | adds a tool or an MCP server, then updates the project            |
-| `gen-agent update`                 | generates the project again, keeping your changes                 |
-| `gen-agent mcp`                    | runs gen-agent as an MCP server for coding assistants             |
+| Command                            | What it does                                                                               |
+| ---------------------------------- | ------------------------------------------------------------------------------------------ |
+| `gen-agent new <name>`             | asks a few questions (none with `--provider`), writes agent.yaml and generates the project |
+| `gen-agent generate --from <file>` | generates the project of an agent.yaml                                                     |
+| `gen-agent import openapi <spec>`  | adds the operations of an OpenAPI 3 spec as HTTP tools                                     |
+| `gen-agent add tool` / `add mcp`   | adds a tool or an MCP server, then updates the project                                     |
+| `gen-agent update`                 | generates the project again, keeping your changes                                          |
+| `gen-agent mcp`                    | runs gen-agent as an MCP server for coding assistants                                      |
 
 Profiles go from a plain chat client with tools (`minimal`) to sign-in, limits, cache and observability (`standard`),
 then personal data protection, guardrails, resilience, evaluations and a Helm chart (`production`).

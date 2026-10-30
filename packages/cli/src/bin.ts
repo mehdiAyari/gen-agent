@@ -1,11 +1,12 @@
 #!/usr/bin/env node
+import { PROVIDERS } from '@gen-agent/core';
 import { createGenAgentServer } from '@gen-agent/mcp-server';
 import { intro, log, outro } from '@clack/prompts';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { Command, Option } from 'commander';
 
 import { addMcpCommand, addToolCommand, updateCommand, type AddMcpOptions, type AddToolOptions } from './add.js';
-import { generateCommand, newCommand, type Output } from './commands.js';
+import { answersFromOptions, generateCommand, newCommand, type NewOptions, type Output } from './commands.js';
 import { importOpenApiCommand, type ImportOpenApiOptions } from './import-openapi.js';
 import { askNewAnswers } from './prompts.js';
 import { VERSION } from './version.js';
@@ -37,20 +38,24 @@ program
       .default('minimal'),
   )
   .option('-o, --output <dir>', 'project directory (default: the agent name)')
-  .action(async (name: string, options: { profile: 'minimal' | 'standard' | 'production'; output?: string }) => {
-    intro(`gen-agent ${VERSION}`);
-    const answers = await askNewAnswers(name);
-    if (answers === undefined) {
-      process.exitCode = 1;
-      return;
-    }
-    process.exitCode = await newCommand(
-      { ...answers, profile: options.profile },
-      { cwd: process.cwd(), ...options },
-      terminal,
-    );
-    if (process.exitCode === 0) outro('Done.');
-  });
+  .addOption(new Option('--provider <provider>', 'model provider: no question is asked').choices(PROVIDERS))
+  .option('--model <name>', 'model name (default: the one suggested for the provider)')
+  .option('--description <text>', 'what the agent does')
+  .option('--package <package>', 'Java package (default: com.example.<name>)')
+  .action(
+    async (name: string, options: NewOptions & { profile: 'minimal' | 'standard' | 'production'; output?: string }) => {
+      const given = answersFromOptions(name, options);
+      if (given === undefined) intro(`gen-agent ${VERSION}`);
+      const answers = given ?? (await askNewAnswers(name));
+      if (answers === undefined) {
+        process.exitCode = 1;
+        return;
+      }
+      const target = { cwd: process.cwd(), ...(options.output === undefined ? {} : { output: options.output }) };
+      process.exitCode = await newCommand({ ...answers, profile: options.profile }, target, terminal);
+      if (given === undefined && process.exitCode === 0) outro('Done.');
+    },
+  );
 
 program
   .command('generate')

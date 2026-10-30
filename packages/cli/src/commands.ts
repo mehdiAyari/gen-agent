@@ -1,7 +1,14 @@
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
-import { buildModel, unsupportedFeatures, validateAgentYaml, type Diagnostic, type Provider } from '@gen-agent/core';
+import {
+  buildModel,
+  SUGGESTED_MODELS,
+  unsupportedFeatures,
+  validateAgentYaml,
+  type Diagnostic,
+  type Provider,
+} from '@gen-agent/core';
 import { resolveOpenApi } from '@gen-agent/openapi';
 import { generateProject } from '@gen-agent/templates';
 import { stringify } from 'yaml';
@@ -67,6 +74,27 @@ export interface NewAnswers {
 export type NewTool =
   | { name: string; type: 'http'; description: string; url: string }
   | { name: string; type: 'java'; description: string };
+
+/** Options of `gen-agent new` that answer its questions, for scripts and CI. */
+export interface NewOptions {
+  provider?: Provider;
+  model?: string;
+  description?: string;
+  package?: string;
+}
+
+/** The answers given as options, once the provider is: then nothing is asked. The model defaults to the suggested one. */
+export function answersFromOptions(name: string, options: NewOptions): NewAnswers | undefined {
+  if (options.provider === undefined) return undefined;
+  return {
+    name,
+    provider: options.provider,
+    model: options.model ?? SUGGESTED_MODELS[options.provider],
+    ...(options.description === undefined ? {} : { description: options.description }),
+    ...(options.package === undefined ? {} : { package: options.package }),
+    tools: [],
+  };
+}
 
 /** The agent.yaml written by `gen-agent new`, from the interactive answers. */
 export function agentYamlFromAnswers(answers: NewAnswers): string {

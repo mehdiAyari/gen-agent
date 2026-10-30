@@ -65,6 +65,7 @@ tool and remembers the conversation. Script: [`docs/demo`](demo).</sub>
 
 ```bash
 npx gen-agent new my-assistant          # answer a few questions
+npx gen-agent new my-assistant --provider ollama --model qwen2.5:7b   # or none: for scripts and CI
 npx gen-agent generate --from agent.yaml
 ```
 
