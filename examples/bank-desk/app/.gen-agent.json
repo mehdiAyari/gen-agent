@@ -1,0 +1,459 @@
+{
+  "generator": {
+    "name": "gen-agent",
+    "version": "0.1.0"
+  },
+  "config": {
+    "agent": {
+      "name": "bank-desk",
+      "description": "Helps the customers of the bank check their balance and send transfers",
+      "profile": "production",
+      "java": 21,
+      "build": "maven",
+      "springAi": "2.0.1",
+      "model": {
+        "provider": "ollama",
+        "name": "qwen2.5:7b",
+        "temperature": 0,
+        "fallback": {
+          "provider": "ollama",
+          "name": "qwen2.5:3b"
+        }
+      },
+      "prompt": {
+        "system": "prompts/system.md",
+        "aiDisclosure": true
+      },
+      "memory": {
+        "retention": "30d",
+        "window": 20,
+        "type": "jdbc"
+      },
+      "tools": [
+        {
+          "name": "account-balance",
+          "description": "Balance of the account of the signed-in customer, in euros",
+          "params": [],
+          "type": "java"
+        },
+        {
+          "name": "send-transfer",
+          "description": "Sends a transfer from the account of the signed-in customer to an IBAN, the amount in euros",
+          "params": [
+            {
+              "name": "iban",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "amount",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "approval": {
+            "required": true
+          },
+          "type": "java"
+        }
+      ],
+      "limits": {
+        "maxIterations": 8,
+        "timeout": "5m"
+      },
+      "interface": [
+        "rest",
+        "chat-ui"
+      ],
+      "deploy": [
+        "docker-compose",
+        "helm"
+      ],
+      "security": {
+        "piiMasking": true,
+        "injectionDetection": true,
+        "outputGuard": true,
+        "killSwitches": true,
+        "auth": "oidc",
+        "rateLimit": "30/min",
+        "tokenBudget": "100000/day"
+      },
+      "cache": {
+        "exact": "redis",
+        "semantic": {
+          "threshold": 0.95,
+          "scope": "user"
+        }
+      },
+      "gdpr": {
+        "erasureEndpoint": true,
+        "logsWithoutPii": true
+      },
+      "observability": {
+        "otel": true,
+        "metrics": "prometheus",
+        "grafanaDashboard": true,
+        "feedback": true
+      },
+      "evals": {
+        "dataset": "evals/golden.yaml",
+        "redTeam": true,
+        "ciModel": "ollama"
+      }
+    }
+  },
+  "files": {
+    ".dockerignore": {
+      "owner": "merged",
+      "sha256": "ca8ce5585bdeb09dc8799257f351f1c86380558bea95f34decc9b414685e58f0"
+    },
+    ".github/workflows/ci.yml": {
+      "owner": "merged",
+      "sha256": "f2574733d0f80a9dd9fa1f3ee19fe4e4b9342a23003f1eebb49c9db898435471"
+    },
+    ".gitignore": {
+      "owner": "merged",
+      "sha256": "8bd33d61dffb07d6b6cf5ba7166e9c53175d4369c94cc229105eb64c69c03798"
+    },
+    ".mvn/wrapper/maven-wrapper.properties": {
+      "owner": "generated",
+      "sha256": "9e702bcd7e68ba1cace0a3382a7082e6e1e1b321688a7a3fbf4d5ae7eb0af533"
+    },
+    "Dockerfile": {
+      "owner": "merged",
+      "sha256": "b39db02c7c1dd6a7dc2809611c7f5b40de3719e15c47c77b68a592101f05504f"
+    },
+    "README.md": {
+      "owner": "merged",
+      "sha256": "2ce5f73f9dee73b048c700420939e01277c0ce734b50affda7398fbcb03cf108"
+    },
+    "compose.yaml": {
+      "owner": "merged",
+      "sha256": "6f6d5d94de239d9c95f4c66ff16783272a99af97a82663c276ce1a6e6f3bc7e9"
+    },
+    "docker/grafana/agent-dashboard.json": {
+      "owner": "generated",
+      "sha256": "42aacf928b2270b1eb945bdb49b1ca47c2f478f31da134fc64f641ad26750e3e"
+    },
+    "docker/grafana/dashboards.yaml": {
+      "owner": "generated",
+      "sha256": "dece74a2bd7ca3573a4057a50ac9f0f4e6149b4bbd83334935ece87e6d9519be"
+    },
+    "docker/keycloak/realm-agent.json": {
+      "owner": "merged",
+      "sha256": "4bd5f247c24be7e45fef5545b2ab9e87d2355bf335b9cf37bf6604fe195457d9"
+    },
+    "evals/golden.yaml": {
+      "owner": "user",
+      "sha256": "31981d70ff1e24584807597425f0090f68e63441468f9e308d4ee7a1154bec2a"
+    },
+    "helm/bank-desk/Chart.yaml": {
+      "owner": "generated",
+      "sha256": "db2fd28f3ea2639e49007bea11a322744358d0beec40ac893e3921c6e67c1be5"
+    },
+    "helm/bank-desk/templates/_helpers.tpl": {
+      "owner": "generated",
+      "sha256": "c3f730417ff95939a114393bd26dc79dc5cc03f422429567097777e31e6acc4c"
+    },
+    "helm/bank-desk/templates/deployment.yaml": {
+      "owner": "generated",
+      "sha256": "964f6ba349ce1d14c957162e66ea97c8718bdf7af3c8bc8ef6a5e79cab9bd8f5"
+    },
+    "helm/bank-desk/templates/ingress.yaml": {
+      "owner": "generated",
+      "sha256": "54ecf844b41a9f8814437451840c6da359e763a49604aeed533165678318f8ef"
+    },
+    "helm/bank-desk/templates/service.yaml": {
+      "owner": "generated",
+      "sha256": "f8bb195ffb92ef6c36d8a85954a1d24c754ec1d2f3c792a890f7c318e06c6589"
+    },
+    "helm/bank-desk/values.yaml": {
+      "owner": "merged",
+      "sha256": "b36f8b7586bdef962edd0ca1af663a6224943565e446198554518b8d694e28ee"
+    },
+    "mvnw": {
+      "owner": "generated",
+      "sha256": "cae96cef89ebea3531221f4ae17c23cf8edf67d00eae8306d4186ae1bbed4d02"
+    },
+    "mvnw.cmd": {
+      "owner": "generated",
+      "sha256": "46eedb8419bd14fe70d5bb2916d7b6f51806e51b39d5b76a42610384ca929c1c"
+    },
+    "pom.xml": {
+      "owner": "merged",
+      "sha256": "be61631ddc45c5471601e741764cd54552d30d45266a0335fd6e28959aaec276"
+    },
+    "src/main/java/com/example/bankdesk/BankDeskApplication.java": {
+      "owner": "merged",
+      "sha256": "a98d6148daad7482878c87f91b288fc38842490942dbb963797a83d779667ee3"
+    },
+    "src/main/java/com/example/bankdesk/generated/AgentConfiguration.java": {
+      "owner": "generated",
+      "sha256": "370334c60d1520208296f62eb5bab63a4758409cfebaf28e2b25153a4780be62"
+    },
+    "src/main/java/com/example/bankdesk/generated/AgentProperties.java": {
+      "owner": "generated",
+      "sha256": "fe6708648dc6f348bec0f8cb3dbcf8421908fb6a801e711eb2b4f0d2371b6bc1"
+    },
+    "src/main/java/com/example/bankdesk/generated/approval/ApprovalUnavailableException.java": {
+      "owner": "generated",
+      "sha256": "e680788f1948bb75ce5e710e166ae1639a6d499be3528f49cd58ea0a41a36142"
+    },
+    "src/main/java/com/example/bankdesk/generated/approval/Approvals.java": {
+      "owner": "generated",
+      "sha256": "1cfe9049b87745cf2d5c2e77a53d02aa21172e51a061402eff8af16824eb2cc4"
+    },
+    "src/main/java/com/example/bankdesk/generated/approval/PendingApproval.java": {
+      "owner": "generated",
+      "sha256": "9fa28e7c4453d1bc98f6516bffa459f55d6607e072029f69bc274cfde29e74d2"
+    },
+    "src/main/java/com/example/bankdesk/generated/cache/ReplyCache.java": {
+      "owner": "generated",
+      "sha256": "5b47f1a823b748506a631c5effdd0e049e3e9a96fe648e7be79b44bcbf9aa2da"
+    },
+    "src/main/java/com/example/bankdesk/generated/cache/SemanticCache.java": {
+      "owner": "generated",
+      "sha256": "bc4397405431e3e363e580f8d041892ae1925d804ab0ee73b30faeb63b85c072"
+    },
+    "src/main/java/com/example/bankdesk/generated/cache/SemanticCacheConfiguration.java": {
+      "owner": "generated",
+      "sha256": "ec6809f175de16aeea64a0c1bf063f2b92b60167fb07a74904cd7c907dd1eef5"
+    },
+    "src/main/java/com/example/bankdesk/generated/chat/ApprovalController.java": {
+      "owner": "generated",
+      "sha256": "41a65311168dd4aa36c5cbb945f8d5485fa8e47b300e9cbbd81c94e676683d33"
+    },
+    "src/main/java/com/example/bankdesk/generated/chat/ChatController.java": {
+      "owner": "generated",
+      "sha256": "1f3ddf15dcb62b7965c1de1d3f635a8df9f0bad0dcebbf37a441998fc709469b"
+    },
+    "src/main/java/com/example/bankdesk/generated/chat/ChatExceptionHandler.java": {
+      "owner": "generated",
+      "sha256": "3088703566394e3469d7a8282093cbd15c7cd46a62d5664dbb267ce7d4b6d22d"
+    },
+    "src/main/java/com/example/bankdesk/generated/chat/ChatMessageRequest.java": {
+      "owner": "generated",
+      "sha256": "29b5d235426061303f30544000836d368bc861e936646db642fe6903a197a48b"
+    },
+    "src/main/java/com/example/bankdesk/generated/chat/ChatMessageResponse.java": {
+      "owner": "generated",
+      "sha256": "149455b00855fc597b1e68d9f9fbbd84c15747dc961187e0e2cd60a7003fb54c"
+    },
+    "src/main/java/com/example/bankdesk/generated/chat/ChatService.java": {
+      "owner": "generated",
+      "sha256": "6a587024ddea52d9469661a305a089c2a64e6ac9a6a48782750b31193830a3df"
+    },
+    "src/main/java/com/example/bankdesk/generated/chat/UnknownConversationException.java": {
+      "owner": "generated",
+      "sha256": "3305bce640d67e4816282fcab2f14494798c085a24c13774f68c9044854ad743"
+    },
+    "src/main/java/com/example/bankdesk/generated/feedback/FeedbackController.java": {
+      "owner": "generated",
+      "sha256": "b74062162cb68fcb24f344af7d860c2db99368262728d65ae5a9037c1e925fd9"
+    },
+    "src/main/java/com/example/bankdesk/generated/feedback/Feedbacks.java": {
+      "owner": "generated",
+      "sha256": "258c171cabc4a71a0374852e5efb83bbca4595bef3a4c9eced14987d9c5b9dc3"
+    },
+    "src/main/java/com/example/bankdesk/generated/guard/Guardrails.java": {
+      "owner": "generated",
+      "sha256": "61169ecf224824d6b0dba0e91a95e56aa220ef4aaa7d37b9f9aae3e328d33b5f"
+    },
+    "src/main/java/com/example/bankdesk/generated/guard/PromptInjection.java": {
+      "owner": "generated",
+      "sha256": "e10b298e9ef90e991b4415f23392745ed1fb5776c8777fa87108f60a7d7255f0"
+    },
+    "src/main/java/com/example/bankdesk/generated/guard/RequestTimeout.java": {
+      "owner": "generated",
+      "sha256": "02589556e4cce25f3b3bed308af53fda3c406f1a099e74c1214c1edcd93cd510"
+    },
+    "src/main/java/com/example/bankdesk/generated/guard/RequestTimeoutException.java": {
+      "owner": "generated",
+      "sha256": "b70e95bc1a48e8270504ac4771e759f3ac0323c09167d3b1c30d3bd35722f44c"
+    },
+    "src/main/java/com/example/bankdesk/generated/limits/LimitExceededException.java": {
+      "owner": "generated",
+      "sha256": "cbeb81ca5cc0ac68eb858b00aa671ef84d1fbde3c2e6d70e902ab804f3c38dca"
+    },
+    "src/main/java/com/example/bankdesk/generated/limits/LimitsConfiguration.java": {
+      "owner": "generated",
+      "sha256": "db8f476971381ccdc7b2214962898f2a720e5d44197fe62e459f20c56c9ae44e"
+    },
+    "src/main/java/com/example/bankdesk/generated/limits/UsageLimits.java": {
+      "owner": "generated",
+      "sha256": "a51fb836a95781138913b701233b4a8e9453300d2a95ba563217d140810e5684"
+    },
+    "src/main/java/com/example/bankdesk/generated/privacy/Conversations.java": {
+      "owner": "generated",
+      "sha256": "727a75733bb72ab65d01f0b2a11831eaa52579b127367702fd076b325e4910c6"
+    },
+    "src/main/java/com/example/bankdesk/generated/privacy/DataEraser.java": {
+      "owner": "generated",
+      "sha256": "eb2f4e5eff17ee5a73857e2ef37d9de919537b87e219ecb35e65f40966123f90"
+    },
+    "src/main/java/com/example/bankdesk/generated/privacy/ErasureController.java": {
+      "owner": "generated",
+      "sha256": "44b76c8266402b9bb95b02b45d81f28290d384b2371c2bcbeef5ef2aac8a68c9"
+    },
+    "src/main/java/com/example/bankdesk/generated/privacy/MaskedMessageConverter.java": {
+      "owner": "generated",
+      "sha256": "c96d5690bdc2ef97f3704042969c10b783bc070deb5573e5a70c8c762a537a89"
+    },
+    "src/main/java/com/example/bankdesk/generated/privacy/MaskedThrowableConverter.java": {
+      "owner": "generated",
+      "sha256": "4f6cd0a4c4dab56095edb63b4e8c13e747c5c293c06b0347433bbfd64b219d32"
+    },
+    "src/main/java/com/example/bankdesk/generated/privacy/PersonalData.java": {
+      "owner": "generated",
+      "sha256": "a07ffd84aacb4b3b61063cdd5485d1f428bafafcd3b6c2ae2e56b6f0a38dd19c"
+    },
+    "src/main/java/com/example/bankdesk/generated/privacy/PersonalDataPatterns.java": {
+      "owner": "generated",
+      "sha256": "0f5f5e93fa7a05e7f728a8c925efd5b41dfeda60dc2d37fd6a61f9804e48f95e"
+    },
+    "src/main/java/com/example/bankdesk/generated/privacy/RetentionJob.java": {
+      "owner": "generated",
+      "sha256": "a9608cda02b145c92959ad8aa7f53fd4e324a702bb3bf8c7cd176c751f487bd5"
+    },
+    "src/main/java/com/example/bankdesk/generated/resilience/ModelUnavailableException.java": {
+      "owner": "generated",
+      "sha256": "0e7c079a84540724e51c508484b919be125c9512e000e7cc1bae66af2bdb44c4"
+    },
+    "src/main/java/com/example/bankdesk/generated/resilience/ResilienceConfiguration.java": {
+      "owner": "generated",
+      "sha256": "a481f151ba84576c8de0d06319db75ecffe59f32bf5cc16af5d183b80ee34674"
+    },
+    "src/main/java/com/example/bankdesk/generated/resilience/ResilientModelAdvisor.java": {
+      "owner": "generated",
+      "sha256": "f0f8e3a5a1d81b1dffd4d5afd654c403f8ace1d6af0ff19544e72a28d886979b"
+    },
+    "src/main/java/com/example/bankdesk/generated/security/SecurityConfiguration.java": {
+      "owner": "generated",
+      "sha256": "0be79b0ba625a684e6c27aeaa831eb78081364d112ea9ee31a146296e9155ca3"
+    },
+    "src/main/java/com/example/bankdesk/generated/switches/AgentSwitchedOffException.java": {
+      "owner": "generated",
+      "sha256": "1b2b6a02acb188b82b6744fcd0699b445d82d074ced706878113877c5cffa995"
+    },
+    "src/main/java/com/example/bankdesk/generated/switches/KillSwitchController.java": {
+      "owner": "generated",
+      "sha256": "ed9af6ed87db6a8ac6b78e3492ea4c597e4384bc4f9c36624b98c6c78ffa9964"
+    },
+    "src/main/java/com/example/bankdesk/generated/switches/KillSwitches.java": {
+      "owner": "generated",
+      "sha256": "0389a23ec921ac056cf381db40cbec0745b206b2136bc225f61146c6ce6333b0"
+    },
+    "src/main/java/com/example/bankdesk/generated/tool/AccountBalanceHandler.java": {
+      "owner": "generated",
+      "sha256": "5d790cbf0a811c691b919e953a498d6988223a045543fd46161e4fd9a05c491b"
+    },
+    "src/main/java/com/example/bankdesk/generated/tool/AccountBalanceTool.java": {
+      "owner": "generated",
+      "sha256": "3dd96eb43f41aa68295c96888b8b95fb86c13dd3696031ba945f6155715de367"
+    },
+    "src/main/java/com/example/bankdesk/generated/tool/GuardedToolCallback.java": {
+      "owner": "generated",
+      "sha256": "4c12bad53d22a5f99c8a74fd34b9704b1c990e48d7f55f8733219b65f8917ca8"
+    },
+    "src/main/java/com/example/bankdesk/generated/tool/SendTransferHandler.java": {
+      "owner": "generated",
+      "sha256": "384dec93a548bc2f3f12b43576cf2165659e0a2201709a491dfaba7b8366b66c"
+    },
+    "src/main/java/com/example/bankdesk/generated/tool/SendTransferTool.java": {
+      "owner": "generated",
+      "sha256": "e269952286db523b403e03b6fc2ad939d5b2895e482d27a5126d6550773b16c8"
+    },
+    "src/main/java/com/example/bankdesk/generated/tool/ToolGuard.java": {
+      "owner": "generated",
+      "sha256": "ee58de9f56cff00cd951a656488f46ada9ce4103a55fdf6b2b76d03a347b6890"
+    },
+    "src/main/java/com/example/bankdesk/generated/ui/ChatUiController.java": {
+      "owner": "generated",
+      "sha256": "ac1ace688ffa58a14ed01fdea55644ee3cc1cf389b1bf521b3b31d1da547964c"
+    },
+    "src/main/java/com/example/bankdesk/tool/DefaultAccountBalanceHandler.java": {
+      "owner": "user",
+      "sha256": "067775f1fe1721c266dafadc5e441120af03f9869cf7afe80bc64c46e0cca899"
+    },
+    "src/main/java/com/example/bankdesk/tool/DefaultSendTransferHandler.java": {
+      "owner": "user",
+      "sha256": "49db68c3320e14605e2d881a65ba93da06628b2d0abfbf4a32fb7c3a31042d65"
+    },
+    "src/main/resources/application.yml": {
+      "owner": "merged",
+      "sha256": "c47da988c1f066d16e7d1b0c75e1799405c4b077b90a6af550dddeee09ad8a63"
+    },
+    "src/main/resources/db/migration/V1__agent_conversation.sql": {
+      "owner": "generated",
+      "sha256": "a7a7f9590d3cadd1fa6c54acb2573346e037d189eb4c2d71aae0f36628a81c34"
+    },
+    "src/main/resources/db/migration/V2__agent_approval.sql": {
+      "owner": "generated",
+      "sha256": "f408d81a0d96504e2b52723026db51cd4c248e85011ba7780411a3bda55f66c8"
+    },
+    "src/main/resources/db/migration/V4__agent_feedback.sql": {
+      "owner": "generated",
+      "sha256": "34306fb7f54af0eba543c96a006ecc5087e8114adf5b590ae60a2ab8e3f816e4"
+    },
+    "src/main/resources/logback-spring.xml": {
+      "owner": "merged",
+      "sha256": "34131920a0dc3faaf4c825fedf4f90e70ca879a1c7814c9e1502e45e4c3fc175"
+    },
+    "src/main/resources/prompts/system.md": {
+      "owner": "user",
+      "sha256": "79c6b90dbe707d8dd37c2c9304787082a4007b782b7651b117cb68b84201ad12"
+    },
+    "src/main/resources/static/chat.css": {
+      "owner": "merged",
+      "sha256": "d7ef692f0beec9597eb3795cad1ac8a14876dcedc890a47553e9589ca2d74b6a"
+    },
+    "src/main/resources/static/chat.js": {
+      "owner": "merged",
+      "sha256": "a80d5bb055de40c30cb8b52952d93d39ea0893c733e1cfabb5b0460d17e508f3"
+    },
+    "src/main/resources/static/index.html": {
+      "owner": "merged",
+      "sha256": "79b8e9ef53df3b351500659353f82fd4ef59d4e5aec495c78c5c7198aa80611d"
+    },
+    "src/test/java/com/example/bankdesk/BankDeskApplicationTests.java": {
+      "owner": "merged",
+      "sha256": "b4ba584dff92107a7e6d5cb13358b02bf5c903507e73b823e53a8c02fe549026"
+    },
+    "src/test/java/com/example/bankdesk/ObservabilityTests.java": {
+      "owner": "generated",
+      "sha256": "cdb7c771d48107bf776ce8edb6ef5c6653b0f1f41f46ff2e9ddca03af0b7ccc1"
+    },
+    "src/test/java/com/example/bankdesk/evals/AgentEvaluationTests.java": {
+      "owner": "generated",
+      "sha256": "6dfa480a10b4f11c8f1ef14771a8cf8c28e498026b94a877d03c118248f140a8"
+    },
+    "src/test/java/com/example/bankdesk/generated/TestcontainersConfiguration.java": {
+      "owner": "generated",
+      "sha256": "7658c0ba937dc7c30b446f5a3dc6b4b3dee5d02617d38bea5ba80d8a5d7c1178"
+    },
+    "src/test/java/com/example/bankdesk/generated/chat/ChatControllerTests.java": {
+      "owner": "generated",
+      "sha256": "20212b22463737717c4d8b1b9c6e68ed429783eedda1a22d6c6b8dca130d67cb"
+    },
+    "src/test/java/com/example/bankdesk/generated/guard/PromptInjectionTests.java": {
+      "owner": "generated",
+      "sha256": "170cb5fa402b71633aa2ddfb0d821f392437d7edc117490f47cfbb9d18e9a031"
+    },
+    "src/test/java/com/example/bankdesk/generated/privacy/PersonalDataPatternsTests.java": {
+      "owner": "generated",
+      "sha256": "26bb9ddc1b37aa3df5228bf2e99198bb22b4e20e42c51c2a3da9c04a9121d66c"
+    },
+    "src/test/java/com/example/bankdesk/generated/tool/AccountBalanceToolTests.java": {
+      "owner": "generated",
+      "sha256": "535d1572afbbfdad1da9e5ed0bc96eb01623752c5a173b6eea89bf621bc175c4"
+    },
+    "src/test/java/com/example/bankdesk/generated/tool/SendTransferToolTests.java": {
+      "owner": "generated",
+      "sha256": "e27be31b04cd54b4d3183e7366e009d9dc97667293d1402582a89ef38c931a8a"
+    },
+    "src/test/java/com/example/bankdesk/generated/tool/ToolGuardTests.java": {
+      "owner": "generated",
+      "sha256": "7e02eb4282dec93c32e4648b0a55d5ffe73c2c42fc12cd06d2bb8ccd3230e9f7"
+    }
+  }
+}

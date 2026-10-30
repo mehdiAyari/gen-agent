@@ -1,0 +1,41 @@
+# Values of the bank-desk chart: helm install bank-desk ./helm/bank-desk -f my-values.yaml
+
+replicaCount: 2
+
+image:
+  # Built from the Dockerfile and pushed to your registry.
+  repository: bank-desk
+  tag: "0.0.1-SNAPSHOT"
+  pullPolicy: IfNotPresent
+
+# Secrets by reference only: a Secret you create, with the keys DATABASE_PASSWORD.
+#   kubectl create secret generic bank-desk-secrets --from-literal=DATABASE_PASSWORD=...
+existingSecret: bank-desk-secrets
+
+# Settings of the agent, as environment variables (application.yml reads them).
+env:
+  # Postgres with the pgvector extension, run apart from the chart.
+  DATABASE_URL: jdbc:postgresql://postgres:5432/agent
+  DATABASE_USERNAME: agent
+  REDIS_URL: redis://redis:6379
+  OIDC_ISSUER_URI: https://login.example.org/realms/agent
+  SPRING_AI_OLLAMA_BASE_URL: http://ollama:11434
+  OTLP_ENABLED: "true"
+  OTLP_ENDPOINT: http://otel-collector:4318
+
+service:
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  host: bank-desk.example.org
+  # The name of a Secret holding the TLS certificate of the host; empty for none.
+  tlsSecret: ""
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    {{- include "agent.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "agent.selectorLabels" . | nindent 4 }}
+  ports:
+    # The API and the chat page; the management port stays inside the pod.
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http

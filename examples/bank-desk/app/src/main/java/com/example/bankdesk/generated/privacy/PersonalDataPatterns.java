@@ -1,0 +1,94 @@
+// Managed by gen-agent: changes here are overwritten.
+package com.example.bankdesk.generated.privacy;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Finds personal data in a text: emails, payment card numbers (Luhn-checked), IBANs (checksum-verified), French
+ * social security numbers and phone numbers. Names and postal addresses are not found: patterns cannot tell them.
+ */
+public final class PersonalDataPatterns {
+
+    /** A piece of personal data: its kind (EMAIL, CARD…) and where it is. */
+    public record Found(String kind, int start, int end, String value) {}
+
+    private record Kind(String name, Pattern pattern, Predicate<String> check) {}
+
+    // The most specific first: a card or an IBAN also looks like a phone number.
+    private static final List<Kind> KINDS = List.of(
+        new Kind("EMAIL", Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"), value -> true),
+        new Kind(
+            "IBAN",
+            Pattern.compile("\\b[A-Z]{2}\\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,3})?\\b"),
+            PersonalDataPatterns::validIban
+        ),
+        new Kind("CARD", Pattern.compile("\\b\\d(?:[ -]?\\d){12,18}\\b"), PersonalDataPatterns::validCard),
+        new Kind(
+            "SSN",
+            Pattern.compile("\\b[12] ?\\d{2} ?(?:0[1-9]|1[0-2]) ?(?:\\d{2}|2[AB]) ?\\d{3} ?\\d{3}(?: ?\\d{2})?\\b"),
+            value -> true
+        ),
+        new Kind(
+            "PHONE",
+            Pattern.compile("(?:\\+\\d{1,3}[ .-]?(?:\\(0\\))?|\\b0)[1-9](?:[ .-]?\\d{2}){4}\\b|\\+\\d{8,15}\\b"),
+            value -> true
+        )
+    );
+
+    private PersonalDataPatterns() {}
+
+    /** Every piece of personal data in the text, in order, without overlaps. */
+    public static List<Found> find(String text) {
+        List<Found> found = new ArrayList<>();
+        for (Kind kind : KINDS) {
+            Matcher matcher = kind.pattern().matcher(text);
+            while (matcher.find()) {
+                Found candidate = new Found(kind.name(), matcher.start(), matcher.end(), matcher.group());
+                boolean overlaps = found
+                    .stream()
+                    .anyMatch(other -> other.start() < candidate.end() && candidate.start() < other.end());
+                if (!overlaps && kind.check().test(candidate.value())) {
+                    found.add(candidate);
+                }
+            }
+        }
+        found.sort(Comparator.comparingInt(Found::start));
+        return found;
+    }
+
+    /** The text with each piece of personal data replaced by its kind, for the logs: [EMAIL], [PHONE]… */
+    public static String maskForLogs(String text) {
+        StringBuilder masked = new StringBuilder(text);
+        List<Found> found = find(text);
+        for (int i = found.size() - 1; i >= 0; i--) {
+            masked.replace(found.get(i).start(), found.get(i).end(), "[" + found.get(i).kind() + "]");
+        }
+        return masked.toString();
+    }
+
+    private static boolean validCard(String value) {
+        String digits = value.replaceAll("[ -]", "");
+        int sum = 0;
+        for (int i = 0; i < digits.length(); i++) {
+            int digit = digits.charAt(digits.length() - 1 - i) - '0';
+            sum += i % 2 == 1 ? (digit * 2 > 9 ? digit * 2 - 9 : digit * 2) : digit;
+        }
+        return sum % 10 == 0;
+    }
+
+    private static boolean validIban(String value) {
+        String compact = value.replace(" ", "");
+        String rearranged = compact.substring(4) + compact.substring(0, 4);
+        int remainder = 0;
+        for (char character : rearranged.toCharArray()) {
+            int number = Character.isDigit(character) ? character - '0' : character - 'A' + 10;
+            remainder = (number > 9 ? remainder * 100 + number : remainder * 10 + number) % 97;
+        }
+        return remainder == 1;
+    }
+}

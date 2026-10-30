@@ -1,0 +1,27 @@
+agent:
+  name: bank-desk
+  description: Helps the customers of the bank check their balance and send transfers
+  profile: production
+  model:
+    provider: ollama
+    name: qwen2.5:7b
+    temperature: 0
+    fallback:
+      provider: ollama
+      name: qwen2.5:3b
+  limits:
+    timeout: 5m # a 7B model on a laptop CPU takes its time
+  interface: [ rest, chat-ui ]
+  deploy: [ docker-compose, helm ]
+  tools:
+    - name: account-balance
+      type: java
+      description: Balance of the account of the signed-in customer, in euros
+    - name: send-transfer
+      type: java
+      description: Sends a transfer from the account of the signed-in customer to an IBAN, the amount in euros
+      params:
+        - { name: iban, type: string, required: true }
+        - { name: amount, type: number, required: true }
+      approval:
+        required: true

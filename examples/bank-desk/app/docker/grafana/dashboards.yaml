@@ -1,0 +1,8 @@
+# Provisions the dashboard of the agent into the Grafana of otel-lgtm.
+apiVersion: 1
+
+providers:
+  - name: bank-desk
+    type: file
+    options:
+      path: /otel-lgtm/agent-dashboard.json

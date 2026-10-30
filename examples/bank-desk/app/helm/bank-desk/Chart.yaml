@@ -1,0 +1,6 @@
+apiVersion: v2
+name: bank-desk
+description: "Helps the customers of the bank check their balance and send transfers"
+type: application
+version: 0.1.0
+appVersion: "0.0.1-SNAPSHOT"

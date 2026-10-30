@@ -1,0 +1,127 @@
+spring:
+  application:
+    name: bank-desk
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/agent}
+    username: ${DATABASE_USERNAME:agent}
+    password: ${DATABASE_PASSWORD}
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Only tokens of this issuer are accepted; its keys are found through its OIDC discovery document.
+          issuer-uri: ${OIDC_ISSUER_URI}
+  ai:
+    ollama:
+      chat:
+        model: qwen2.5:7b
+        temperature: 0
+      embedding:
+        model: nomic-embed-text
+    retry:
+      # Failed calls are retried twice, 1 then 2 seconds apart, before the circuit breaker counts a failure.
+      max-attempts: 3
+      backoff:
+        initial-interval: 1s
+        multiplier: 2
+        max-interval: 4s
+    tools:
+      limits:
+        # Tool calls the model may make to answer one message; beyond, the request stops with 422.
+        max-total-tool-calls: 8
+    chat:
+      memory:
+        repository:
+          jdbc:
+            # Creates the table of Spring AI's chat memory when it does not exist yet.
+            initialize-schema: always
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        # Open after half of the last 10 calls failed (5 at least), then try again after 30 seconds.
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2
+
+agent:
+  system-prompt: classpath:prompts/system.md
+  # Sent when no model can answer.
+  fallback-answer: "The assistant is unavailable right now. Please try again in a few minutes."
+  fallback:
+    model: qwen2.5:3b
+  # The longest a request may take, model calls and tools included; beyond, 504.
+  timeout: 5m
+  guard:
+    # Sent instead of an answer to a message that tries to take over the agent, or that would leak its instructions.
+    refusal: "I can't help with that request."
+  security:
+    # Where the roles are in the tokens of the provider: agent-admin is the administrator of the agent.
+    roles-claim: ${OIDC_ROLES_CLAIM:realm_access.roles}
+  chat-ui:
+    # Public client of the chat page at the OIDC provider: authorization code with PKCE, no secret.
+    client-id: ${OIDC_CLIENT_ID:agent-client}
+  memory:
+    window: 20
+    # Unused conversations are erased after this long (GDPR storage limitation).
+    retention: 30d
+  limits:
+    requests: 30
+    requests-period: 1m
+    tokens: 100000
+    tokens-period: 1d
+  cache:
+    # How long a first answer is reused for the same question of the same user.
+    ttl: 1h
+    semantic:
+      # Questions of the same user this similar (0 to 1) share their answer.
+      threshold: 0.95
+      dimensions: 768
+  privacy:
+    # How long the personal data behind the tokens of a conversation is kept.
+    ttl: 30d
+
+management:
+  server:
+    # Health and metrics on their own port, kept off the public one.
+    port: ${MANAGEMENT_PORT:8081}
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  metrics:
+    distribution:
+      percentiles-histogram:
+        # Buckets for the request duration percentiles of the dashboard.
+        http.server.requests: true
+      maximum-expected-value:
+        # Answers of a model take seconds, not milliseconds.
+        http.server.requests: 2m
+  endpoint:
+    health:
+      # Liveness and readiness, for the probes of Kubernetes.
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      otlp:
+        # Sent to an OpenTelemetry collector when OTLP_ENABLED is true: docker compose starts one, with Grafana.
+        enabled: ${OTLP_ENABLED:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTLP_ENABLED:false}
+        url: ${OTLP_ENDPOINT:http://localhost:4318}/v1/metrics

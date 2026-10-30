@@ -1,0 +1,43 @@
+{
+  "realm": "agent",
+  "enabled": true,
+  "sslRequired": "none",
+  "clients": [
+    {
+      "clientId": "agent-client",
+      "name": "bank-desk",
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["http://localhost:8080/*"],
+      "webOrigins": ["http://localhost:8080"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:8080/*"
+      }
+    }
+  ],
+  "roles": {
+    "realm": [{ "name": "agent-admin", "description": "May erase the data of any user and switch the agent and its tools off" }]
+  },
+  "users": [
+    {
+      "username": "demo",
+      "email": "demo@example.org",
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "demo", "temporary": false }]
+    },
+    {
+      "username": "admin",
+      "email": "admin@example.org",
+      "emailVerified": true,
+      "firstName": "Agent",
+      "lastName": "Admin",
+      "enabled": true,
+      "realmRoles": ["agent-admin"],
+      "credentials": [{ "type": "password", "value": "admin", "temporary": false }]
+    }  ]
+}
