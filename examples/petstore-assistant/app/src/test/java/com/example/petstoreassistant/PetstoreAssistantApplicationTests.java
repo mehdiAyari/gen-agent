@@ -26,9 +26,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
  * Starts the whole application with a fake model: checks the wiring (system prompt, memory, tools) and the REST
  * endpoint without calling a real provider.
  */
-@SpringBootTest(
-    properties = { "agent.tools.find-pets-by-status.token=test-token", "agent.tools.get-pet-by-id.token=test-token" }
-)
+@SpringBootTest
 @AutoConfigureMockMvc
 class PetstoreAssistantApplicationTests {
 

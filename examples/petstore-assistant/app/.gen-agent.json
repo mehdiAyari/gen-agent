@@ -38,11 +38,7 @@
           ],
           "type": "http",
           "method": "GET",
-          "url": "https://petstore3.swagger.io/api/v3/pet/findByStatus",
-          "auth": {
-            "type": "bearer",
-            "env": "PETSTORE_TOKEN"
-          }
+          "url": "https://petstore3.swagger.io/api/v3/pet/findByStatus"
         },
         {
           "name": "get-pet-by-id",
@@ -57,12 +53,7 @@
           ],
           "type": "http",
           "method": "GET",
-          "url": "https://petstore3.swagger.io/api/v3/pet/{petId}",
-          "auth": {
-            "type": "header",
-            "name": "api_key",
-            "env": "PETSTORE_API_KEY"
-          }
+          "url": "https://petstore3.swagger.io/api/v3/pet/{petId}"
         }
       ],
       "interface": [
@@ -81,7 +72,7 @@
     },
     "README.md": {
       "owner": "merged",
-      "sha256": "47fd90e96d89b7569ecfefd1e5dc1b4811f4bea86f687db5e8c8c6af949543b7"
+      "sha256": "55459bf9b942621f184f18601285bd628788c496824a78ea99e3282f33e1a307"
     },
     "mvnw": {
       "owner": "generated",
@@ -101,7 +92,7 @@
     },
     "src/main/java/com/example/petstoreassistant/generated/AgentConfiguration.java": {
       "owner": "generated",
-      "sha256": "b16f00cab70780c0f512a3cac5c451d67ba120b649edd76c234bfd24f88a3f98"
+      "sha256": "24df9005db869d9b24a1bee39211e5e85e119c0fe6d7af65758933ffca3e0a19"
     },
     "src/main/java/com/example/petstoreassistant/generated/AgentProperties.java": {
       "owner": "generated",
@@ -109,7 +100,7 @@
     },
     "src/main/java/com/example/petstoreassistant/generated/chat/ChatController.java": {
       "owner": "generated",
-      "sha256": "bd1ca33f266c4dcc37dcf1f58affb829f233a4e2a18ede395a47e94c959af666"
+      "sha256": "d5c3c841df444976b93440613f74597da7bffa9df8a7c3794d10b33733a93afd"
     },
     "src/main/java/com/example/petstoreassistant/generated/chat/ChatExceptionHandler.java": {
       "owner": "generated",
@@ -129,19 +120,23 @@
     },
     "src/main/java/com/example/petstoreassistant/generated/tool/FindPetsByStatusTool.java": {
       "owner": "generated",
-      "sha256": "3580406263832b93a71d1f5bbc539e7fcd920dd67bd84cf3adf7857d406723bc"
+      "sha256": "132608301f99b9d07e342ca0a793810cd8db18c8e447b986ad692b0e0fee8459"
     },
     "src/main/java/com/example/petstoreassistant/generated/tool/FindPetsByStatusToolProperties.java": {
       "owner": "generated",
-      "sha256": "ac9922c3bfda0dba809437e1ca7be5709d0be54c30dd114e4436523139ea065b"
+      "sha256": "c8cad0d80f056444097190efca6ffcffdb06513b164c950ba61982cbfd3a268f"
     },
     "src/main/java/com/example/petstoreassistant/generated/tool/GetPetByIdTool.java": {
       "owner": "generated",
-      "sha256": "34ba7a1401f71ceb37c9cd13fac04b6be312319601e55f35366a1ed6484bdd47"
+      "sha256": "f94d9ecbaf3dd15137d2dcdb7f6f1431b2d2445aed71de83bfbbe210abba1df2"
     },
     "src/main/java/com/example/petstoreassistant/generated/tool/GetPetByIdToolProperties.java": {
       "owner": "generated",
-      "sha256": "b2d435151d8b0d43306b82a1f589873d2c0097b6301de1bcaa93f725950244ca"
+      "sha256": "d0d0db73aea1c2bfbb9284b3cea342501f49372a937b2e9763d40ad33eb59efd"
+    },
+    "src/main/java/com/example/petstoreassistant/generated/tool/LoggedToolCallback.java": {
+      "owner": "generated",
+      "sha256": "0f03c0d50a2b20a7f9315415465e45014551e66614abcaab7f07a21f909754f6"
     },
     "src/main/java/com/example/petstoreassistant/generated/tool/ToolResponses.java": {
       "owner": "generated",
@@ -149,7 +144,7 @@
     },
     "src/main/resources/application.yml": {
       "owner": "merged",
-      "sha256": "345bfde9ff987f3484fb8271e8d95c857caf488e55a54c5e72f1563e56170706"
+      "sha256": "cb3cf889183c72e5667cc433e74b536d452736887d69070b2971696ff1b1c5ec"
     },
     "src/main/resources/prompts/system.md": {
       "owner": "user",
@@ -157,19 +152,23 @@
     },
     "src/test/java/com/example/petstoreassistant/PetstoreAssistantApplicationTests.java": {
       "owner": "merged",
-      "sha256": "c9514d243c1d1bc0e3eedb3771c44eb10fed8f508694cdfe98195948c100680f"
+      "sha256": "7ea2bf67c80db19861c0247a914410378536a74a6649ed121cdce9290f8a9c8d"
     },
     "src/test/java/com/example/petstoreassistant/generated/chat/ChatControllerTests.java": {
       "owner": "generated",
-      "sha256": "5a34f8a6928df7199ef5e6e91fcfb6c7e1a5bec60e1e9afca9a24340b0b75ad3"
+      "sha256": "47142694c5250597ea32145a2e0e695f07d72075b8984f81212d62076869854b"
     },
     "src/test/java/com/example/petstoreassistant/generated/tool/FindPetsByStatusToolTests.java": {
       "owner": "generated",
-      "sha256": "f0d677f16e75cec447f592df91ec8b0e874ca49b86753bb78e157f58f746c685"
+      "sha256": "17e1b694950e651bb6c045facfc85188f588505a03823e77d1f6507234d9c359"
     },
     "src/test/java/com/example/petstoreassistant/generated/tool/GetPetByIdToolTests.java": {
       "owner": "generated",
-      "sha256": "f3f0ee58b123ca143c02f40f3243fe1cf344f27ac4d7024e4c203c1ff16c6993"
+      "sha256": "83d1a2b7d44628895680b2d0122f99a11c92b4c91c3cecf4c666c54c9e034c20"
+    },
+    "src/test/java/com/example/petstoreassistant/generated/tool/LoggedToolCallbackTests.java": {
+      "owner": "generated",
+      "sha256": "5a946d5d8d746d44ca7ebe99cfcffb30b8ce7b9f658528e192c8107ff18782eb"
     },
     "src/test/java/com/example/petstoreassistant/generated/tool/ToolResponsesTests.java": {
       "owner": "generated",

@@ -12,8 +12,6 @@ Java 21 is the only requirement: `./mvnw` downloads Maven (checked against its S
 Start [Ollama](https://ollama.com) and pull the model (`ollama pull qwen2.5:7b`), then:
 
 ```bash
-export PETSTORE_TOKEN=...   # never commit it
-export PETSTORE_API_KEY=...   # never commit it
 ./mvnw spring-boot:run
 ```
 

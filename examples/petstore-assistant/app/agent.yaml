@@ -9,3 +9,4 @@ agent:
     - spec: specs/petstore.json
       include: [ findPetsByStatus, getPetById ]
       baseUrl: https://petstore3.swagger.io/api/v3
+      auth: none

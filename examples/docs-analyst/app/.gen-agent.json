@@ -84,7 +84,7 @@
     },
     "src/main/java/com/example/docsanalyst/generated/chat/ChatController.java": {
       "owner": "generated",
-      "sha256": "168d36a74eac725bc50ed311461b64ef1d83e91ae8c58c177c445381776d96da"
+      "sha256": "b091e0ce01d8efda83def12e37156bf0a711e504297419071505bd35ff160521"
     },
     "src/main/java/com/example/docsanalyst/generated/chat/ChatExceptionHandler.java": {
       "owner": "generated",
@@ -148,7 +148,7 @@
     },
     "src/test/java/com/example/docsanalyst/generated/chat/ChatControllerTests.java": {
       "owner": "generated",
-      "sha256": "ab36979052aa16fb9755bb0b7a803a52b7905b9306808b6e98647e49b35cafae"
+      "sha256": "d714f935a2109a5109f48596587fa0bf5f359c28a454f0e3104b4149fd493196"
     },
     "src/test/resources/documents/opening-hours.md": {
       "owner": "generated",

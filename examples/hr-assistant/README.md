@@ -30,8 +30,9 @@ gen-agent generate --from agent.yaml --output app
 # Two tools, added to the generated project: the handlers are written by hand.
 gen-agent add tool remaining-days-off --type java --dir app \
   --description "Days off the signed-in employee has left this year"
-gen-agent add tool book-day-off --type java --dir app --approval --param date:string:required \
-  --description "Books a day off for the signed-in employee, on a date written YYYY-MM-DD"
+gen-agent add tool book-day-off --type java --dir app --approval \
+  --param "date:string:required:the day off, written YYYY-MM-DD" \
+  --description "Books a day off for the signed-in employee"
 ```
 
 `generate` wrote the agent (sign-in, memory, limits, chat page, Compose with Postgres, Redis and Keycloak); each
@@ -90,4 +91,3 @@ cd app && ./mvnw verify   # 30 tests, Postgres and Redis in Docker, a fake model
 
 - On a laptop CPU, `qwen2.5:7b` takes about a minute per answer. `qwen2.5:3b` is faster but often skips the tools.
 - The model works out the date from the message: ask with the full date, it has no calendar.
-- The approval card shows the raw arguments of the call (`{"date":"2026-11-06"}`).

@@ -11,7 +11,10 @@ import com.example.hrassistant.generated.limits.LimitExceededException;
 import com.example.hrassistant.generated.security.SecurityConfiguration;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
@@ -53,6 +56,28 @@ class ChatControllerTests {
             .bodyJson()
             .extractingPath("$.reply")
             .isEqualTo("Hi!");
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void logsHowLongTheAnswerTookNeverWhatItSays(CapturedOutput output) {
+        given(chatService.reply(any(), eq("ada"))).willReturn(
+            new ChatMessageResponse("c1", "Your IBAN is FR7630006000011234567890189")
+        );
+
+        assertThat(
+            mockMvc
+                .post()
+                .uri("/api/chat")
+                .with(jwt().jwt(token -> token.subject("ada")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"message": "What is my IBAN?"}
+                    """
+                )
+        ).hasStatusOk();
+        assertThat(output).contains("Answered in").doesNotContain("IBAN");
     }
 
     @Test

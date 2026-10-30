@@ -22,9 +22,9 @@ type_cmd "cat agent.yaml"
 cat agent.yaml; sleep 2
 
 type_cmd "gen-agent import openapi https://petstore3.swagger.io/api/v3/openapi.json \\"
-type_cmd "    --base-url https://petstore3.swagger.io/api/v3 --include findPetsByStatus,getPetById"
+type_cmd "    --base-url https://petstore3.swagger.io/api/v3 --no-auth --include findPetsByStatus,getPetById"
 gen-agent import openapi https://petstore3.swagger.io/api/v3/openapi.json \
-  --base-url https://petstore3.swagger.io/api/v3 --include findPetsByStatus,getPetById 2>&1 | grep -v '^│$' | head -8
+  --base-url https://petstore3.swagger.io/api/v3 --no-auth --include findPetsByStatus,getPetById 2>&1 | grep -v '^│$' | head -8
 sleep 2
 
 type_cmd "gen-agent generate --from agent.yaml --output app"
@@ -34,7 +34,6 @@ echo "Created petstore-assistant in app"; sleep 1
 type_cmd "cp system.md app/src/main/resources/prompts/   # the only file written by hand"
 cp system.md app/src/main/resources/prompts/
 cd app
-export PETSTORE_TOKEN=demo PETSTORE_API_KEY=special-key
 type_cmd "./mvnw -q spring-boot:run &"
 ./mvnw -q spring-boot:run > spring-boot.log 2>&1 &
 until curl -s -o /dev/null localhost:8080/api/chat; do sleep 1; done

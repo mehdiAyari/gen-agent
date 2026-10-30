@@ -28,7 +28,14 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfiguration {
 
     /** The chat page and its settings are public; the page talks only to the agent and to the OIDC provider. */
-    private static final String[] CHAT_PAGE = { "/", "/index.html", "/chat.js", "/chat.css", "/chat-config.json" };
+    private static final String[] CHAT_PAGE = {
+        "/",
+        "/index.html",
+        "/chat.js",
+        "/approval-text.js",
+        "/chat.css",
+        "/chat-config.json",
+    };
 
     @Bean
     SecurityFilterChain securityFilterChain(

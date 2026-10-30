@@ -9,8 +9,6 @@ agent:
     fallback:
       provider: ollama
       name: qwen2.5:3b
-  limits:
-    timeout: 5m # a 7B model on a laptop CPU takes its time
   interface: [ rest, chat-ui ]
   deploy: [ docker-compose, helm ]
   tools:
@@ -19,9 +17,9 @@ agent:
       description: Balance of the account of the signed-in customer, in euros
     - name: send-transfer
       type: java
-      description: Sends a transfer from the account of the signed-in customer to an IBAN, the amount in euros
+      description: Sends a transfer from the account of the signed-in customer
       params:
-        - { name: iban, type: string, required: true }
-        - { name: amount, type: number, required: true }
+        - { name: iban, type: string, required: true, description: "the IBAN of the recipient, as the customer wrote it" }
+        - { name: amount, type: number, required: true, description: "the amount, in euros" }
       approval:
         required: true

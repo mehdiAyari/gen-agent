@@ -3,6 +3,7 @@ package com.example.hrassistant.generated.tool;
 
 import java.util.Objects;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 /** Exposes {@code book-day-off} to the model and delegates the work to {@link BookDayOffHandler}. */
@@ -15,8 +16,8 @@ public class BookDayOffTool {
         this.handler = handler;
     }
 
-    @Tool(description = "Books a day off for the signed-in employee, on a date written YYYY-MM-DD")
-    public String bookDayOff(String date) {
+    @Tool(description = "Books a day off for the signed-in employee")
+    public String bookDayOff(@ToolParam(description = "the day off, written YYYY-MM-DD") String date) {
         Objects.requireNonNull(date, "date is required");
         return handler.bookDayOff(date);
     }

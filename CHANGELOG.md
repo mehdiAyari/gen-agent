@@ -93,6 +93,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Found by the examples, and checked again on them: approval cards show the tool name of agent.yaml and one line per
+  argument, not the Java name and raw JSON; answers and tool calls are logged without their content; Compose projects
+  are named after the agent; guard and feedback counters exist from the start, so the dashboard counts the first
+  refusal; a forced word in French ("réponds uniquement par le mot …") is refused; a production agent on Ollama waits
+  5 minutes instead of 60 seconds.
 - An agent that needs Postgres or Redis without Docker Compose had nothing to start them: it now runs with
   `./mvnw spring-boot:test-run` (`./gradlew bootTestRun`), its services in Docker as in its tests (found while writing
   the examples).

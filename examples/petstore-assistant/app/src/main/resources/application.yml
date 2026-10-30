@@ -14,9 +14,7 @@ agent:
   tools:
     find-pets-by-status:
       url: https://petstore3.swagger.io/api/v3/pet/findByStatus
-      token: ${PETSTORE_TOKEN}
       max-response-chars: 20000
     get-pet-by-id:
       url: "https://petstore3.swagger.io/api/v3/pet/{petId}"
-      token: ${PETSTORE_API_KEY}
       max-response-chars: 20000

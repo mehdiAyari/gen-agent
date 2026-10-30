@@ -22,7 +22,7 @@ agent:
     temperature: 0
 YAML
 gen-agent import openapi https://petstore3.swagger.io/api/v3/openapi.json \
-  --base-url https://petstore3.swagger.io/api/v3 --include findPetsByStatus,getPetById
+  --base-url https://petstore3.swagger.io/api/v3 --no-auth --include findPetsByStatus,getPetById
 gen-agent generate --from agent.yaml --output app
 ```
 
@@ -47,12 +47,12 @@ Java 21 and Ollama:
 ```bash
 ollama pull qwen2.5:7b
 cd app
-export PETSTORE_TOKEN=demo PETSTORE_API_KEY=special-key   # the public Petstore accepts any value
 ./mvnw spring-boot:run
 ```
 
-The spec declares OAuth 2 and an API key on these operations: gen-agent reads both from the environment and never
-writes them in `agent.yaml`.
+The spec declares OAuth 2 and an API key that the public Petstore does not enforce: `--no-auth` imports the tools
+without them. For an API that needs them, leave it out: gen-agent reads the token from the environment and never writes
+it in `agent.yaml`.
 
 ## Try it
 

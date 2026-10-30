@@ -20,6 +20,7 @@ agent:
     temperature: 0
 YAML
 
-$gen_agent import openapi "$spec" --base-url https://petstore3.swagger.io/api/v3 \
+# The public Petstore declares OAuth 2 and an API key it does not enforce: --no-auth.
+$gen_agent import openapi "$spec" --base-url https://petstore3.swagger.io/api/v3 --no-auth \
   --include findPetsByStatus,getPetById
 $gen_agent generate --from agent.yaml --output "$target"

@@ -142,6 +142,9 @@ class HrAssistantApplicationTests {
     @Test
     void servesTheChatPageAndItsSettingsWithoutAToken() {
         assertThat(mockMvc.get().uri("/")).hasStatusOk().hasForwardedUrl("index.html");
+        for (String file : List.of("/chat.js", "/approval-text.js", "/chat.css")) {
+            assertThat(mockMvc.get().uri(file)).hasStatusOk();
+        }
         assertThat(mockMvc.get().uri("/index.html"))
             .hasStatusOk()
             .headers()

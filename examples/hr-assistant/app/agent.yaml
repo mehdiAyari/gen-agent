@@ -13,8 +13,8 @@ agent:
       description: Days off the signed-in employee has left this year
     - name: book-day-off
       type: java
-      description: Books a day off for the signed-in employee, on a date written YYYY-MM-DD
+      description: Books a day off for the signed-in employee
       params:
-        - { name: date, type: string, required: true }
+        - { name: date, type: string, required: true, description: "the day off, written YYYY-MM-DD" }
       approval:
         required: true

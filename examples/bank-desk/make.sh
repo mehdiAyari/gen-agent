@@ -20,8 +20,6 @@ agent:
     fallback:
       provider: ollama
       name: qwen2.5:3b
-  limits:
-    timeout: 5m # a 7B model on a laptop CPU takes its time
   interface: [rest, chat-ui]
   deploy: [docker-compose, helm]
 YAML
@@ -30,5 +28,6 @@ $gen_agent generate --from agent.yaml --output "$target"
 $gen_agent add tool account-balance --type java --dir "$target" \
   --description "Balance of the account of the signed-in customer, in euros"
 $gen_agent add tool send-transfer --type java --dir "$target" --approval \
-  --param iban:string:required --param amount:number:required \
-  --description "Sends a transfer from the account of the signed-in customer to an IBAN, the amount in euros"
+  --param "iban:string:required:the IBAN of the recipient, as the customer wrote it" \
+  --param "amount:number:required:the amount, in euros" \
+  --description "Sends a transfer from the account of the signed-in customer"

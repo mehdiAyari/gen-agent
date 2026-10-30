@@ -1,5 +1,7 @@
 # The agent and the services it needs, for a local run: docker compose up --build
 # Sign in as demo / demo through Keycloak (http://localhost:8180, admin / admin): see README.md.
+# Named after the agent, wherever the project lives: its containers are hr-assistant-agent-1 and so on.
+name: hr-assistant
 services:
   agent:
     build: .

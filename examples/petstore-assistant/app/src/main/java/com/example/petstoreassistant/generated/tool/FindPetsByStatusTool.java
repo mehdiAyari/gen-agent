@@ -4,7 +4,6 @@ package com.example.petstoreassistant.generated.tool;
 import java.util.Objects;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -17,10 +16,7 @@ public class FindPetsByStatusTool {
     private final int maxResponseChars;
 
     FindPetsByStatusTool(RestClient.Builder restClientBuilder, FindPetsByStatusToolProperties properties) {
-        this.restClient = restClientBuilder
-            .baseUrl(properties.url())
-            .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.token())
-            .build();
+        this.restClient = restClientBuilder.baseUrl(properties.url()).build();
         this.maxResponseChars = properties.maxResponseChars();
     }
 

@@ -16,10 +16,7 @@ public class GetPetByIdTool {
     private final int maxResponseChars;
 
     GetPetByIdTool(RestClient.Builder restClientBuilder, GetPetByIdToolProperties properties) {
-        this.restClient = restClientBuilder
-            .baseUrl(properties.url())
-            .defaultHeader("api_key", properties.token())
-            .build();
+        this.restClient = restClientBuilder.baseUrl(properties.url()).build();
         this.maxResponseChars = properties.maxResponseChars();
     }
 

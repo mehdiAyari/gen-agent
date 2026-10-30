@@ -24,5 +24,6 @@ $gen_agent generate --from agent.yaml --output "$target"
 # Two tools, added to the generated project: the handlers are written by hand.
 $gen_agent add tool remaining-days-off --type java --dir "$target" \
   --description "Days off the signed-in employee has left this year"
-$gen_agent add tool book-day-off --type java --dir "$target" --approval --param date:string:required \
-  --description "Books a day off for the signed-in employee, on a date written YYYY-MM-DD"
+$gen_agent add tool book-day-off --type java --dir "$target" --approval \
+  --param "date:string:required:the day off, written YYYY-MM-DD" \
+  --description "Books a day off for the signed-in employee"

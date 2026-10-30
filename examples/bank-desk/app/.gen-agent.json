@@ -38,17 +38,19 @@
         },
         {
           "name": "send-transfer",
-          "description": "Sends a transfer from the account of the signed-in customer to an IBAN, the amount in euros",
+          "description": "Sends a transfer from the account of the signed-in customer",
           "params": [
             {
               "name": "iban",
               "type": "string",
-              "required": true
+              "required": true,
+              "description": "the IBAN of the recipient, as the customer wrote it"
             },
             {
               "name": "amount",
               "type": "number",
-              "required": true
+              "required": true,
+              "description": "the amount, in euros"
             }
           ],
           "approval": {
@@ -57,10 +59,6 @@
           "type": "java"
         }
       ],
-      "limits": {
-        "maxIterations": 8,
-        "timeout": "5m"
-      },
       "interface": [
         "rest",
         "chat-ui"
@@ -77,6 +75,10 @@
         "auth": "oidc",
         "rateLimit": "30/min",
         "tokenBudget": "100000/day"
+      },
+      "limits": {
+        "maxIterations": 8,
+        "timeout": "5m"
       },
       "cache": {
         "exact": "redis",
@@ -129,7 +131,7 @@
     },
     "compose.yaml": {
       "owner": "merged",
-      "sha256": "6f6d5d94de239d9c95f4c66ff16783272a99af97a82663c276ce1a6e6f3bc7e9"
+      "sha256": "342769f2c218c0d71024b8e2be607bbb0065843a0bc66251d9d8f0a4e4d2177f"
     },
     "docker/grafana/agent-dashboard.json": {
       "owner": "generated",
@@ -189,7 +191,7 @@
     },
     "src/main/java/com/example/bankdesk/generated/AgentConfiguration.java": {
       "owner": "generated",
-      "sha256": "370334c60d1520208296f62eb5bab63a4758409cfebaf28e2b25153a4780be62"
+      "sha256": "e55ef34fa51a26837d1c76ec21fe53a0a1977743a67a2d69dc1a5120daf12d57"
     },
     "src/main/java/com/example/bankdesk/generated/AgentProperties.java": {
       "owner": "generated",
@@ -225,7 +227,7 @@
     },
     "src/main/java/com/example/bankdesk/generated/chat/ChatController.java": {
       "owner": "generated",
-      "sha256": "1f3ddf15dcb62b7965c1de1d3f635a8df9f0bad0dcebbf37a441998fc709469b"
+      "sha256": "37379b62e74fb641844d85c043014521bcc56365fb97fe8c3ea98b4c7d8b3c55"
     },
     "src/main/java/com/example/bankdesk/generated/chat/ChatExceptionHandler.java": {
       "owner": "generated",
@@ -253,15 +255,15 @@
     },
     "src/main/java/com/example/bankdesk/generated/feedback/Feedbacks.java": {
       "owner": "generated",
-      "sha256": "258c171cabc4a71a0374852e5efb83bbca4595bef3a4c9eced14987d9c5b9dc3"
+      "sha256": "9abff6d5d3749ca941d52170a4826a6b14e77eb2871fc707b41217df988c769b"
     },
     "src/main/java/com/example/bankdesk/generated/guard/Guardrails.java": {
       "owner": "generated",
-      "sha256": "61169ecf224824d6b0dba0e91a95e56aa220ef4aaa7d37b9f9aae3e328d33b5f"
+      "sha256": "71af3f81421ec963c9de2bf798f84d7f4fa2065f450cdbd9074237b81c2c833b"
     },
     "src/main/java/com/example/bankdesk/generated/guard/PromptInjection.java": {
       "owner": "generated",
-      "sha256": "e10b298e9ef90e991b4415f23392745ed1fb5776c8777fa87108f60a7d7255f0"
+      "sha256": "ba43d2163a93a89797075ec4374bcba7e9fbb891eb9682de48b61e68dbc7fbeb"
     },
     "src/main/java/com/example/bankdesk/generated/guard/RequestTimeout.java": {
       "owner": "generated",
@@ -329,7 +331,7 @@
     },
     "src/main/java/com/example/bankdesk/generated/security/SecurityConfiguration.java": {
       "owner": "generated",
-      "sha256": "0be79b0ba625a684e6c27aeaa831eb78081364d112ea9ee31a146296e9155ca3"
+      "sha256": "f0fdea811afe1c9050d0a3a125a20d97f9988e2f0480fb59de3c0fffb49cad6f"
     },
     "src/main/java/com/example/bankdesk/generated/switches/AgentSwitchedOffException.java": {
       "owner": "generated",
@@ -355,13 +357,17 @@
       "owner": "generated",
       "sha256": "4c12bad53d22a5f99c8a74fd34b9704b1c990e48d7f55f8733219b65f8917ca8"
     },
+    "src/main/java/com/example/bankdesk/generated/tool/LoggedToolCallback.java": {
+      "owner": "generated",
+      "sha256": "1217cb97f7483b2b4804ca3d01ab621c054fa8fba9baf732ae162b42196c0792"
+    },
     "src/main/java/com/example/bankdesk/generated/tool/SendTransferHandler.java": {
       "owner": "generated",
       "sha256": "384dec93a548bc2f3f12b43576cf2165659e0a2201709a491dfaba7b8366b66c"
     },
     "src/main/java/com/example/bankdesk/generated/tool/SendTransferTool.java": {
       "owner": "generated",
-      "sha256": "e269952286db523b403e03b6fc2ad939d5b2895e482d27a5126d6550773b16c8"
+      "sha256": "1601ab817ac6bb3835188e30ca09d51f1314ef56b18621453fad4aa8e490e032"
     },
     "src/main/java/com/example/bankdesk/generated/tool/ToolGuard.java": {
       "owner": "generated",
@@ -403,13 +409,17 @@
       "owner": "user",
       "sha256": "79c6b90dbe707d8dd37c2c9304787082a4007b782b7651b117cb68b84201ad12"
     },
+    "src/main/resources/static/approval-text.js": {
+      "owner": "merged",
+      "sha256": "a86654b82482b9466dd3fce71e58e80e51c65f30558d1ae6fe44692f605a4507"
+    },
     "src/main/resources/static/chat.css": {
       "owner": "merged",
-      "sha256": "d7ef692f0beec9597eb3795cad1ac8a14876dcedc890a47553e9589ca2d74b6a"
+      "sha256": "9952f2614845df6d588da925244e45d71a3d8174ff57a5b7aab61f7154dc88d0"
     },
     "src/main/resources/static/chat.js": {
       "owner": "merged",
-      "sha256": "a80d5bb055de40c30cb8b52952d93d39ea0893c733e1cfabb5b0460d17e508f3"
+      "sha256": "43981e665ef46963307b44f50edf69ae47804ccb718775e0581a409dc2e0c609"
     },
     "src/main/resources/static/index.html": {
       "owner": "merged",
@@ -417,11 +427,11 @@
     },
     "src/test/java/com/example/bankdesk/BankDeskApplicationTests.java": {
       "owner": "merged",
-      "sha256": "b4ba584dff92107a7e6d5cb13358b02bf5c903507e73b823e53a8c02fe549026"
+      "sha256": "ba36f561631f8f326fdf2827f33dc9b24bb22f290e843ec29a5467602f45c644"
     },
     "src/test/java/com/example/bankdesk/ObservabilityTests.java": {
       "owner": "generated",
-      "sha256": "cdb7c771d48107bf776ce8edb6ef5c6653b0f1f41f46ff2e9ddca03af0b7ccc1"
+      "sha256": "58c310a8acdee157f8b9cf7f8a6fdb33119648abb95bae9237cb4c459a12ed57"
     },
     "src/test/java/com/example/bankdesk/evals/AgentEvaluationTests.java": {
       "owner": "generated",
@@ -433,11 +443,11 @@
     },
     "src/test/java/com/example/bankdesk/generated/chat/ChatControllerTests.java": {
       "owner": "generated",
-      "sha256": "20212b22463737717c4d8b1b9c6e68ed429783eedda1a22d6c6b8dca130d67cb"
+      "sha256": "3ddf77ba32ab8b56549d649af01ff44cd539b179d93cb9e4995b8743c3d37c35"
     },
     "src/test/java/com/example/bankdesk/generated/guard/PromptInjectionTests.java": {
       "owner": "generated",
-      "sha256": "170cb5fa402b71633aa2ddfb0d821f392437d7edc117490f47cfbb9d18e9a031"
+      "sha256": "393b6ad2d8a4d79874489e23a1842a6858e57f63a23f17251f05790da9983479"
     },
     "src/test/java/com/example/bankdesk/generated/privacy/PersonalDataPatternsTests.java": {
       "owner": "generated",
@@ -446,6 +456,10 @@
     "src/test/java/com/example/bankdesk/generated/tool/AccountBalanceToolTests.java": {
       "owner": "generated",
       "sha256": "535d1572afbbfdad1da9e5ed0bc96eb01623752c5a173b6eea89bf621bc175c4"
+    },
+    "src/test/java/com/example/bankdesk/generated/tool/LoggedToolCallbackTests.java": {
+      "owner": "generated",
+      "sha256": "1cfd31dae970bc5f2de96a48c42ee611e2d0637005c6e68e62d009e54bae861f"
     },
     "src/test/java/com/example/bankdesk/generated/tool/SendTransferToolTests.java": {
       "owner": "generated",

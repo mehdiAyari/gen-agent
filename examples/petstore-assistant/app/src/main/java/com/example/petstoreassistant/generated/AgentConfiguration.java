@@ -5,11 +5,13 @@ import com.example.petstoreassistant.generated.tool.FindPetsByStatusTool;
 import com.example.petstoreassistant.generated.tool.FindPetsByStatusToolProperties;
 import com.example.petstoreassistant.generated.tool.GetPetByIdTool;
 import com.example.petstoreassistant.generated.tool.GetPetByIdToolProperties;
+import com.example.petstoreassistant.generated.tool.LoggedToolCallback;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,7 +44,8 @@ class AgentConfiguration {
         return builder
             .defaultSystem(properties.systemPrompt())
             .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
-            .defaultTools(findPetsByStatusTool, getPetByIdTool)
+            // Every call is logged: the tool and how long it took, never what it was given.
+            .defaultToolCallbacks(LoggedToolCallback.logged(ToolCallbacks.from(findPetsByStatusTool, getPetByIdTool)))
             .build();
     }
 }
