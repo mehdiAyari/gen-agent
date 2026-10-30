@@ -148,7 +148,7 @@
     },
     "src/main/java/com/example/hrassistant/generated/chat/ChatExceptionHandler.java": {
       "owner": "generated",
-      "sha256": "fc82a8831d07fbd9209e0345b35dc2be5c8c171513bd841304dfc8ae2cfc8fff"
+      "sha256": "810d8310908b9b42597611cad2855254cc94e13ba111e435d432d242160efb66"
     },
     "src/main/java/com/example/hrassistant/generated/chat/ChatMessageRequest.java": {
       "owner": "generated",
@@ -160,7 +160,7 @@
     },
     "src/main/java/com/example/hrassistant/generated/chat/ChatService.java": {
       "owner": "generated",
-      "sha256": "64cb240eca42a161bf9346b6c209f59e2db6694baa19eb88ae3d3635be2d1892"
+      "sha256": "00fc81f410b0b7d2c034840e3eeea64f3d36f8515db8794c80c58e97751f2719"
     },
     "src/main/java/com/example/hrassistant/generated/chat/UnknownConversationException.java": {
       "owner": "generated",
@@ -224,7 +224,7 @@
     },
     "src/main/resources/application.yml": {
       "owner": "merged",
-      "sha256": "55fcf359d6b8ac5f2ac31754d7aed2c8db3658c83a623d98130f3ada7c8a5d41"
+      "sha256": "c4e4c2c132f4ecaf3a4ddff4fe501f8a281bb66cc1394d00e4225281ebb12b1b"
     },
     "src/main/resources/db/migration/V2__agent_approval.sql": {
       "owner": "generated",
@@ -264,7 +264,7 @@
     },
     "src/test/java/com/example/hrassistant/generated/chat/ChatControllerTests.java": {
       "owner": "generated",
-      "sha256": "2d03bb09a7e36b1d26a7d028d44d0c6e0751f53ee24791517c420aaaca76d12f"
+      "sha256": "c1e50ec0d0bb4a10b071a76f9d560dd717e60d1ab052fbeaeb068ba88b3e33f6"
     },
     "src/test/java/com/example/hrassistant/generated/tool/BookDayOffToolTests.java": {
       "owner": "generated",

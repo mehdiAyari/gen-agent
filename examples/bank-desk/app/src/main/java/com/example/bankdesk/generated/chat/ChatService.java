@@ -30,7 +30,7 @@ import org.springframework.stereotype.Service;
  * kept under their user: nobody can read or continue someone else's.
  */
 @Service
-class ChatService {
+public class ChatService {
 
     private final ChatClient chatClient;
 
@@ -91,17 +91,14 @@ class ChatService {
         usageLimits.checkRequest(userId);
         String conversationId =
             request.conversationId() != null ? request.conversationId() : UUID.randomUUID().toString();
-        // Stored under a key of its user: another user's conversation id leads nowhere. A name-based UUID keeps the
-        // key within the 36 characters of Spring AI's memory table.
-        String memoryKey = UUID.nameUUIDFromBytes(
-            (userId + ":" + conversationId).getBytes(StandardCharsets.UTF_8)
-        ).toString();
+        String memoryKey = memoryKeyOf(userId, conversationId);
         if (request.conversationId() != null && chatMemory.get(memoryKey).isEmpty()) {
             throw new UnknownConversationException(conversationId);
         }
         Optional<String> refusal = guardrails.refusalFor(request.message());
         if (refusal.isPresent()) {
-            return new ChatMessageResponse(conversationId, refusal.get());
+            // Nothing is kept of a refused message: a conversation it would have started does not exist.
+            return new ChatMessageResponse(request.conversationId(), refusal.get());
         }
         // The model, the memory and the caches only ever see tokens in place of personal data.
         String message = personalData.mask(memoryKey, request.message());
@@ -202,5 +199,18 @@ class ChatService {
                 )
             )
             .toList();
+    }
+
+    /** Throws {@link UnknownConversationException} unless the user has this conversation. */
+    public void requireConversation(String userId, String conversationId) {
+        if (chatMemory.get(memoryKeyOf(userId, conversationId)).isEmpty()) {
+            throw new UnknownConversationException(conversationId);
+        }
+    }
+
+    // Stored under a key of its user: another user's conversation id leads nowhere. A name-based UUID keeps the key
+    // within the 36 characters of Spring AI's memory table.
+    private static String memoryKeyOf(String userId, String conversationId) {
+        return UUID.nameUUIDFromBytes((userId + ":" + conversationId).getBytes(StandardCharsets.UTF_8)).toString();
     }
 }

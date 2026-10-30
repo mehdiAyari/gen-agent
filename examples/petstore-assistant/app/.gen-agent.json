@@ -104,7 +104,7 @@
     },
     "src/main/java/com/example/petstoreassistant/generated/chat/ChatExceptionHandler.java": {
       "owner": "generated",
-      "sha256": "84190683963731c9cfce7825f35ef076f0c525bb6b4260383d6bac3fbd99bf6b"
+      "sha256": "3ad3dcc01c6a7c643242053cc6a9c7f2b2962ca346a3887631dd49797908ecc5"
     },
     "src/main/java/com/example/petstoreassistant/generated/chat/ChatMessageRequest.java": {
       "owner": "generated",
@@ -156,7 +156,7 @@
     },
     "src/test/java/com/example/petstoreassistant/generated/chat/ChatControllerTests.java": {
       "owner": "generated",
-      "sha256": "47142694c5250597ea32145a2e0e695f07d72075b8984f81212d62076869854b"
+      "sha256": "af26d0a87cb971f4509fc0266402f7cd314ace8a77cabb9b466034fa0cda9a63"
     },
     "src/test/java/com/example/petstoreassistant/generated/tool/FindPetsByStatusToolTests.java": {
       "owner": "generated",

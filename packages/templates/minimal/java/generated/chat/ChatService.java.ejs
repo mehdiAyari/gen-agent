@@ -12,7 +12,7 @@ package <%= project.generatedPackage %>.chat;
 /** Sends a user message to the model within its conversation, so earlier messages are remembered. */
 <%_ } _%>
 @<%= type('org.springframework.stereotype.Service') %>
-class ChatService {
+<%= features.oidc && features.feedback ? 'public ' : '' %>class ChatService {
 
     private final <%= type('org.springframework.ai.chat.client.ChatClient') %> chatClient;
 <%_ if (features.oidc) { _%>
@@ -168,16 +168,15 @@ const checkAnswer = features.outputGuard ? `
         String conversationId = request.conversationId() != null
                 ? request.conversationId()
                 : <%= type('java.util.UUID') %>.randomUUID().toString();
-        // Stored under a key of its user: another user's conversation id leads nowhere. A name-based UUID keeps the
-        // key within the 36 characters of Spring AI's memory table.
-        String memoryKey = UUID.nameUUIDFromBytes((userId + ":" + conversationId).getBytes(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8)).toString();
+        String memoryKey = memoryKeyOf(userId, conversationId);
         if (request.conversationId() != null && chatMemory.get(memoryKey).isEmpty()) {
             throw new UnknownConversationException(conversationId);
         }
 <%_   if (features.injectionDetection) { _%>
         <%= type('java.util.Optional') %><String> refusal = guardrails.refusalFor(request.message());
         if (refusal.isPresent()) {
-            return new ChatMessageResponse(conversationId, refusal.get());
+            // Nothing is kept of a refused message: a conversation it would have started does not exist.
+            return new ChatMessageResponse(request.conversationId(), refusal.get());
         }
 <%_   } _%>
 <%_   if (features.pii) { _%>
@@ -262,6 +261,21 @@ const checkAnswer = features.outputGuard ? `
     }
 <%_     } _%>
 <%_   } _%>
+<%_   if (features.feedback) { _%>
+
+    /** Throws {@link UnknownConversationException} unless the user has this conversation. */
+    public void requireConversation(String userId, String conversationId) {
+        if (chatMemory.get(memoryKeyOf(userId, conversationId)).isEmpty()) {
+            throw new UnknownConversationException(conversationId);
+        }
+    }
+<%_   } _%>
+
+    // Stored under a key of its user: another user's conversation id leads nowhere. A name-based UUID keeps the key
+    // within the 36 characters of Spring AI's memory table.
+    private static String memoryKeyOf(String userId, String conversationId) {
+        return <%= type('java.util.UUID') %>.nameUUIDFromBytes((userId + ":" + conversationId).getBytes(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8)).toString();
+    }
 <%_ } else { _%>
     ChatMessageResponse reply(ChatMessageRequest request) {
         String conversationId = request.conversationId() != null

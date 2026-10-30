@@ -19,24 +19,32 @@ class FeedbackController {
             @<%= type('jakarta.validation.constraints.Size') %>(max = 2000) String comment) {}
 
     private final Feedbacks feedbacks;
+<%_ if (features.oidc) { _%>
+
+    private final <%= type(`${project.generatedPackage}.chat.ChatService`) %> chatService;
+<%_ } _%>
 <%_ if (features.pii) { _%>
 
     private final <%= type(`${project.generatedPackage}.privacy.PersonalData`) %> personalData;
-
-    FeedbackController(Feedbacks feedbacks, PersonalData personalData) {
-        this.feedbacks = feedbacks;
-        this.personalData = personalData;
-    }
-<%_ } else { _%>
-
-    FeedbackController(Feedbacks feedbacks) {
-        this.feedbacks = feedbacks;
-    }
 <%_ } _%>
+
+    FeedbackController(<%- ['Feedbacks feedbacks', ...(features.oidc ? ['ChatService chatService'] : []), ...(features.pii ? ['PersonalData personalData'] : [])].join(', ') %>) {
+        this.feedbacks = feedbacks;
+<%_ if (features.oidc) { _%>
+        this.chatService = chatService;
+<%_ } _%>
+<%_ if (features.pii) { _%>
+        this.personalData = personalData;
+<%_ } _%>
+    }
 
     @<%= type('org.springframework.web.bind.annotation.PostMapping') %>
     @<%= type('org.springframework.web.bind.annotation.ResponseStatus') %>(<%= type('org.springframework.http.HttpStatus') %>.NO_CONTENT)
     void rate(@<%= type('jakarta.validation.Valid') %> @<%= type('org.springframework.web.bind.annotation.RequestBody') %> FeedbackRequest request<%- features.oidc ? `, @${type('org.springframework.security.core.annotation.AuthenticationPrincipal')} ${type('org.springframework.security.oauth2.jwt.Jwt')} user` : '' %>) {
+<%_ if (features.oidc) { _%>
+        // Only on a conversation of the user: anyone else's, or one that never was, answers 404.
+        chatService.requireConversation(user.getSubject(), request.conversationId());
+<%_ } _%>
 <%_ if (features.pii) { _%>
         // The comment is kept with its personal data masked, under a key of its own.
         String comment = request.comment() == null ? null : personalData.mask("feedback:" + request.conversationId(), request.comment());

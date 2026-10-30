@@ -5,9 +5,15 @@ spring:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/agent}
     username: ${DATABASE_USERNAME:agent}
     password: ${DATABASE_PASSWORD}
+    hikari:
+      # Milliseconds: when Postgres is down, a request fails within seconds instead of waiting half a minute.
+      connection-timeout: 5000
   data:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}
+      # When Redis is down, a request fails within seconds instead of waiting a minute.
+      timeout: 2s
+      connect-timeout: 2s
   servlet:
     multipart:
       # The largest document an administrator may upload.

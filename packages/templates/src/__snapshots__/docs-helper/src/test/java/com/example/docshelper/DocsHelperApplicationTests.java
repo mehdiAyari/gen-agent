@@ -104,6 +104,16 @@ class DocsHelperApplicationTests {
             .contains("9am to 5pm");
     }
 
+    @Test
+    void answersWhenTheEmbeddingModelIsDown() {
+        // The fake embedding model fails on this word, as a provider that is down: no cache, no passages, an answer.
+        assertThat(post("{\"message\": \"unreachable-embeddings Hello\"}"))
+            .hasStatusOk()
+            .bodyJson()
+            .extractingPath("$.reply")
+            .isEqualTo("Hello from the agent");
+    }
+
     private MvcTestResult ask(String message) {
         return post("{\"message\": \"" + message + "\"}");
     }
@@ -171,6 +181,9 @@ class DocsHelperApplicationTests {
         }
 
         private static float[] vectorOf(String text) {
+            if (text.contains("unreachable-embeddings")) {
+                throw new IllegalStateException("The embedding model is down");
+            }
             float[] vector = new float[DIMENSIONS];
             for (String word : text.toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
                 if (!word.isEmpty()) {

@@ -93,6 +93,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Found by cutting the dependencies of a running agent: when Postgres or Redis is down, a request answered 500 after 30
+  or 60 seconds; it now answers 503 with `Retry-After` within seconds. When the provider is down, a failing embedding
+  (semantic cache, knowledge base) answered 500 instead of the fallback model and the fallback answer. A refused first
+  message returned a conversation id that led to 404; feedback was accepted on any conversation id; validation errors
+  did not say which field was wrong.
 - Found by generating every combination of options and building them: a semantic cache without the exact one did not
   compile (it now brings the exact cache, which it is looked up after); `ToolGuard` and the evaluations missed imports
   in some combinations; empty `evals` evaluated nothing (they now score the reference set); a signed-in agent without

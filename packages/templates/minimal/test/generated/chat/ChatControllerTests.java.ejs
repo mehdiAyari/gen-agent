@@ -74,9 +74,32 @@ class ChatControllerTests {
                                 {"message": " "}
                                 """))
                 .hasStatus(<%= type('org.springframework.http.HttpStatus') %>.BAD_REQUEST)
-                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .extractingPath("$.detail")
+                .isEqualTo("message: must not be blank");
     }
 
+<%_ if (features.postgres || features.redis) { _%>
+    @Test
+    void answers503WhenAServiceItNeedsIsDownWithoutSayingWhich() {
+        given(chatService.<%- reply %>).willThrow(new <%= type('org.springframework.dao.DataAccessResourceFailureException') %>("Connection refused: redis:6379"));
+
+        assertThat(mockMvc.post()
+                        .uri("/api/chat")<%- signedIn %>
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"message": "Hello"}
+                                """))
+                .hasStatus(HttpStatus.SERVICE_UNAVAILABLE)
+                .hasHeader("Retry-After", "30")
+                .bodyJson()
+                .extractingPath("$.detail")
+                .asString()
+                .doesNotContain("redis");
+    }
+
+<%_ } _%>
     @Test
     void hidesInternalErrorsBehindAGenericProblemDetail() {
         given(chatService.<%- reply %>).willThrow(new IllegalStateException("connection refused to internal host"));

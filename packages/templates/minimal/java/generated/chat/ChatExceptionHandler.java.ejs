@@ -73,6 +73,34 @@ class ChatExceptionHandler extends <%= type('org.springframework.web.servlet.mvc
     }
 
 <%_ } _%>
+    /** Says which field is wrong and why: "message: must not be blank". */
+    @Override
+    protected <%= type('org.springframework.http.ResponseEntity') %><Object> handleMethodArgumentNotValid(
+            <%= type('org.springframework.web.bind.MethodArgumentNotValidException') %> exception,
+            <%= type('org.springframework.http.HttpHeaders') %> headers,
+            <%= type('org.springframework.http.HttpStatusCode') %> status,
+            <%= type('org.springframework.web.context.request.WebRequest') %> request) {
+        exception.getBody().setDetail(exception.getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .sorted()
+                .collect(<%= type('java.util.stream.Collectors') %>.joining("; ")));
+        return super.handleMethodArgumentNotValid(exception, headers, status, request);
+    }
+
+<%_ if (features.postgres || features.redis) { _%>
+    /** A database the agent needs is down or too slow: the client may try again soon, and learns nothing more. */
+    @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>({<%= type('org.springframework.dao.DataAccessResourceFailureException') %>.class, <%= type('org.springframework.dao.QueryTimeoutException') %>.class})
+    <%= type('org.springframework.http.ResponseEntity') %><<%= type('org.springframework.http.ProblemDetail') %>> handleUnavailable(<%= type('org.springframework.dao.DataAccessException') %> exception) {
+        log.warn("A service the agent needs is unavailable: {}", exception.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                <%= type('org.springframework.http.HttpStatus') %>.SERVICE_UNAVAILABLE, "A service the agent needs is unavailable. Try again in a moment.");
+        problem.setTitle("Temporarily unavailable");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(<%= type('org.springframework.http.HttpHeaders') %>.RETRY_AFTER, "30")
+                .body(problem);
+    }
+
+<%_ } _%>
     @<%= type('org.springframework.web.bind.annotation.ExceptionHandler') %>(Exception.class)
     <%= type('org.springframework.http.ProblemDetail') %> handleUnexpected(Exception exception) {
         log.error("The agent could not answer", exception);

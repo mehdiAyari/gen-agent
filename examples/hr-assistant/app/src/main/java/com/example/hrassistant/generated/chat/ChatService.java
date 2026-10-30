@@ -56,11 +56,7 @@ class ChatService {
         usageLimits.checkRequest(userId);
         String conversationId =
             request.conversationId() != null ? request.conversationId() : UUID.randomUUID().toString();
-        // Stored under a key of its user: another user's conversation id leads nowhere. A name-based UUID keeps the
-        // key within the 36 characters of Spring AI's memory table.
-        String memoryKey = UUID.nameUUIDFromBytes(
-            (userId + ":" + conversationId).getBytes(StandardCharsets.UTF_8)
-        ).toString();
+        String memoryKey = memoryKeyOf(userId, conversationId);
         if (request.conversationId() != null && chatMemory.get(memoryKey).isEmpty()) {
             throw new UnknownConversationException(conversationId);
         }
@@ -119,5 +115,11 @@ class ChatService {
         usageLimits.recordTokens(userId, response.getMetadata().getUsage().getTotalTokens());
         String answer = response.getResult().getOutput().getText();
         return new ChatMessageResponse(conversationId, answer, toolGuard.pendingApprovals());
+    }
+
+    // Stored under a key of its user: another user's conversation id leads nowhere. A name-based UUID keeps the key
+    // within the 36 characters of Spring AI's memory table.
+    private static String memoryKeyOf(String userId, String conversationId) {
+        return UUID.nameUUIDFromBytes((userId + ":" + conversationId).getBytes(StandardCharsets.UTF_8)).toString();
     }
 }

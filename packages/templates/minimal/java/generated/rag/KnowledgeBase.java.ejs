@@ -116,10 +116,17 @@ public class KnowledgeBase {
 
     /** The passages that may answer the question, best first, as told to the model; empty when none was found. */
     public <%= type('java.util.Optional') %><String> contextFor(String question) {
-        List<Document> found = store.similaritySearch(<%= type('org.springframework.ai.vectorstore.SearchRequest') %>.builder()
-                .query(question)
-                .topK(<%= rag.rerank ? '3 * topK' : 'topK' %>)
-                .build());
+        List<Document> found;
+        try {
+            found = store.similaritySearch(<%= type('org.springframework.ai.vectorstore.SearchRequest') %>.builder()
+                    .query(question)
+                    .topK(<%= rag.rerank ? '3 * topK' : 'topK' %>)
+                    .build());
+        } catch (RuntimeException failure) {
+            // The model answers without passages, as when none matches: it says it does not know.
+            log.warn("The knowledge base could not be searched: {}", failure.toString());
+            return Optional.empty();
+        }
 <%_ if (features.injectionDetection) { _%>
         found = found.stream().filter(KnowledgeBase::trustworthy).toList();
 <%_ } _%>

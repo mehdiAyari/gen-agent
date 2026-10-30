@@ -88,7 +88,7 @@
     },
     "src/main/java/com/example/docsanalyst/generated/chat/ChatExceptionHandler.java": {
       "owner": "generated",
-      "sha256": "ff1585b37fc4fb38504c1e8faf9ace10b4d233ddca0ef6a5a27d0de03460dff0"
+      "sha256": "df550f329a1f4d96fc3c2aca364aa47242488194f9dc3210fc05c74dc0e3880e"
     },
     "src/main/java/com/example/docsanalyst/generated/chat/ChatMessageRequest.java": {
       "owner": "generated",
@@ -116,11 +116,11 @@
     },
     "src/main/java/com/example/docsanalyst/generated/rag/KnowledgeBase.java": {
       "owner": "generated",
-      "sha256": "e5164bf101e20b135cf148644fc0844505f4cb2eb70a5789dfaba0397dd0b108"
+      "sha256": "79ad7a3b865db81d3656a35da0c47ada6d12852da64a9aeb08eab1e615685ac5"
     },
     "src/main/resources/application.yml": {
       "owner": "merged",
-      "sha256": "fb7d786b8e56ce00024cef82e6c3aef6b7f835a807ccdb566db0d6447f7c275e"
+      "sha256": "0b039042be3d03e19e5f4ba37b3dd8f58735cd3cd1f1761b883c2082e5e5516d"
     },
     "src/main/resources/db/migration/V3__agent_document_source.sql": {
       "owner": "generated",
@@ -132,7 +132,7 @@
     },
     "src/test/java/com/example/docsanalyst/DocsAnalystApplicationTests.java": {
       "owner": "merged",
-      "sha256": "eedb93ec9dcdbb5c001e0e727705a2e7c07bde5f0732883d4853887621eae2b4"
+      "sha256": "bc5429b847d4e3b66ee3abcf9e3ad23b250d65d96982f0eda884857205dd1c7d"
     },
     "src/test/java/com/example/docsanalyst/TestDocsAnalystApplication.java": {
       "owner": "generated",
@@ -148,7 +148,7 @@
     },
     "src/test/java/com/example/docsanalyst/generated/chat/ChatControllerTests.java": {
       "owner": "generated",
-      "sha256": "d714f935a2109a5109f48596587fa0bf5f359c28a454f0e3104b4149fd493196"
+      "sha256": "83d3522784527430c42aae4e0d07fce91aea088ccc118606336dddc690bb620d"
     },
     "src/test/resources/documents/opening-hours.md": {
       "owner": "generated",

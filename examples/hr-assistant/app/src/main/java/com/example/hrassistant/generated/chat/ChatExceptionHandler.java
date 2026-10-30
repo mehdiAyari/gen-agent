@@ -3,14 +3,21 @@ package com.example.hrassistant.generated.chat;
 
 import com.example.hrassistant.generated.approval.ApprovalUnavailableException;
 import com.example.hrassistant.generated.limits.LimitExceededException;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.QueryTimeoutException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -51,6 +58,39 @@ class ChatExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(exception.status(), exception.getMessage());
         problem.setTitle("Approval unavailable");
         return problem;
+    }
+
+    /** Says which field is wrong and why: "message: must not be blank". */
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+        MethodArgumentNotValidException exception,
+        HttpHeaders headers,
+        HttpStatusCode status,
+        WebRequest request
+    ) {
+        exception.getBody().setDetail(
+            exception
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .sorted()
+                .collect(Collectors.joining("; "))
+        );
+        return super.handleMethodArgumentNotValid(exception, headers, status, request);
+    }
+
+    /** A database the agent needs is down or too slow: the client may try again soon, and learns nothing more. */
+    @ExceptionHandler({ DataAccessResourceFailureException.class, QueryTimeoutException.class })
+    ResponseEntity<ProblemDetail> handleUnavailable(DataAccessException exception) {
+        log.warn("A service the agent needs is unavailable: {}", exception.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "A service the agent needs is unavailable. Try again in a moment."
+        );
+        problem.setTitle("Temporarily unavailable");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+            .header(HttpHeaders.RETRY_AFTER, "30")
+            .body(problem);
     }
 
     @ExceptionHandler(Exception.class)

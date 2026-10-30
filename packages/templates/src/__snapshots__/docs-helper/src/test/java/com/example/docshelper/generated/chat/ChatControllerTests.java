@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -81,7 +82,35 @@ class ChatControllerTests {
                 )
         )
             .hasStatus(HttpStatus.BAD_REQUEST)
-            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.detail")
+            .isEqualTo("message: must not be blank");
+    }
+
+    @Test
+    void answers503WhenAServiceItNeedsIsDownWithoutSayingWhich() {
+        given(chatService.reply(any())).willThrow(
+            new DataAccessResourceFailureException("Connection refused: redis:6379")
+        );
+
+        assertThat(
+            mockMvc
+                .post()
+                .uri("/api/chat")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"message": "Hello"}
+                    """
+                )
+        )
+            .hasStatus(HttpStatus.SERVICE_UNAVAILABLE)
+            .hasHeader("Retry-After", "30")
+            .bodyJson()
+            .extractingPath("$.detail")
+            .asString()
+            .doesNotContain("redis");
     }
 
     @Test

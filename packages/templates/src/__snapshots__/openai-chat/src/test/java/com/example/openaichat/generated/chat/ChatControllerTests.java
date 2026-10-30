@@ -81,7 +81,10 @@ class ChatControllerTests {
                 )
         )
             .hasStatus(HttpStatus.BAD_REQUEST)
-            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+            .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .bodyJson()
+            .extractingPath("$.detail")
+            .isEqualTo("message: must not be blank");
     }
 
     @Test

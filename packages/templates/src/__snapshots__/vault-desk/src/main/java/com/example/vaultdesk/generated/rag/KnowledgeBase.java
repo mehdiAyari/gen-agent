@@ -146,12 +146,19 @@ public class KnowledgeBase {
 
     /** The passages that may answer the question, best first, as told to the model; empty when none was found. */
     public Optional<String> contextFor(String question) {
-        List<Document> found = store.similaritySearch(
-            SearchRequest.builder()
-                .query(question)
-                .topK(3 * topK)
-                .build()
-        );
+        List<Document> found;
+        try {
+            found = store.similaritySearch(
+                SearchRequest.builder()
+                    .query(question)
+                    .topK(3 * topK)
+                    .build()
+            );
+        } catch (RuntimeException failure) {
+            // The model answers without passages, as when none matches: it says it does not know.
+            log.warn("The knowledge base could not be searched: {}", failure.toString());
+            return Optional.empty();
+        }
         found = found.stream().filter(KnowledgeBase::trustworthy).toList();
         List<Document> passages = rerank(question, found);
         if (passages.isEmpty()) {

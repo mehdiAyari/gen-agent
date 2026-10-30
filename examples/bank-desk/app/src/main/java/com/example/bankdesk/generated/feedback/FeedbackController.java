@@ -1,6 +1,7 @@
 // Managed by gen-agent: changes here are overwritten.
 package com.example.bankdesk.generated.feedback;
 
+import com.example.bankdesk.generated.chat.ChatService;
 import com.example.bankdesk.generated.privacy.PersonalData;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -33,16 +34,21 @@ class FeedbackController {
 
     private final Feedbacks feedbacks;
 
+    private final ChatService chatService;
+
     private final PersonalData personalData;
 
-    FeedbackController(Feedbacks feedbacks, PersonalData personalData) {
+    FeedbackController(Feedbacks feedbacks, ChatService chatService, PersonalData personalData) {
         this.feedbacks = feedbacks;
+        this.chatService = chatService;
         this.personalData = personalData;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void rate(@Valid @RequestBody FeedbackRequest request, @AuthenticationPrincipal Jwt user) {
+        // Only on a conversation of the user: anyone else's, or one that never was, answers 404.
+        chatService.requireConversation(user.getSubject(), request.conversationId());
         // The comment is kept with its personal data masked, under a key of its own.
         String comment =
             request.comment() == null

@@ -11,6 +11,8 @@ package <%= project.generatedPackage %>.cache;
 @<%= type('org.springframework.stereotype.Component') %>
 public class SemanticCache {
 
+    private static final <%= type('org.slf4j.Logger') %> log = <%= type('org.slf4j.LoggerFactory') %>.getLogger(SemanticCache.class);
+
     private final <%= type('org.springframework.ai.vectorstore.VectorStore') %> store;
 
     private final double threshold;
@@ -20,21 +22,32 @@ public class SemanticCache {
         this.threshold = properties.cache().semantic().threshold();
     }
 
+    /** The answer to a question of the same meaning; none when the embedding model or the store cannot tell. */
     public <%= type('java.util.Optional') %><String> find(String userId, String question) {
-        return store
-                .similaritySearch(<%= type('org.springframework.ai.vectorstore.SearchRequest') %>.builder()
-                        .query(question)
-                        .topK(1)
-                        .similarityThreshold(threshold)
-                        .filterExpression(ofUser(userId))
-                        .build())
-                .stream()
-                .findFirst()
-                .map(document -> (String) document.getMetadata().get("answer"));
+        try {
+            return store
+                    .similaritySearch(<%= type('org.springframework.ai.vectorstore.SearchRequest') %>.builder()
+                            .query(question)
+                            .topK(1)
+                            .similarityThreshold(threshold)
+                            .filterExpression(ofUser(userId))
+                            .build())
+                    .stream()
+                    .findFirst()
+                    .map(document -> (String) document.getMetadata().get("answer"));
+        } catch (RuntimeException failure) {
+            // A cache is a shortcut: when it fails, the model answers.
+            log.warn("The semantic cache could not be read: {}", failure.toString());
+            return Optional.empty();
+        }
     }
 
     public void put(String userId, String question, String answer) {
-        store.add(<%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.document.Document') %>(question, <%= type('java.util.Map') %>.of("user", user(userId), "answer", answer))));
+        try {
+            store.add(<%= type('java.util.List') %>.of(new <%= type('org.springframework.ai.document.Document') %>(question, <%= type('java.util.Map') %>.of("user", user(userId), "answer", answer))));
+        } catch (RuntimeException failure) {
+            log.warn("The semantic cache could not keep an answer: {}", failure.toString());
+        }
     }
 
     public void forget(String userId) {

@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -23,6 +25,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class SemanticCache {
 
+    private static final Logger log = LoggerFactory.getLogger(SemanticCache.class);
+
     private final VectorStore store;
 
     private final double threshold;
@@ -32,23 +36,34 @@ public class SemanticCache {
         this.threshold = properties.cache().semantic().threshold();
     }
 
+    /** The answer to a question of the same meaning; none when the embedding model or the store cannot tell. */
     public Optional<String> find(String userId, String question) {
-        return store
-            .similaritySearch(
-                SearchRequest.builder()
-                    .query(question)
-                    .topK(1)
-                    .similarityThreshold(threshold)
-                    .filterExpression(ofUser(userId))
-                    .build()
-            )
-            .stream()
-            .findFirst()
-            .map(document -> (String) document.getMetadata().get("answer"));
+        try {
+            return store
+                .similaritySearch(
+                    SearchRequest.builder()
+                        .query(question)
+                        .topK(1)
+                        .similarityThreshold(threshold)
+                        .filterExpression(ofUser(userId))
+                        .build()
+                )
+                .stream()
+                .findFirst()
+                .map(document -> (String) document.getMetadata().get("answer"));
+        } catch (RuntimeException failure) {
+            // A cache is a shortcut: when it fails, the model answers.
+            log.warn("The semantic cache could not be read: {}", failure.toString());
+            return Optional.empty();
+        }
     }
 
     public void put(String userId, String question, String answer) {
-        store.add(List.of(new Document(question, Map.of("user", user(userId), "answer", answer))));
+        try {
+            store.add(List.of(new Document(question, Map.of("user", user(userId), "answer", answer))));
+        } catch (RuntimeException failure) {
+            log.warn("The semantic cache could not keep an answer: {}", failure.toString());
+        }
     }
 
     public void forget(String userId) {
