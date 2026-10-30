@@ -2,6 +2,8 @@
 // browser (authorization code with PKCE) and sends the access token with each message. Replies are shown as text,
 // never as HTML.
 
+import { describeCall } from './approval-text.js';
+
 const config = await (await fetch('chat-config.json')).json();
 const $ = (id) => document.getElementById(id);
 const messages = $('messages');
@@ -213,8 +215,15 @@ function showFeedback(item, conversation) {
 function showApproval(approval) {
   const item = show('approval', '');
   const until = new Date(approval.expiresAt).toLocaleString();
+  const call = describeCall(approval);
   const text = document.createElement('p');
-  text.textContent = `${approval.tool} waits for your approval, until ${until}: ${approval.arguments}`;
+  text.textContent = `${call.tool} waits for your approval, until ${until}:`;
+  const list = document.createElement('ul');
+  for (const argument of call.arguments) {
+    const line = document.createElement('li');
+    line.textContent = argument;
+    list.append(line);
+  }
   const actions = document.createElement('div');
   for (const [label, approved] of [
     ['Approve', true],
@@ -226,7 +235,7 @@ function showApproval(approval) {
     button.addEventListener('click', () => decide(item, approval.id, approved));
     actions.append(button);
   }
-  item.append(text, actions);
+  item.append(text, list, actions);
 }
 
 async function decide(item, id, approved) {

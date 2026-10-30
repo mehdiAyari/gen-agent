@@ -88,7 +88,7 @@ export const minimalEntries: TemplateEntry[] = [
     when: (m) => m.features.chatUi,
     output: () => 'src/main/resources/static/index.html',
   },
-  ...['chat.js', 'chat.css'].map((name): TemplateEntry => ({
+  ...['chat.js', 'approval-text.js', 'chat.css'].map((name): TemplateEntry => ({
     template: `static/${name}`,
     owner: 'merged',
     raw: true,

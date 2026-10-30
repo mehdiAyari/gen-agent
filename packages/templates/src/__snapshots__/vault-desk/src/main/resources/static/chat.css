@@ -176,6 +176,13 @@ button:disabled {
   margin: 0 0 0.5rem;
 }
 
+#messages .approval ul {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+  font-family: ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+
 #messages .approval div {
   display: flex;
   gap: 0.5rem;
