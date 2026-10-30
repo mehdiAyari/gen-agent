@@ -360,6 +360,10 @@
               "baseUrl": {
                 "type": "string",
                 "format": "uri"
+              },
+              "auth": {
+                "type": "string",
+                "const": "none"
               }
             },
             "required": ["spec"],

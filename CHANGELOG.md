@@ -87,6 +87,8 @@ All notable changes to this project are documented here. The format follows
   afterwards and a recording of a real run on Ollama; the end-to-end tests check each one still matches its commands.
 - `gen-agent add tool --approval`: the calls of the new tool wait for the approval of the user who asked.
 - `gen-agent add tool --param name:type:required:description`: the description of a parameter, read by the model.
+- `gen-agent import openapi --no-auth` (`auth: none` on an `openapi` entry): a public API whose spec declares a
+  security it does not enforce needs no token.
 - `gen-agent new --provider` (with `--model`, `--description`, `--package`) asks nothing: for scripts and CI.
 
 ### Fixed

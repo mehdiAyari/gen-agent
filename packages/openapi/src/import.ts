@@ -49,6 +49,8 @@ export interface ImportOptions {
   specUrl?: string;
   /** Prefix of the environment variables holding credentials; derived from the title otherwise. */
   envPrefix?: string;
+  /** `none`: the API is public, whatever security its spec declares. */
+  auth?: 'none';
 }
 
 /** More tools than this and models pick the wrong one more often. */
@@ -115,7 +117,7 @@ export function importOpenApi(source: string, options: ImportOptions = {}): Impo
     const name = uniqueName(toolNameOf(operation), names);
     const notes: string[] = [];
     try {
-      tools.push(toolOf(spec, operation, name, base.url, envPrefix, notes));
+      tools.push(toolOf(spec, operation, name, base.url, options.auth === 'none' ? undefined : envPrefix, notes));
       names.add(name);
       warnings.push(...notes.map((note) => `${name}: ${note}`));
     } catch (error) {
@@ -164,7 +166,8 @@ function toolOf(
   operation: Operation,
   name: string,
   baseUrl: string,
-  envPrefix: string,
+  /** Prefix of the variables holding credentials; undefined for a public API. */
+  envPrefix: string | undefined,
   notes: string[],
 ): ImportedTool {
   const params: ImportedParam[] = [];
@@ -229,7 +232,7 @@ function toolOf(
 
   // Keys in the order a person writes them in agent.yaml; GET, the default method, is left out.
   const description = textOf(operation.node.summary) ?? textOf(operation.node.description);
-  const auth = authOf(spec, operation, envPrefix, notes);
+  const auth = envPrefix === undefined ? undefined : authOf(spec, operation, envPrefix, notes);
   return {
     name,
     type: 'http',

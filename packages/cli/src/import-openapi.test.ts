@@ -65,6 +65,17 @@ describe('gen-agent import openapi', () => {
     expect(out.text()).toMatch(/SHOP_TOKEN/);
   });
 
+  it('imports a public API without authentication with --no-auth, whatever its spec declares', async () => {
+    writeFileSync(join(cwd, 'shop.json'), shop);
+
+    const options = { source: 'shop.json', cwd, baseUrl: 'https://shop.example.org/api', auth: false } as const;
+    expect(await importOpenApiCommand(options, out)).toBe(0);
+
+    expect(agentFile()).toMatch(/- spec: shop.json\n {6}baseUrl: https:\/\/shop.example.org\/api\n {6}auth: none\n/);
+    expect(validateAgentYaml(agentFile()).ok).toBe(true);
+    expect(out.text()).not.toMatch(/SHOP_TOKEN/);
+  });
+
   it('downloads a spec over https into specs/, with the base URL the spec is relative to', async () => {
     const fetched: string[] = [];
     const code = await importOpenApiCommand(

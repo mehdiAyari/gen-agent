@@ -15,7 +15,8 @@ gen-agent generate --from agent.yaml
 The spec is saved under `specs/` and `agent.yaml` refers to it, so the tools follow the API when you regenerate;
 `--expand` copies them into `agent.yaml` instead, to edit their descriptions. Path, query and JSON body parameters,
 bearer tokens and API key headers (read from environment variables) are supported. What a tool cannot send (file
-uploads, nested bodies, required business headers) is skipped and the reason is printed.
+uploads, nested bodies, required business headers) is skipped and the reason is printed. A public API whose spec
+declares a security it does not enforce (the Petstore does) is imported with `--no-auth`: no token to set.
 
 ## Web generator
 

@@ -76,13 +76,20 @@ program
   .option('--to <file>', 'agent.yaml to update', 'agent.yaml')
   .option('--expand', 'copy the tools into agent.yaml instead of referring to the spec')
   .option('--base-url <url>', 'base URL of the API, when the spec gives a relative one')
-  .action(async (source: string, options: { include?: string; to: string; expand?: boolean; baseUrl?: string }) => {
-    const command: ImportOpenApiOptions = { source, cwd: process.cwd(), to: options.to };
-    if (options.include !== undefined) command.include = options.include.split(',').map((id) => id.trim());
-    if (options.expand === true) command.expand = true;
-    if (options.baseUrl !== undefined) command.baseUrl = options.baseUrl;
-    process.exitCode = await importOpenApiCommand(command, terminal);
-  });
+  .option('--no-auth', 'a public API: no authentication, whatever its spec declares')
+  .action(
+    async (
+      source: string,
+      options: { include?: string; to: string; expand?: boolean; baseUrl?: string; auth: boolean },
+    ) => {
+      const command: ImportOpenApiOptions = { source, cwd: process.cwd(), to: options.to };
+      if (options.include !== undefined) command.include = options.include.split(',').map((id) => id.trim());
+      if (options.expand === true) command.expand = true;
+      if (options.baseUrl !== undefined) command.baseUrl = options.baseUrl;
+      if (!options.auth) command.auth = false;
+      process.exitCode = await importOpenApiCommand(command, terminal);
+    },
+  );
 
 const add = program.command('add').description('add to a generated project, keeping your changes');
 

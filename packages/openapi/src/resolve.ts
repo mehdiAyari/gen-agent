@@ -32,6 +32,7 @@ export function resolveOpenApi(file: AgentFile, read: (spec: string) => string):
     const options: ImportOptions = {};
     if (entry.include !== undefined) options.include = entry.include;
     if (entry.baseUrl !== undefined) options.baseUrl = entry.baseUrl;
+    if (entry.auth !== undefined) options.auth = entry.auth;
     const result = importOpenApi(source, options);
     if (!result.ok) {
       errors.push(...result.errors.map((error) => `${where}: ${error}`));

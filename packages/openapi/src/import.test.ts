@@ -237,6 +237,22 @@ describe('importOpenApi', () => {
     ]);
   });
 
+  it('leaves the authentication out of a public API whose spec declares one', () => {
+    const { tools, warnings } = imported(
+      spec(
+        { '/me': { get: { operationId: 'me' } } },
+        {
+          security: [{ oauth: ['read'] }],
+          components: { securitySchemes: { oauth: { type: 'oauth2', flows: {} } } },
+        },
+      ),
+      { auth: 'none' },
+    );
+
+    expect(tools.map((tool) => tool.auth)).toEqual([undefined]);
+    expect(warnings).toEqual([]);
+  });
+
   it('skips what an agent tool cannot send, and says why', () => {
     const { tools, skipped } = imported(
       spec(

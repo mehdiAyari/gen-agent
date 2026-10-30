@@ -180,6 +180,8 @@ const agent = z.strictObject({
         include: z.array(z.string().min(1)).optional(),
         /** Base URL of the API, when the spec gives a relative server URL. */
         baseUrl: z.url({ protocol: /^https?$/ }).optional(),
+        /** `none`: the API is public, whatever security its spec declares. */
+        auth: z.literal('none').optional(),
       }),
     )
     .optional(),

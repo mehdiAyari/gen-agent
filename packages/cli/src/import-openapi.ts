@@ -19,6 +19,8 @@ export interface ImportOpenApiOptions {
   expand?: boolean;
   /** Base URL of the API, when the spec gives a relative one. */
   baseUrl?: string;
+  /** False for a public API: no authentication, whatever its spec declares. */
+  auth?: boolean;
 }
 
 /** Downloads a spec. Replaced in tests. */
@@ -68,6 +70,7 @@ export async function importOpenApiCommand(
   if (options.include !== undefined) importOptions.include = options.include;
   if (options.baseUrl !== undefined) importOptions.baseUrl = options.baseUrl;
   if (remote) importOptions.specUrl = options.source;
+  if (options.auth === false) importOptions.auth = 'none';
   const result = importOpenApi(spec, importOptions);
   if (!result.ok) {
     for (const error of result.errors) out.error(error.replace('(baseUrl)', '(--base-url)'));
@@ -109,6 +112,7 @@ export async function importOpenApiCommand(
       spec: specPath,
       ...(options.include === undefined ? {} : { include: options.include }),
       ...(value.baseUrlFromOptions ? { baseUrl: value.baseUrl } : {}),
+      ...(options.auth === false ? { auth: 'none' as const } : {}),
     });
   }
 
@@ -163,7 +167,10 @@ function appendTools(document: Document, tools: ImportedTool[]): void {
   }
 }
 
-function appendReference(document: Document, entry: { spec: string; include?: string[]; baseUrl?: string }): void {
+function appendReference(
+  document: Document,
+  entry: { spec: string; include?: string[]; baseUrl?: string; auth?: 'none' },
+): void {
   const node = document.createNode(entry) as YAMLMap;
   const include = node.get('include');
   if (include instanceof YAMLSeq) include.flow = true;
