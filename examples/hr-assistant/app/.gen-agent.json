@@ -120,11 +120,11 @@
     },
     "src/main/java/com/example/hrassistant/generated/AgentConfiguration.java": {
       "owner": "generated",
-      "sha256": "f6367a214a45e3374d7f10275d846187a0047a43f83f242dddc70d4646506beb"
+      "sha256": "23473c609dedd3c0d1c5b5acd6a8922f326c25f7683e11e5802f805e642059ab"
     },
     "src/main/java/com/example/hrassistant/generated/AgentProperties.java": {
       "owner": "generated",
-      "sha256": "9dd47b1bc5033d97829851f64c6aba46cb41b0bc8a5dcd8cbc9c69f29e3ff915"
+      "sha256": "c6b19f81c0099c7dd5800d3fe52f75c1ed1fe4e2ee15395e83a09bf271d4ad93"
     },
     "src/main/java/com/example/hrassistant/generated/approval/ApprovalUnavailableException.java": {
       "owner": "generated",
@@ -165,6 +165,10 @@
     "src/main/java/com/example/hrassistant/generated/chat/ChatService.java": {
       "owner": "generated",
       "sha256": "00fc81f410b0b7d2c034840e3eeea64f3d36f8515db8794c80c58e97751f2719"
+    },
+    "src/main/java/com/example/hrassistant/generated/chat/CurrentDateAdvisor.java": {
+      "owner": "generated",
+      "sha256": "58e052542f810449400473ed8e5877531221ec0140444f7512001d5252cce646"
     },
     "src/main/java/com/example/hrassistant/generated/chat/UnknownConversationException.java": {
       "owner": "generated",
@@ -228,7 +232,7 @@
     },
     "src/main/resources/application.yml": {
       "owner": "merged",
-      "sha256": "c4e4c2c132f4ecaf3a4ddff4fe501f8a281bb66cc1394d00e4225281ebb12b1b"
+      "sha256": "7c4747672a9b61f74db595792f07c4b907fd46899c8a0f83df8a3467507eca5f"
     },
     "src/main/resources/db/migration/V2__agent_approval.sql": {
       "owner": "generated",
@@ -256,7 +260,7 @@
     },
     "src/test/java/com/example/hrassistant/HrAssistantApplicationTests.java": {
       "owner": "merged",
-      "sha256": "929253dab33d5e406d5171f593249c57a20e6433781e7b54b069d63815d0a32d"
+      "sha256": "1d3e2a9f8b0184e5943dd0693cee38e5f5dcbea133e34230d0546beae133e936"
     },
     "src/test/java/com/example/hrassistant/ObservabilityTests.java": {
       "owner": "generated",

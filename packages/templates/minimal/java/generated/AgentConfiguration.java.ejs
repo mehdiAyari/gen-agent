@@ -62,9 +62,14 @@ class AgentConfiguration {
         return builder.defaultSystem(properties.systemPrompt())
 <%_ } _%>
 <%_ if (features.resilience) { _%>
-                .defaultAdvisors(<%= type('org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor') %>.builder(chatMemory).build(), resilientModelAdvisor)
+                .defaultAdvisors(
+                        <%= type('org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor') %>.builder(chatMemory).build(),
+                        new <%= type(`${project.generatedPackage}.chat.CurrentDateAdvisor`) %>(<%= type('java.time.Clock') %>.system(properties.timeZone())),
+                        resilientModelAdvisor)
 <%_ } else { _%>
-                .defaultAdvisors(<%= type('org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor') %>.builder(chatMemory).build())
+                .defaultAdvisors(
+                        <%= type('org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor') %>.builder(chatMemory).build(),
+                        new <%= type(`${project.generatedPackage}.chat.CurrentDateAdvisor`) %>(<%= type('java.time.Clock') %>.system(properties.timeZone())))
 <%_ } _%>
 <%_ const javaTools = () => `${type('org.springframework.ai.support.ToolCallbacks')}.from(${tools.map((tool) => `${tool.methodName}Tool`).join(', ')})`;
 const mcpToolStream = () => `mcpTools.stream().flatMap(provider -> ${type('java.util.Arrays')}.stream(provider.getToolCallbacks()))`;

@@ -1,6 +1,7 @@
 // Managed by gen-agent: changes here are overwritten. Edit agent.yaml and regenerate.
 package com.example.vaultdesk.generated;
 
+import com.example.vaultdesk.generated.chat.CurrentDateAdvisor;
 import com.example.vaultdesk.generated.guard.Guardrails;
 import com.example.vaultdesk.generated.memory.SummarizingChatMemory;
 import com.example.vaultdesk.generated.privacy.PersonalData;
@@ -12,6 +13,7 @@ import com.example.vaultdesk.generated.tool.TransferStatusTool;
 import com.example.vaultdesk.generated.tool.TransferStatusToolProperties;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -59,7 +61,11 @@ class AgentConfiguration {
                     ToolGuard.PROMPT_NOTE +
                     guardrails.promptNote()
             )
-            .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build(), resilientModelAdvisor)
+            .defaultAdvisors(
+                MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                new CurrentDateAdvisor(Clock.system(properties.timeZone())),
+                resilientModelAdvisor
+            )
             // Every call is logged: the tool and how long it took, never what it was given.
             .defaultTools(
                 LoggedToolCallback.logged(toolGuard.guard(ToolCallbacks.from(transferStatusTool, blockCardTool)))

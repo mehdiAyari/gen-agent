@@ -96,11 +96,11 @@
     },
     "src/main/java/com/example/petstoreassistant/generated/AgentConfiguration.java": {
       "owner": "generated",
-      "sha256": "1fe8b92afae2fb3d131207b791183abadd242dd6e6de720e83c8c72074ded02c"
+      "sha256": "5539dab3e5e411b011497b6af4719f51a4ce32bd5dd26d23d545854c6ba07b9e"
     },
     "src/main/java/com/example/petstoreassistant/generated/AgentProperties.java": {
       "owner": "generated",
-      "sha256": "709e6043c8a5d886fe5a7a7ef3c7ef90464d6b9454e4902a062b1f286fb11bc7"
+      "sha256": "92cd87a97d1f6eeaa9918d2216cef8eedd397e758e11a4fbcffea0d02896027e"
     },
     "src/main/java/com/example/petstoreassistant/generated/chat/ChatController.java": {
       "owner": "generated",
@@ -121,6 +121,10 @@
     "src/main/java/com/example/petstoreassistant/generated/chat/ChatService.java": {
       "owner": "generated",
       "sha256": "8cb65839d02bbcaa484660f63364c62394713eecf78d8a382868d1ab2ffaada4"
+    },
+    "src/main/java/com/example/petstoreassistant/generated/chat/CurrentDateAdvisor.java": {
+      "owner": "generated",
+      "sha256": "c486f9b535872b0b83c4123f422b1aa48249663994781bd22d1c49c8b8058147"
     },
     "src/main/java/com/example/petstoreassistant/generated/tool/FindPetsByStatusTool.java": {
       "owner": "generated",
@@ -148,7 +152,7 @@
     },
     "src/main/resources/application.yml": {
       "owner": "merged",
-      "sha256": "cb3cf889183c72e5667cc433e74b536d452736887d69070b2971696ff1b1c5ec"
+      "sha256": "d19862c99e6d6b3fee3b77a551a9e261930226c10d498c96ff98a9ef75703dcd"
     },
     "src/main/resources/prompts/system.md": {
       "owner": "user",
@@ -156,7 +160,7 @@
     },
     "src/test/java/com/example/petstoreassistant/PetstoreAssistantApplicationTests.java": {
       "owner": "merged",
-      "sha256": "7ea2bf67c80db19861c0247a914410378536a74a6649ed121cdce9290f8a9c8d"
+      "sha256": "25a9e75735b6310c7db4510ea264f088af504c9870d2827c622139782b8890d8"
     },
     "src/test/java/com/example/petstoreassistant/generated/chat/ChatControllerTests.java": {
       "owner": "generated",

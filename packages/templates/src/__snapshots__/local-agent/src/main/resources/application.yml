@@ -8,5 +8,7 @@ spring:
 
 agent:
   system-prompt: classpath:prompts/local-agent.md
+  # Where the users are: the model is told the date of the day there.
+  time-zone: UTC
   memory:
     window: 20

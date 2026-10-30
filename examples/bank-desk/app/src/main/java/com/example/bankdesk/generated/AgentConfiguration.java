@@ -1,6 +1,7 @@
 // Managed by gen-agent: changes here are overwritten. Edit agent.yaml and regenerate.
 package com.example.bankdesk.generated;
 
+import com.example.bankdesk.generated.chat.CurrentDateAdvisor;
 import com.example.bankdesk.generated.guard.Guardrails;
 import com.example.bankdesk.generated.privacy.PersonalData;
 import com.example.bankdesk.generated.resilience.ResilientModelAdvisor;
@@ -10,6 +11,7 @@ import com.example.bankdesk.generated.tool.SendTransferTool;
 import com.example.bankdesk.generated.tool.ToolGuard;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -55,7 +57,11 @@ class AgentConfiguration {
                     ToolGuard.PROMPT_NOTE +
                     guardrails.promptNote()
             )
-            .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build(), resilientModelAdvisor)
+            .defaultAdvisors(
+                MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                new CurrentDateAdvisor(Clock.system(properties.timeZone())),
+                resilientModelAdvisor
+            )
             // Every call is logged: the tool and how long it took, never what it was given.
             .defaultTools(
                 LoggedToolCallback.logged(toolGuard.guard(ToolCallbacks.from(accountBalanceTool, sendTransferTool)))

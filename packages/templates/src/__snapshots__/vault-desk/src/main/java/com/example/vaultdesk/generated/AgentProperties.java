@@ -3,6 +3,7 @@ package com.example.vaultdesk.generated;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.ZoneId;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
 
@@ -11,6 +12,7 @@ import org.springframework.core.io.Resource;
  *
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
+ * @param timeZone where the users are: the model is told the date of the day there
  * @param rag the knowledge base the answers draw on
  * @param fallbackAnswer the answer sent when no model can answer
  * @param fallback the model that answers when the first one fails
@@ -25,6 +27,7 @@ import org.springframework.core.io.Resource;
 public record AgentProperties(
     Resource systemPrompt,
     Memory memory,
+    ZoneId timeZone,
     Rag rag,
     String fallbackAnswer,
     Fallback fallback,

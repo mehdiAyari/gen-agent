@@ -13,7 +13,11 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -484,6 +488,17 @@ class ClaimsDeskApplicationTests {
 
     private MvcTestResult ask(String message) {
         return post("ada", "{\"message\": \"" + message + "\"}");
+    }
+
+    @Test
+    void tellsTheModelTheDateOfTheDay() {
+        String today = LocalDate.now(ZoneId.of("UTC")).format(
+            DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.ENGLISH)
+        );
+
+        post("tess", "{\"message\": \"What day is it?\"}");
+
+        assertThat(chatModel.lastPrompt().getContents()).contains("Today is " + today + " (UTC).");
     }
 
     /** The system prompt as written in its file, whatever it says. */

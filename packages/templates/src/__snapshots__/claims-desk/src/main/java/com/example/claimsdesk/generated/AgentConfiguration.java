@@ -1,12 +1,14 @@
 // Managed by gen-agent: changes here are overwritten. Edit agent.yaml and regenerate.
 package com.example.claimsdesk.generated;
 
+import com.example.claimsdesk.generated.chat.CurrentDateAdvisor;
 import com.example.claimsdesk.generated.guard.Guardrails;
 import com.example.claimsdesk.generated.memory.SummarizingChatMemory;
 import com.example.claimsdesk.generated.privacy.PersonalData;
 import com.example.claimsdesk.generated.resilience.ResilientModelAdvisor;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -47,7 +49,11 @@ class AgentConfiguration {
                     PersonalData.PROMPT_NOTE +
                     guardrails.promptNote()
             )
-            .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build(), resilientModelAdvisor)
+            .defaultAdvisors(
+                MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                new CurrentDateAdvisor(Clock.system(properties.timeZone())),
+                resilientModelAdvisor
+            )
             .build();
     }
 }

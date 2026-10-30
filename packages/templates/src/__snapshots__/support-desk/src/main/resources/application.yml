@@ -66,6 +66,8 @@ spring:
 
 agent:
   system-prompt: classpath:prompts/system.md
+  # Where the users are: the model is told the date of the day there.
+  time-zone: UTC
   mcp:
     knowledge:
       token: ${KNOWLEDGE_MCP_TOKEN}

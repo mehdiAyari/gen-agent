@@ -124,6 +124,8 @@ resilience4j:
 <%_ } _%>
 agent:
   system-prompt: classpath:<%= prompt.resource %>
+  # Where the users are: the model is told the date of the day there.
+  time-zone: UTC
 <%_ if (features.resilience) { _%>
   # Sent when no model can answer.
   fallback-answer: "The assistant is unavailable right now. Please try again in a few minutes."

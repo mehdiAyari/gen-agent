@@ -74,6 +74,9 @@ export function problemsOf(files: GeneratedFile[]): string[] {
         if (!(dependency in services)) problems.push(`compose.yaml: ${service} depends on ${dependency}, not defined`);
       }
     }
+    // A required variable (${NAME:?…}) is checked by every command: docker compose down would refuse to stop.
+    if (/\$\{[A-Z0-9_]+:\?/.test(compose))
+      problems.push('compose.yaml: a required variable blocks docker compose down');
     for (const [, name] of compose.matchAll(/\$\{([A-Z][A-Z0-9_]*)(?::?-[^}]*)?\}/g)) {
       if (name !== undefined && !readme.includes(name))
         problems.push(`README.md: ${name} of compose.yaml is not documented`);

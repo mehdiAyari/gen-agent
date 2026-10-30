@@ -8,6 +8,7 @@ package <%= project.generatedPackage %>;
  *
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
+ * @param timeZone where the users are: the model is told the date of the day there
 <%_ if (features.rag) { _%>
  * @param rag the knowledge base the answers draw on
 <%_ } _%>
@@ -40,6 +41,7 @@ package <%= project.generatedPackage %>;
 public record AgentProperties(<%- [
   `${type('org.springframework.core.io.Resource')} systemPrompt`,
   'Memory memory',
+  `${type('java.time.ZoneId')} timeZone`,
   ...(features.rag ? ['Rag rag'] : []),
   ...(features.resilience ? ['String fallbackAnswer'] : []),
   ...(fallback ? ['Fallback fallback'] : []),

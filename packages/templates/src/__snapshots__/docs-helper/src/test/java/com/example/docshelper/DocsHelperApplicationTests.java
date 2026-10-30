@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.example.docshelper.generated.TestcontainersConfiguration;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -116,6 +119,17 @@ class DocsHelperApplicationTests {
 
     private MvcTestResult ask(String message) {
         return post("{\"message\": \"" + message + "\"}");
+    }
+
+    @Test
+    void tellsTheModelTheDateOfTheDay() {
+        String today = LocalDate.now(ZoneId.of("UTC")).format(
+            DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.ENGLISH)
+        );
+
+        post("{\"message\": \"What day is it?\"}");
+
+        assertThat(chatModel.lastPrompt().getContents()).contains("Today is " + today + " (UTC).");
     }
 
     /** The system prompt as written in its file, whatever it says. */

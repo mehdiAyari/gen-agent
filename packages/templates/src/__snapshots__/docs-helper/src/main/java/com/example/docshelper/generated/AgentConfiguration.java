@@ -1,6 +1,8 @@
 // Managed by gen-agent: changes here are overwritten. Edit agent.yaml and regenerate.
 package com.example.docshelper.generated;
 
+import com.example.docshelper.generated.chat.CurrentDateAdvisor;
+import java.time.Clock;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -27,7 +29,10 @@ class AgentConfiguration {
     ChatClient chatClient(ChatClient.Builder builder, ChatMemory chatMemory, AgentProperties properties) {
         return builder
             .defaultSystem(properties.systemPrompt())
-            .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+            .defaultAdvisors(
+                MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                new CurrentDateAdvisor(Clock.system(properties.timeZone()))
+            )
             .build();
     }
 }

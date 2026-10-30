@@ -20,9 +20,11 @@ services:
       # Sandboxed MCP servers run with docker, which the container of the agent does not have:
       # run the agent with ./mvnw spring-boot:run to use their tools, or set sandbox: none in agent.yaml.
       SPRING_AI_MCP_CLIENT_ENABLED: "false"
-      MISTRAL_API_KEY: ${MISTRAL_API_KEY:?export MISTRAL_API_KEY before docker compose up}
-      SHOP_API_TOKEN: ${SHOP_API_TOKEN:?export SHOP_API_TOKEN before docker compose up}
-      KNOWLEDGE_MCP_TOKEN: ${KNOWLEDGE_MCP_TOKEN:?export KNOWLEDGE_MCP_TOKEN before docker compose up}
+      # Taken from your shell: export them before docker compose up, or the provider refuses every call. Not needed to
+      # stop the agent: docker compose down works without them.
+      MISTRAL_API_KEY:
+      SHOP_API_TOKEN:
+      KNOWLEDGE_MCP_TOKEN:
     depends_on:
       postgres:
         condition: service_healthy

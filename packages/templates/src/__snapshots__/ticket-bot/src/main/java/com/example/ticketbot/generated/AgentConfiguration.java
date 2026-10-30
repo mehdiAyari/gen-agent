@@ -1,6 +1,7 @@
 // Managed by gen-agent: changes here are overwritten. Edit agent.yaml and regenerate.
 package com.example.ticketbot.generated;
 
+import com.example.ticketbot.generated.chat.CurrentDateAdvisor;
 import com.example.ticketbot.generated.tool.AddCommentTool;
 import com.example.ticketbot.generated.tool.AddCommentToolProperties;
 import com.example.ticketbot.generated.tool.CreateTicketTool;
@@ -10,6 +11,7 @@ import com.example.ticketbot.generated.tool.ServiceStatusTool;
 import com.example.ticketbot.generated.tool.ServiceStatusToolProperties;
 import com.example.ticketbot.generated.tool.TicketStatusTool;
 import com.example.ticketbot.generated.tool.TicketStatusToolProperties;
+import java.time.Clock;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -51,7 +53,10 @@ class AgentConfiguration {
     ) {
         return builder
             .defaultSystem(properties.systemPrompt())
-            .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+            .defaultAdvisors(
+                MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                new CurrentDateAdvisor(Clock.system(properties.timeZone()))
+            )
             // Every call is logged: the tool and how long it took, never what it was given.
             .defaultTools(
                 LoggedToolCallback.logged(

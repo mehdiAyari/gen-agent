@@ -20,8 +20,10 @@ services:
       AGENT_RAG_DOCUMENTS: /app/documents
       OTLP_ENABLED: "true"
       OTLP_ENDPOINT: http://lgtm:4318
-      MISTRAL_API_KEY: ${MISTRAL_API_KEY:?export MISTRAL_API_KEY before docker compose up}
-      BANK_API_TOKEN: ${BANK_API_TOKEN:?export BANK_API_TOKEN before docker compose up}
+      # Taken from your shell: export them before docker compose up, or the provider refuses every call. Not needed to
+      # stop the agent: docker compose down works without them.
+      MISTRAL_API_KEY:
+      BANK_API_TOKEN:
     volumes:
       # The documents of the knowledge base, indexed when the agent starts.
       - ./documents:/app/documents:ro

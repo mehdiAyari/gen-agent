@@ -154,6 +154,11 @@ export const minimalEntries: TemplateEntry[] = [
     output: (m) => main(m, 'generated/ui/ChatPageHeaders.java'),
   },
   {
+    template: 'java/generated/chat/CurrentDateAdvisor.java.ejs',
+    owner: 'generated',
+    output: (m) => main(m, 'generated/chat/CurrentDateAdvisor.java'),
+  },
+  {
     template: 'java/generated/chat/UnknownConversationException.java.ejs',
     owner: 'generated',
     when: (m) => m.features.oidc,

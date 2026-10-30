@@ -95,6 +95,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Found by running agents on Anthropic: the model was never told the date of the day, so "tomorrow" or "next Friday"
+  were guesses (an advisor now adds it, in the time zone of `agent.time-zone`); `docker compose down` refused to stop
+  the agent without its API key exported, every secret being a required variable of `compose.yaml`.
 - Found by running the tests of every combination instead of compiling them: with a tight request limit in
   `agent.yaml` (5/sec), the generated tests sent their messages faster than it and failed; they now run with their own
   limit.

@@ -58,6 +58,8 @@ resilience4j:
 
 agent:
   system-prompt: classpath:prompts/system.md
+  # Where the users are: the model is told the date of the day there.
+  time-zone: UTC
   # Sent when no model can answer.
   fallback-answer: "The assistant is unavailable right now. Please try again in a few minutes."
   fallback:

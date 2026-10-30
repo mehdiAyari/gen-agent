@@ -1,11 +1,13 @@
 // Managed by gen-agent: changes here are overwritten. Edit agent.yaml and regenerate.
 package com.example.supportdesk.generated;
 
+import com.example.supportdesk.generated.chat.CurrentDateAdvisor;
 import com.example.supportdesk.generated.tool.LoggedToolCallback;
 import com.example.supportdesk.generated.tool.OrderStatusTool;
 import com.example.supportdesk.generated.tool.OrderStatusToolProperties;
 import com.example.supportdesk.generated.tool.RefundTool;
 import com.example.supportdesk.generated.tool.ToolGuard;
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
@@ -48,7 +50,10 @@ class AgentConfiguration {
     ) {
         return builder
             .defaultSystem(properties.systemPrompt())
-            .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+            .defaultAdvisors(
+                MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                new CurrentDateAdvisor(Clock.system(properties.timeZone()))
+            )
             // Every call is logged: the tool and how long it took, never what it was given.
             .defaultTools(
                 LoggedToolCallback.logged(

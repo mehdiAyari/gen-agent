@@ -1,0 +1,35 @@
+// Managed by gen-agent: changes here are overwritten. Set the time zone in application.yml.
+package <%= project.generatedPackage %>.chat;
+
+<%- imports %>
+
+/**
+ * Tells the model the date of the day, in the time zone of the users ({@code agent.time-zone}): without it, "tomorrow"
+ * or "next Friday" are guesses.
+ */
+public class CurrentDateAdvisor implements <%= type('org.springframework.ai.chat.client.advisor.api.CallAdvisor') %> {
+
+    private static final <%= type('java.time.format.DateTimeFormatter') %> DATE = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", <%= type('java.util.Locale') %>.ENGLISH);
+
+    private final <%= type('java.time.Clock') %> clock;
+
+    public CurrentDateAdvisor(Clock clock) {
+        this.clock = clock;
+    }
+
+    @Override
+    public <%= type('org.springframework.ai.chat.client.ChatClientResponse') %> adviseCall(<%= type('org.springframework.ai.chat.client.ChatClientRequest') %> request, <%= type('org.springframework.ai.chat.client.advisor.api.CallAdvisorChain') %> chain) {
+        String today = "\n\nToday is " + <%= type('java.time.LocalDate') %>.now(clock).format(DATE) + " (" + clock.getZone().getId() + ").";
+        return chain.nextCall(request.mutate().prompt(request.prompt().augmentSystemMessage(system -> system.mutate().text(system.getText() + today).build())).build());
+    }
+
+    @Override
+    public String getName() {
+        return "current-date";
+    }
+
+    @Override
+    public int getOrder() {
+        return <%= type('org.springframework.core.Ordered') %>.HIGHEST_PRECEDENCE;
+    }
+}

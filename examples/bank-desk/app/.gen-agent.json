@@ -195,11 +195,11 @@
     },
     "src/main/java/com/example/bankdesk/generated/AgentConfiguration.java": {
       "owner": "generated",
-      "sha256": "83e8c9fc2e9ae97c192040c8efc03c9656acf4000c1a396facd4c530f01362e7"
+      "sha256": "4832bb81b2968f26fbab850cff98ce67fa500521cbac073296ff98457e20170b"
     },
     "src/main/java/com/example/bankdesk/generated/AgentProperties.java": {
       "owner": "generated",
-      "sha256": "fe6708648dc6f348bec0f8cb3dbcf8421908fb6a801e711eb2b4f0d2371b6bc1"
+      "sha256": "97e7ae8a94c4cad3aa014e96d3d808c930831c07ade941a6196708d66841a0cd"
     },
     "src/main/java/com/example/bankdesk/generated/approval/ApprovalUnavailableException.java": {
       "owner": "generated",
@@ -248,6 +248,10 @@
     "src/main/java/com/example/bankdesk/generated/chat/ChatService.java": {
       "owner": "generated",
       "sha256": "a85baec6f4c70b2daed1d8436a6875a32b6267eb0c1899b0a0f405abd5d5c77c"
+    },
+    "src/main/java/com/example/bankdesk/generated/chat/CurrentDateAdvisor.java": {
+      "owner": "generated",
+      "sha256": "b66c8695bd10d1425f7c596bc98e01b084378f94e418aa41d416865ef03997d1"
     },
     "src/main/java/com/example/bankdesk/generated/chat/UnknownConversationException.java": {
       "owner": "generated",
@@ -391,7 +395,7 @@
     },
     "src/main/resources/application.yml": {
       "owner": "merged",
-      "sha256": "8bcd297ef482b8cbf0a3636c66196e1abf6346b7976517673e7b53da26271088"
+      "sha256": "f23f9948bcb92c3d8b25a9d9711102eb995d8679416a47c55b21eb2967f2dc0a"
     },
     "src/main/resources/db/migration/V1__agent_conversation.sql": {
       "owner": "generated",
@@ -431,7 +435,7 @@
     },
     "src/test/java/com/example/bankdesk/BankDeskApplicationTests.java": {
       "owner": "merged",
-      "sha256": "a5a8715b4530c07eaaa3b7ae327fd8b3de7741bdc8f91e8940efd1fc3dd9e9a4"
+      "sha256": "b48988d47be890a9086ac0dff93b8c3e64666c2f8c7dffca86302f9e6692bedd"
     },
     "src/test/java/com/example/bankdesk/ObservabilityTests.java": {
       "owner": "generated",

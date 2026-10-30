@@ -658,6 +658,16 @@ class <%= project.applicationClass %>Tests {
     }
 <%_ } _%>
 
+    @<%= type('org.junit.jupiter.api.Test') %>
+    void tellsTheModelTheDateOfTheDay() {
+        String today = <%= type('java.time.LocalDate') %>.now(<%= type('java.time.ZoneId') %>.of("UTC"))
+                .format(<%= type('java.time.format.DateTimeFormatter') %>.ofPattern("EEEE d MMMM yyyy", <%= type('java.util.Locale') %>.ENGLISH));
+
+        <%- features.oidc ? 'post("tess", ' : 'post(' %>"{\"message\": \"What day is it?\"}");
+
+        <%= staticImport('org.assertj.core.api.Assertions.assertThat') %>(chatModel.lastPrompt().getContents()).contains("Today is " + today + " (UTC).");
+    }
+
     /** The system prompt as written in its file, whatever it says. */
     private static String systemPrompt() throws <%= type('java.io.IOException') %> {
         return new <%= type('org.springframework.core.io.ClassPathResource') %>("<%= prompt.resource %>").getContentAsString(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8).strip();

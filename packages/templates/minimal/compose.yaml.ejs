@@ -43,8 +43,12 @@ services:
       # run the agent with <%= build.run %> to use their tools, or set sandbox: none in agent.yaml.
       SPRING_AI_MCP_CLIENT_ENABLED: "false"
 <%_ } _%>
+<%_ if (secrets.length > 0) { _%>
+      # Taken from your shell: export them before docker compose up, or the provider refuses every call. Not needed to
+      # stop the agent: docker compose down works without them.
+<%_ } _%>
 <%_ for (const secret of secrets) { _%>
-      <%= secret %>: ${<%= secret %>:?export <%= secret %> before docker compose up}
+      <%= secret %>:
 <%_ } _%>
 <%_ if (features.rag) { _%>
     volumes:

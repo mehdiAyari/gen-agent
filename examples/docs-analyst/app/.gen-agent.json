@@ -80,11 +80,11 @@
     },
     "src/main/java/com/example/docsanalyst/generated/AgentConfiguration.java": {
       "owner": "generated",
-      "sha256": "6adce25f6703f4351e98ee42ea469218f9f17cb5e6ad69452ac3e9727f345d60"
+      "sha256": "02faed163a8acd2e43d070de6fddc2f06aba830d2013f8bacbee874830a4da9e"
     },
     "src/main/java/com/example/docsanalyst/generated/AgentProperties.java": {
       "owner": "generated",
-      "sha256": "1101126eba3eb701c7fbf06aae60f83021a78fd5b49282f5fb692c8ee79b9870"
+      "sha256": "aff1dedf63cd90fa57fe92fda92005ee9f4276d153c7052a16e12b52372c6bdf"
     },
     "src/main/java/com/example/docsanalyst/generated/chat/ChatController.java": {
       "owner": "generated",
@@ -106,6 +106,10 @@
       "owner": "generated",
       "sha256": "a66598223ab5f46028e5fc331265d9b200186b81924dc482071cf20e432b30ea"
     },
+    "src/main/java/com/example/docsanalyst/generated/chat/CurrentDateAdvisor.java": {
+      "owner": "generated",
+      "sha256": "fdf409eac54558e08f13e870cf7924616cab09c809c1354f431d6ac35e275a73"
+    },
     "src/main/java/com/example/docsanalyst/generated/rag/DocumentFolder.java": {
       "owner": "generated",
       "sha256": "2ff2b1b153576176ec8c66001302df59ab413bf655e4a1c54d998c9932e8aff0"
@@ -124,7 +128,7 @@
     },
     "src/main/resources/application.yml": {
       "owner": "merged",
-      "sha256": "0b039042be3d03e19e5f4ba37b3dd8f58735cd3cd1f1761b883c2082e5e5516d"
+      "sha256": "0c9bbb91c469fe12e7c9ec513e1848627dfea2dc3b58750af03d72dde536cb1e"
     },
     "src/main/resources/db/migration/V3__agent_document_source.sql": {
       "owner": "generated",
@@ -136,7 +140,7 @@
     },
     "src/test/java/com/example/docsanalyst/DocsAnalystApplicationTests.java": {
       "owner": "merged",
-      "sha256": "bc5429b847d4e3b66ee3abcf9e3ad23b250d65d96982f0eda884857205dd1c7d"
+      "sha256": "eca0b0b0f29b906be5c10d459039466213346444f6ea1047d49aef5baaf9f8b2"
     },
     "src/test/java/com/example/docsanalyst/TestDocsAnalystApplication.java": {
       "owner": "generated",

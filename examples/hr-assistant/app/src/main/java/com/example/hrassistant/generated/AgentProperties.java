@@ -2,6 +2,7 @@
 package com.example.hrassistant.generated;
 
 import java.time.Duration;
+import java.time.ZoneId;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
 
@@ -10,11 +11,12 @@ import org.springframework.core.io.Resource;
  *
  * @param systemPrompt the system prompt, kept in a resource file so it can be versioned and reviewed like code
  * @param memory how much of the conversation is sent back to the model
+ * @param timeZone where the users are: the model is told the date of the day there
  * @param limits what each user may use
  * @param cache how first answers are reused
  */
 @ConfigurationProperties("agent")
-public record AgentProperties(Resource systemPrompt, Memory memory, Limits limits, Cache cache) {
+public record AgentProperties(Resource systemPrompt, Memory memory, ZoneId timeZone, Limits limits, Cache cache) {
     /**
      * @param window number of recent messages kept per conversation
      */

@@ -34,6 +34,8 @@ spring:
 
 agent:
   system-prompt: classpath:prompts/system.md
+  # Where the users are: the model is told the date of the day there.
+  time-zone: UTC
   chat-ui:
     # Public client of the chat page at the OIDC provider: authorization code with PKCE, no secret.
     client-id: ${OIDC_CLIENT_ID:agent-client}

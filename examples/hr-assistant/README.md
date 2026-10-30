@@ -90,4 +90,5 @@ cd app && ./mvnw verify   # 30 tests, Postgres and Redis in Docker, a fake model
 ## Limits
 
 - On a laptop CPU, `qwen2.5:7b` takes about a minute per answer. `qwen2.5:3b` is faster but often skips the tools.
-- The model works out the date from the message: ask with the full date, it has no calendar.
+- The model is told the date of the day in UTC (`agent.time-zone` in `application.yml`); a small model still gets
+  "next Friday" wrong at times: ask with the full date.
