@@ -223,8 +223,11 @@ versions can regenerate safely ([ADR 0001](adr/0001-separate-generated-and-user-
 
 ## Limits
 
-- Prompt injection detection uses heuristics: it makes attacks harder without ruling them out (the generated red team
-  found a request it lets through). PII masking works with patterns: names and addresses are not detected.
+- Prompt injection detection uses patterns: it makes attacks harder without ruling them out. Measured on attacks it
+  was not written from, it caught 8 out of 30, with no false alarm on 40 ordinary customer messages. What holds when
+  it misses is architectural: approvals and kill switches are enforced in code, answers that repeat the system prompt
+  are refused on the way out, tool results are data. PII masking works with patterns too: names and addresses are not
+  detected.
 - Spring AI is pinned to 2.0.1. `generate` writes into a new or empty directory; `add` and `update` grow an existing
   project; `upgrade` to a new version of gen-agent comes later.
 - MCP servers in containers see none of the files of the host, and do not run under Docker Compose (the agent's

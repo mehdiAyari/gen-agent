@@ -44,10 +44,18 @@ public class SecurityConfiguration {
                 .oauth2ResourceServer(server -> server.jwt(<%= type('org.springframework.security.config.Customizer') %>.withDefaults()))
 <%_ } _%>
                 .sessionManagement(session -> session.sessionCreationPolicy(<%= type('org.springframework.security.config.http.SessionCreationPolicy') %>.STATELESS))
-                .csrf(<%= type('org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer') %>::disable)<%_ if (features.chatUi) { _%>
-                .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(
-                        "default-src 'self'; img-src 'self' data:; connect-src 'self' " + providerOrigin
-                                + "; frame-ancestors 'none'; form-action 'self' " + providerOrigin)))<%_ } _%>
+                .csrf(<%= type('org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer') %>::disable)
+                // Nothing of the agent can be framed, embedded or opened by another site.
+                .headers(headers -> headers
+<%_ if (features.chatUi) { _%>
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; img-src 'self' data:; connect-src 'self' " + providerOrigin
+                                        + "; frame-ancestors 'none'; form-action 'self' " + providerOrigin))
+<%_ } _%>
+                        .crossOriginOpenerPolicy(policy -> policy.policy(<%= type('org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter') %>.CrossOriginOpenerPolicy.SAME_ORIGIN))
+                        .crossOriginEmbedderPolicy(policy -> policy.policy(<%= type('org.springframework.security.web.header.writers.CrossOriginEmbedderPolicyHeaderWriter') %>.CrossOriginEmbedderPolicy.REQUIRE_CORP))
+                        .crossOriginResourcePolicy(policy -> policy.policy(<%= type('org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter') %>.CrossOriginResourcePolicy.SAME_ORIGIN))
+                        .permissionsPolicyHeader(policy -> policy.policy("camera=(), microphone=(), geolocation=()")))
                 .build();
     }
 <%_ if (features.adminRole) { _%>

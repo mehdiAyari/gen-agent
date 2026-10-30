@@ -138,6 +138,13 @@ export const minimalEntries: TemplateEntry[] = [
   },
 
   {
+    template: 'java/generated/ui/ChatPageHeaders.java.ejs',
+    owner: 'generated',
+    // With sign-in, Spring Security writes them.
+    when: (m) => m.features.chatUi && !m.features.oidc,
+    output: (m) => main(m, 'generated/ui/ChatPageHeaders.java'),
+  },
+  {
     template: 'java/generated/chat/UnknownConversationException.java.ejs',
     owner: 'generated',
     when: (m) => m.features.oidc,

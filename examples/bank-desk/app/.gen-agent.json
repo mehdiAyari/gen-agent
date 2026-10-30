@@ -263,7 +263,7 @@
     },
     "src/main/java/com/example/bankdesk/generated/guard/PromptInjection.java": {
       "owner": "generated",
-      "sha256": "ba43d2163a93a89797075ec4374bcba7e9fbb891eb9682de48b61e68dbc7fbeb"
+      "sha256": "29ded554e9e15db055877c1224f589d82acc468edcbd1a09353977e1a0ce0836"
     },
     "src/main/java/com/example/bankdesk/generated/guard/RequestTimeout.java": {
       "owner": "generated",
@@ -331,7 +331,7 @@
     },
     "src/main/java/com/example/bankdesk/generated/security/SecurityConfiguration.java": {
       "owner": "generated",
-      "sha256": "f0fdea811afe1c9050d0a3a125a20d97f9988e2f0480fb59de3c0fffb49cad6f"
+      "sha256": "5e4a96a2612e68092c07bd8f359d28b21f600a8926cacb094aba8f3db698d978"
     },
     "src/main/java/com/example/bankdesk/generated/switches/AgentSwitchedOffException.java": {
       "owner": "generated",
@@ -427,7 +427,7 @@
     },
     "src/test/java/com/example/bankdesk/BankDeskApplicationTests.java": {
       "owner": "merged",
-      "sha256": "33471603fe67af8600f4322cdabdc4c458b80e2c73eca43e1b8c6cbfa9c54ec3"
+      "sha256": "3d47b7d758bfb1711037c1a6b88c7c9827e54c800cafd521f7b77765915f6ee9"
     },
     "src/test/java/com/example/bankdesk/ObservabilityTests.java": {
       "owner": "generated",
@@ -447,7 +447,7 @@
     },
     "src/test/java/com/example/bankdesk/generated/guard/PromptInjectionTests.java": {
       "owner": "generated",
-      "sha256": "393b6ad2d8a4d79874489e23a1842a6858e57f63a23f17251f05790da9983479"
+      "sha256": "bd62f717b76168b0ac5d72b3805ecc2ee79abe9f3c16c63c6c591b771325bcd9"
     },
     "src/test/java/com/example/bankdesk/generated/privacy/PersonalDataPatternsTests.java": {
       "owner": "generated",

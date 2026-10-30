@@ -93,6 +93,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Found by attacking the production agent: the prompt injection patterns caught 27 of 58 common attacks (now all of
+  them, with no false alarm on ordinary messages; 8 of 30 attacks never seen before); "developer mode" in an ordinary
+  question was refused; the responses lacked the cross-origin and permissions headers an OWASP ZAP scan expects, and
+  a chat page without sign-in had no security header at all.
 - Found by updating a project made by an earlier version and changed by hand: an edit to a generated file was lost
   without a word (it is now kept as `<file>.gen-agent-old` and reported), and the files of a tool removed from
   `agent.yaml` stayed behind, its untouched handler breaking the build (files nobody changed are now deleted).

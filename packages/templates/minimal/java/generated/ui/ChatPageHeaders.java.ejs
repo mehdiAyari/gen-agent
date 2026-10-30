@@ -1,0 +1,26 @@
+// Managed by gen-agent: changes here are overwritten.
+package <%= project.generatedPackage %>.ui;
+
+<%- imports %>
+
+/** The security headers of every response: the chat page talks only to the agent, and no other site can frame it. */
+@<%= type('org.springframework.stereotype.Component') %>
+class ChatPageHeaders extends <%= type('org.springframework.web.filter.OncePerRequestFilter') %> {
+
+    @Override
+    protected void doFilterInternal(
+            <%= type('jakarta.servlet.http.HttpServletRequest') %> request,
+            <%= type('jakarta.servlet.http.HttpServletResponse') %> response,
+            <%= type('jakarta.servlet.FilterChain') %> chain)
+            throws <%= type('jakarta.servlet.ServletException') %>, <%= type('java.io.IOException') %> {
+        response.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'");
+        response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+        response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+        response.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+        response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+        response.setHeader("X-Content-Type-Options", "nosniff");
+        response.setHeader("X-Frame-Options", "DENY");
+        response.setHeader("Referrer-Policy", "no-referrer");
+        chain.doFilter(request, response);
+    }
+}
