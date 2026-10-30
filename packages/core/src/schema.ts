@@ -298,7 +298,17 @@ export const EMBEDDING_PROVIDERS: readonly Provider[] = ['openai', 'mistral', 'o
  * What the profile equips the agent with, unless agent.yaml says otherwise: minimal adds nothing; standard and
  * production add a JDBC memory, OIDC with request and token limits per user, and Docker Compose.
  */
-const equipped = agent.transform((definition) => {
+const equipped = agent.transform((declared) => {
+  // The semantic cache is looked up after the exact one: it brings it along.
+  const cached =
+    declared.cache?.semantic !== undefined && declared.cache.exact === undefined
+      ? { ...declared, cache: { ...declared.cache, exact: 'redis' as const } }
+      : declared;
+  // Evaluations with nothing to evaluate score the reference set.
+  const definition =
+    cached.evals !== undefined && cached.evals.dataset === undefined && cached.evals.redTeam !== true
+      ? { ...cached, evals: { ...cached.evals, dataset: PRODUCTION_DEFAULTS.dataset } }
+      : cached;
   const full = definition.profile !== 'minimal';
   const memory = { ...definition.memory, type: definition.memory.type ?? (full ? 'jdbc' : 'in-memory') };
   if (!full) return { ...definition, memory };

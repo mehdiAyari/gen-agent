@@ -238,7 +238,8 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
     });
   }
 
-  if (agent.cache?.exact === 'redis' && agent.security?.auth !== 'oidc') {
+  // A semantic cache says it once, below.
+  if (agent.cache?.exact === 'redis' && agent.cache.semantic === undefined && agent.security?.auth !== 'oidc') {
     errors.push({ path: ['agent', 'cache', 'exact'], message: 'answers are cached per user: set security.auth: oidc' });
   }
   if (agent.cache?.semantic !== undefined) {
@@ -246,6 +247,11 @@ export function checkRules(file: AgentFile): { errors: RuleIssue[]; warnings: Ru
       errors.push({
         path: ['agent', 'cache', 'semantic'],
         message: 'answers are cached per user: set security.auth: oidc',
+      });
+    } else if (agent.cache.exact === 'none') {
+      errors.push({
+        path: ['agent', 'cache', 'semantic'],
+        message: 'it is looked up after the exact cache: set cache.exact: redis',
       });
     } else if (!EMBEDDING_PROVIDERS.includes(agent.model.provider)) {
       errors.push({

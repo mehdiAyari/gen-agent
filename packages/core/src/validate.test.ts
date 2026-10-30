@@ -390,6 +390,27 @@ tools:
       expect(errorsOf(result)).toEqual([expect.stringMatching(/^agent.cache.semantic.scope: /)]);
     });
 
+    it('evaluates the reference set when evals says nothing more', () => {
+      const result = validateAgentYaml(withAgent('evals: {}\n'));
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.config.agent.evals?.dataset).toBe('evals/golden.yaml');
+    });
+
+    it('puts a semantic cache behind the exact one, which it needs', () => {
+      const result = validateAgentYaml(withAgent('security:\n  auth: oidc\ncache:\n  semantic: { threshold: 0.9 }\n'));
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.config.agent.cache?.exact).toBe('redis');
+      expect(
+        errorsOf(
+          validateAgentYaml(
+            withAgent('security:\n  auth: oidc\ncache:\n  exact: none\n  semantic: { threshold: 0.9 }\n'),
+          ),
+        ),
+      ).toEqual(['agent.cache.semantic: it is looked up after the exact cache: set cache.exact: redis']);
+    });
+
     it('keeps the cache per user, so it needs signed-in users', () => {
       const result = validateAgentYaml(withAgent('cache:\n  exact: redis\n'));
 
