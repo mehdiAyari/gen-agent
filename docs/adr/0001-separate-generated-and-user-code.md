@@ -67,7 +67,9 @@ Written at the root of every generated project:
 `gen-agent new` and `gen-agent generate` write into an empty (or new) directory only. `gen-agent add` and
 `gen-agent update` regenerate an existing project with the owners and fingerprints above: generated files are
 rewritten, user files are kept, and a shared file the user changed gets the new version next to it
-(`<file>.gen-agent-new`), never silently overwritten.
+(`<file>.gen-agent-new`), never silently overwritten. A generated file edited by hand anyway is rewritten, the
+hand-made version kept as `<file>.gen-agent-old`; a file no longer generated is deleted when unchanged since gen-agent
+wrote it, whoever owns it, and reported otherwise.
 
 ## Consequences
 

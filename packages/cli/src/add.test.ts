@@ -173,4 +173,30 @@ describe('gen-agent update', () => {
     expect(await updateCommand({ dir: 'shop-bot', cwd }, out)).toBe(0);
     expect(read('src/main/resources/application.yml')).toContain('window: 5');
   });
+
+  it('keeps a generated file edited by hand next to its new version, and says so', async () => {
+    const controller = `${javaRoot}/generated/chat/ChatController.java`;
+    const edited = read(controller).replace('class ChatController {', 'class ChatController {\n    // mine');
+    writeFileSync(at(controller), edited);
+    writeFileSync(
+      at('agent.yaml'),
+      read('agent.yaml').replace('  name: shop-bot\n', '  name: shop-bot\n  memory:\n    window: 5\n'),
+    );
+
+    expect(await updateCommand({ dir: 'shop-bot', cwd }, out)).toBe(0);
+    expect(read(controller)).not.toContain('// mine');
+    expect(read(`${controller}.gen-agent-old`)).toBe(edited);
+    expect(out.text()).toContain(`${controller}.gen-agent-old`);
+  });
+
+  it('removes the files of a tool removed from agent.yaml, and points at the code of the user', async () => {
+    const handler = `${javaRoot}/tool/DefaultRefundHandler.java`;
+    writeFileSync(at(handler), read(handler).replace('throw new', '// refunds by hand\n        throw new'));
+    writeFileSync(at('agent.yaml'), read('agent.yaml').replace(/ {2}tools:\n( {4}.*\n)+/, ''));
+
+    expect(await updateCommand({ dir: 'shop-bot', cwd }, out)).toBe(0);
+    expect(existsSync(at(`${javaRoot}/generated/tool/RefundTool.java`))).toBe(false);
+    expect(existsSync(at(`${javaRoot}/tool/DefaultRefundHandler.java`))).toBe(true);
+    expect(out.text()).toContain(`${javaRoot}/tool/DefaultRefundHandler.java`);
+  });
 });

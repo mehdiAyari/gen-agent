@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
 import { MANIFEST_PATH, planUpdate, unsupportedFeatures, validateAgentYaml, type Manifest } from '@gen-agent/core';
@@ -166,23 +166,44 @@ async function updateProject(
     );
   };
   for (const action of actions) {
+    if (action.kind === 'write' && action.reason === 'edited') {
+      write(action.backupPath, readFileSync(join(directory, action.path), 'utf8'));
+    }
     if (action.kind === 'write') write(action.path, action.content, executable.has(action.path) ? 0o755 : undefined);
     if (action.kind === 'side') write(action.sidePath, action.content);
+    if (action.kind === 'delete') rmSync(join(directory, action.path));
   }
   writeFileSync(configPath, yaml);
 
   const count = (predicate: (action: (typeof actions)[number]) => boolean): number => actions.filter(predicate).length;
   const sides = actions.flatMap((action) => (action.kind === 'side' ? [action.sidePath] : []));
+  const backups = actions.flatMap((action) =>
+    action.kind === 'write' && action.reason === 'edited' ? [action.backupPath] : [],
+  );
+  const stale = actions.flatMap((action) => (action.kind === 'keep' && action.reason === 'stale' ? [action.path] : []));
   out.info(
     [
       `Updated ${options.dir}: ${String(count((a) => a.kind === 'write' && a.reason === 'new'))} new files, ` +
         `${String(count((a) => a.kind === 'write' && a.reason !== 'new'))} rewritten, ` +
-        `${String(count((a) => a.kind === 'keep' && a.reason === 'user'))} of yours kept.`,
+        `${String(count((a) => a.kind === 'keep' && a.reason === 'user'))} of yours kept` +
+        `${count((a) => a.kind === 'delete') > 0 ? `, ${String(count((a) => a.kind === 'delete'))} no longer generated removed` : ''}.`,
       ...(sides.length === 0
         ? []
         : [
             'You changed these files: merge the new version written next to each, then delete it.',
             ...sides.map((side) => `  ${side}`),
+          ]),
+      ...(backups.length === 0
+        ? []
+        : [
+            'These files belong to gen-agent but were changed by hand: they were rewritten, your version kept here.',
+            ...backups.map((backup) => `  ${backup}`),
+          ]),
+      ...(stale.length === 0
+        ? []
+        : [
+            'No longer generated, but changed by you: they refer to what is gone, delete or adapt them.',
+            ...stale.map((path) => `  ${path}`),
           ]),
     ].join('\n'),
   );

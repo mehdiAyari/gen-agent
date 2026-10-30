@@ -45,7 +45,14 @@ describe('planUpdate', () => {
     );
 
     expect(actions).toEqual([
-      { kind: 'write', path: 'Generated.java', content: 'generated v2', reason: 'generated' },
+      // Edited by hand although gen-agent owns it: rewritten, the hand-made version kept next to it.
+      {
+        kind: 'write',
+        path: 'Generated.java',
+        content: 'generated v2',
+        reason: 'edited',
+        backupPath: 'Generated.java.gen-agent-old',
+      },
       { kind: 'side', path: 'README.md', sidePath: 'README.md.gen-agent-new', content: 'readme v2' },
       { kind: 'write', path: 'pom.xml', content: 'pom v2', reason: 'unchanged' },
       { kind: 'keep', path: 'Handler.java', reason: 'user' },
@@ -54,8 +61,45 @@ describe('planUpdate', () => {
     ]);
   });
 
+  it('rewrites a generated file the user left alone, without a backup', async () => {
+    const actions = await planUpdate([file('Generated.java', 'generated', 'generated v2')], previous, (path) =>
+      path === 'Generated.java' ? 'generated v1' : undefined,
+    );
+
+    expect(actions).toEqual([{ kind: 'write', path: 'Generated.java', content: 'generated v2', reason: 'generated' }]);
+  });
+
+  it('deletes what is no longer generated, unless the user changed it', async () => {
+    const before: Manifest = {
+      files: {
+        ...previous.files,
+        'OldTool.java': { owner: 'generated', sha256: sha256('old tool') },
+        'OldEdited.java': { owner: 'generated', sha256: sha256('old edited') },
+        'OldHandler.java': { owner: 'user', sha256: sha256('old handler') },
+      },
+    };
+    const onDisk: Record<string, string> = {
+      'OldTool.java': 'old tool',
+      'OldHandler.java': 'old handler',
+      'OldEdited.java': 'old edited, then changed',
+      'Handler.java': 'my implementation',
+    };
+
+    const actions = await planUpdate([], before, (path) => onDisk[path]);
+
+    expect(actions).toEqual([
+      { kind: 'keep', path: 'Handler.java', reason: 'stale' },
+      { kind: 'delete', path: 'OldTool.java' },
+      { kind: 'keep', path: 'OldEdited.java', reason: 'stale' },
+      // The user's, but never changed: nothing of theirs is lost.
+      { kind: 'delete', path: 'OldHandler.java' },
+    ]);
+  });
+
   it('leaves alone a file that is already up to date', async () => {
-    const actions = await planUpdate([file('pom.xml', 'merged', 'pom v1')], previous, () => 'pom v1');
+    const actions = await planUpdate([file('pom.xml', 'merged', 'pom v1')], previous, (path) =>
+      path === 'pom.xml' ? 'pom v1' : undefined,
+    );
 
     expect(actions).toEqual([{ kind: 'keep', path: 'pom.xml', reason: 'identical' }]);
   });

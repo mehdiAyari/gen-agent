@@ -81,7 +81,9 @@ gen-agent update        # after editing agent.yaml by hand
 ```
 
 Generated files are rewritten, your files never are, and a shared file you changed (README, `pom.xml`…) gets the new
-version next to it as `<file>.gen-agent-new`, to merge.
+version next to it as `<file>.gen-agent-new`, to merge. A generated file you edited anyway is rewritten too, your
+version kept as `<file>.gen-agent-old`. What is no longer generated (a tool removed from `agent.yaml`) is deleted when
+nobody changed it, and listed when you did.
 
 Then:
 

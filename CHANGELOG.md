@@ -93,6 +93,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Found by updating a project made by an earlier version and changed by hand: an edit to a generated file was lost
+  without a word (it is now kept as `<file>.gen-agent-old` and reported), and the files of a tool removed from
+  `agent.yaml` stayed behind, its untouched handler breaking the build (files nobody changed are now deleted).
 - Found by walking the paths never walked (MCP servers local and remote, Gradle, routing and fallback, a kind cluster):
   the Helm chart ran two replicas of an agent that keeps its conversations in memory, so each one forgot half of
   them; its README did not say how to build and push the image, nor what `my-values.yaml` holds.
