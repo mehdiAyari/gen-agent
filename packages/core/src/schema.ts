@@ -286,6 +286,11 @@ export const PRODUCTION_DEFAULTS = {
   dataset: 'evals/golden.yaml',
 } as const;
 
+/** How long a production request may take: a local model on a laptop CPU takes minutes, a hosted one seconds. */
+export function productionTimeout(provider: Provider): string {
+  return provider === 'ollama' ? '5m' : PRODUCTION_DEFAULTS.timeout;
+}
+
 /** Providers with an embedding model, which the semantic cache needs. */
 export const EMBEDDING_PROVIDERS: readonly Provider[] = ['openai', 'mistral', 'ollama'];
 
@@ -329,7 +334,7 @@ const equipped = agent.transform((definition) => {
       ? {
           limits: {
             maxIterations: PRODUCTION_DEFAULTS.maxIterations,
-            timeout: PRODUCTION_DEFAULTS.timeout,
+            timeout: productionTimeout(definition.model.provider),
             ...definition.limits,
           },
         }

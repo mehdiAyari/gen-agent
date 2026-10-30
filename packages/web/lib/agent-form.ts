@@ -1,6 +1,7 @@
 import {
   EMBEDDING_PROVIDERS,
   PRODUCTION_DEFAULTS,
+  productionTimeout,
   STANDARD_LIMITS,
   SUGGESTED_MODELS,
   unsupportedFeatures,
@@ -240,7 +241,7 @@ function addedByCore(form: Pick<AgentForm, 'profile' | 'auth' | 'provider' | 'me
     injectionDetection: production,
     outputGuard: production,
     maxIterations: production ? String(PRODUCTION_DEFAULTS.maxIterations) : '',
-    timeout: production ? PRODUCTION_DEFAULTS.timeout : '',
+    timeout: production ? productionTimeout(form.provider) : '',
     killSwitches: production && signedIn,
     evals: production,
     evalsDataset: production ? PRODUCTION_DEFAULTS.dataset : '',

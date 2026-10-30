@@ -1,6 +1,13 @@
 'use client';
 
-import { EMBEDDING_PROVIDERS, EU_PROVIDERS, PROVIDERS, SUGGESTED_MODELS, type Provider } from '@gen-agent/core';
+import {
+  EMBEDDING_PROVIDERS,
+  EU_PROVIDERS,
+  productionTimeout,
+  PROVIDERS,
+  SUGGESTED_MODELS,
+  type Provider,
+} from '@gen-agent/core';
 import { PlusIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { FocusEvent } from 'react';
@@ -56,6 +63,8 @@ export function AgentFields({ form, errorOf, onChange, onVisit }: AgentFieldsPro
       ...(suggested ? { model: SUGGESTED_MODELS[provider] } : {}),
       // The semantic cache needs an embedding model.
       ...(EMBEDDING_PROVIDERS.includes(provider) ? {} : { semanticCache: false }),
+      // A timeout left as the profile set it follows the provider: a local model takes longer.
+      ...(form.timeout === productionTimeout(form.provider) ? { timeout: productionTimeout(provider) } : {}),
     });
   };
   const addTool = (): void => {

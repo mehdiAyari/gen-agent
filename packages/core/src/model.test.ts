@@ -484,6 +484,11 @@ agent:
       requestTimeout: true,
     });
     expect(production.loop).toEqual({ maxIterations: 8, timeout: '60s' });
+    // A local model on a laptop CPU takes minutes, not seconds.
+    const local = buildModel(
+      parse('agent:\n  name: desk\n  profile: production\n  model: { provider: ollama, name: m }\n'),
+    );
+    expect(local.loop.timeout).toBe('5m');
     // Once a tool result held instructions, only the tools that read data stay callable.
     expect(production.readOnlyTools).toEqual(['rates']);
     expect(production.secretPatterns).toContain('AKIA[0-9A-Z]{16}');

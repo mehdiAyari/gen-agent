@@ -218,6 +218,7 @@ describe('the production profile', () => {
       timeout: '60s',
     });
     expect(withProfile(withProfile(defaultForm(), 'production'), 'minimal')).toEqual(defaultForm());
+    expect(withProfile({ ...defaultForm(), provider: 'ollama' }, 'production').timeout).toBe('5m');
   });
 
   it('adds no semantic cache for a provider without embeddings', () => {
