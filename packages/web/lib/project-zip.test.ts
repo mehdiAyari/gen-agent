@@ -24,7 +24,9 @@ describe('projectZip', () => {
 
     expect(result.fileName).toBe('zip-bot.zip');
     for (const file of expected) {
-      expect(await zip.file(`zip-bot/${file.path}`)?.async('string'), file.path).toBe(file.content);
+      // Binary files (the jar of the wrapper) are compared byte for byte, in base64.
+      const format = file.encoding === 'base64' ? 'base64' : 'string';
+      expect(await zip.file(`zip-bot/${file.path}`)?.async(format), file.path).toBe(file.content);
     }
     expect(await zip.file('zip-bot/agent.yaml')?.async('string')).toBe(formToYaml(form));
     expect(Object.values(zip.files).filter((entry) => !entry.dir)).toHaveLength(expected.length + 1);
