@@ -256,11 +256,11 @@
     },
     "src/test/java/com/example/hrassistant/HrAssistantApplicationTests.java": {
       "owner": "merged",
-      "sha256": "18e30adac4ff1b30a080ea53ebec713857b505adfcb5654a8ecbf70b77b2fab9"
+      "sha256": "929253dab33d5e406d5171f593249c57a20e6433781e7b54b069d63815d0a32d"
     },
     "src/test/java/com/example/hrassistant/ObservabilityTests.java": {
       "owner": "generated",
-      "sha256": "c08d13a9c118e222bf12c60c32aa09c19b38bcd7021134b78a2a393853704a8f"
+      "sha256": "62ca1e85ad398b79764489c8e5528be7fdf344d7f639d14e576ac8f2d649b3fa"
     },
     "src/test/java/com/example/hrassistant/generated/TestcontainersConfiguration.java": {
       "owner": "generated",

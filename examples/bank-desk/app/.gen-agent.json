@@ -111,7 +111,7 @@
     },
     ".github/workflows/ci.yml": {
       "owner": "merged",
-      "sha256": "f2574733d0f80a9dd9fa1f3ee19fe4e4b9342a23003f1eebb49c9db898435471"
+      "sha256": "c453b1bddc317d604015909d567a956c3ecd6a2bd5bcb27e9d368a2b87e97bd3"
     },
     ".gitignore": {
       "owner": "merged",
@@ -431,15 +431,15 @@
     },
     "src/test/java/com/example/bankdesk/BankDeskApplicationTests.java": {
       "owner": "merged",
-      "sha256": "3d47b7d758bfb1711037c1a6b88c7c9827e54c800cafd521f7b77765915f6ee9"
+      "sha256": "a5a8715b4530c07eaaa3b7ae327fd8b3de7741bdc8f91e8940efd1fc3dd9e9a4"
     },
     "src/test/java/com/example/bankdesk/ObservabilityTests.java": {
       "owner": "generated",
-      "sha256": "58c310a8acdee157f8b9cf7f8a6fdb33119648abb95bae9237cb4c459a12ed57"
+      "sha256": "c40fdc59a6391381b3fb28c47c317b8611ef571bd2912b85bf5ad266eab69ab3"
     },
     "src/test/java/com/example/bankdesk/evals/AgentEvaluationTests.java": {
       "owner": "generated",
-      "sha256": "6dfa480a10b4f11c8f1ef14771a8cf8c28e498026b94a877d03c118248f140a8"
+      "sha256": "4376873f709889e4f5f4aa65beaa57c1bc5e732446a1a03d7c539b6c93e68e38"
     },
     "src/test/java/com/example/bankdesk/generated/TestcontainersConfiguration.java": {
       "owner": "generated",

@@ -21,6 +21,8 @@ import org.springframework.web.client.RestClient;
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org",
         "spring.ai.mcp.client.enabled=false",
         "agent.mcp.knowledge.token=test-token",
+        "agent.limits.requests=30",
+        "agent.limits.requests-period=1m",
         "agent.tools.order-status.token=test-token",
         "management.server.port=0",
     }

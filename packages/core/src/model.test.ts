@@ -277,6 +277,19 @@ agent:
     });
   });
 
+  it('gives the generated tests their own request limit, whatever agent.yaml sets', () => {
+    const tight = buildModel(
+      parse(
+        'agent:\n  name: desk\n  profile: standard\n  model: { provider: ollama, name: m }\n  security: { rateLimit: 5/sec }\n',
+      ),
+    );
+
+    expect(tight.limits.requests).toEqual({ capacity: 5, period: '1s', unit: 'second' });
+    expect(tight.testProperties).toEqual(
+      expect.arrayContaining(['agent.limits.requests=30', 'agent.limits.requests-period=1m']),
+    );
+  });
+
   it('caches first answers and exports traces and metrics', () => {
     expect(buildModel(standard).features).toMatchObject({ cache: true, redis: true, otel: true, prometheus: true });
   });

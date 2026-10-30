@@ -41,6 +41,8 @@ import tools.jackson.databind.json.JsonMapper;
 @SpringBootTest(
     properties = {
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org",
+        "agent.limits.requests=30",
+        "agent.limits.requests-period=1m",
         "agent.timeout=10m",
     }
 )

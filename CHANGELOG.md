@@ -85,6 +85,8 @@ All notable changes to this project are documented here. The format follows
 - Test coverage of every package (`pnpm coverage`), kept by the CI; a short README, the details in `docs/guide.md`.
 - Examples in `examples/`: complete agents with the commands that made them (`make.sh`), the code written by hand
   afterwards and a recording of a real run on Ollama; the end-to-end tests check each one still matches its commands.
+- Tests: every combination of the pairwise sample runs its own tests, not only its compilation, and agents are started
+  for real on Ollama in CI and asked questions.
 - `gen-agent add tool --approval`: the calls of the new tool wait for the approval of the user who asked.
 - `gen-agent add tool --param name:type:required:description`: the description of a parameter, read by the model.
 - `gen-agent import openapi --no-auth` (`auth: none` on an `openapi` entry): a public API whose spec declares a
@@ -93,6 +95,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Found by running the tests of every combination instead of compiling them: with a tight request limit in
+  `agent.yaml` (5/sec), the generated tests sent their messages faster than it and failed; they now run with their own
+  limit.
+- The GitHub Actions workflow of the generated projects started Ollama next to the system service its installer
+  starts, so the models were downloaded on every run instead of coming from the cache.
 - Found by following the README on a machine with only Java and Node: without `unzip`, the Maven Wrapper downloaded
   the `.tar.gz` of Maven and checked it against the SHA-256 of the `.zip`, so no generated project could build. The
   wrapper is now of type `bin`: Java downloads Maven, checks it and unpacks it. An end-to-end test builds a Maven and

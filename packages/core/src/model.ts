@@ -713,6 +713,8 @@ export function buildModel(file: AgentFile): GenerationModel {
         server.kind === 'remote' && server.auth !== undefined ? [`agent.mcp.${server.name}.token=test-token`] : [],
       ),
       ...(fallbackKey === undefined ? [] : ['agent.fallback.api-key=test-key']),
+      // The tests send a dozen messages per user in a second: a tight limit of agent.yaml would refuse them.
+      ...(requests === undefined ? [] : ['agent.limits.requests=30', 'agent.limits.requests-period=1m']),
       ...(ragEnabled ? ['agent.rag.documents=src/test/resources/documents'] : []),
       // A short timeout, so that the test of a request that takes too long runs quickly.
       ...(agent.limits?.timeout === undefined ? [] : ['agent.timeout=3s']),

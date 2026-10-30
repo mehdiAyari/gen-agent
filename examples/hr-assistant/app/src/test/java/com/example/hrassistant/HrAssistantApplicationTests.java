@@ -41,7 +41,13 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
  * Starts the whole application with a fake model: checks the wiring (system prompt, memory, tools) and the REST
  * endpoint without calling a real provider.
  */
-@SpringBootTest(properties = "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org")
+@SpringBootTest(
+    properties = {
+        "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org",
+        "agent.limits.requests=30",
+        "agent.limits.requests-period=1m",
+    }
+)
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 class HrAssistantApplicationTests {

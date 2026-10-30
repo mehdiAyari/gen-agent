@@ -38,8 +38,10 @@ jobs:
       - name: Start Ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
-          ollama serve &
-          sleep 5
+          # The installer starts a system service whose models live elsewhere: serve the cached folder instead.
+          sudo systemctl stop ollama || true
+          OLLAMA_MODELS="$HOME/.ollama/models" ollama serve > /tmp/ollama.log 2>&1 &
+          until curl -s localhost:11434 > /dev/null; do sleep 1; done
           ollama pull <%= evals.model %>
 <%_ if (features.vectorStore) { _%>
           ollama pull nomic-embed-text

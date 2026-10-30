@@ -20,6 +20,8 @@ import org.springframework.web.client.RestClient;
         "spring.ai.anthropic.api-key=test-key",
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://issuer.example.org",
         "agent.fallback.api-key=test-key",
+        "agent.limits.requests=30",
+        "agent.limits.requests-period=1m",
         "agent.timeout=3s",
         "management.server.port=0",
     }
