@@ -29,7 +29,8 @@ it('generates an agent from the official Petstore spec that passes mvnw verify',
   rmSync(project, { recursive: true, force: true });
   for (const file of await generateProject(resolved.file, '0.0.0-e2e')) {
     mkdirSync(dirname(join(project, file.path)), { recursive: true });
-    writeFileSync(join(project, file.path), file.content, file.executable === true ? { mode: 0o755 } : {});
+    const bytes = file.encoding === 'base64' ? Buffer.from(file.content, 'base64') : file.content;
+    writeFileSync(join(project, file.path), bytes, file.executable === true ? { mode: 0o755 } : {});
   }
 
   // Every imported tool is compiled and tested by the generated project: path, query, body and authentication.

@@ -9,7 +9,8 @@ const gradle = (m: GenerationModel): boolean => m.build.tool === 'gradle';
 export const minimalEntries: TemplateEntry[] = [
   { template: 'gitignore.ejs', owner: 'merged', output: () => '.gitignore' },
   { template: 'pom.xml.ejs', owner: 'merged', when: maven, output: () => 'pom.xml' },
-  // Maven Wrapper 3.3.4 (Apache 2.0), copied as distributed; pins Maven 3.9.16 and checks its SHA-256.
+  // Maven Wrapper 3.3.4 (Apache 2.0) of type bin, as `mvn wrapper:wrapper -Dtype=bin` writes it, its jar checked
+  // against Maven Central: Java downloads Maven, checks its SHA-256 and unpacks it, with or without unzip on the machine.
   {
     template: 'maven-wrapper/mvnw',
     owner: 'generated',
@@ -19,6 +20,14 @@ export const minimalEntries: TemplateEntry[] = [
     output: () => 'mvnw',
   },
   { template: 'maven-wrapper/mvnw.cmd', owner: 'generated', raw: true, when: maven, output: () => 'mvnw.cmd' },
+  {
+    template: 'maven-wrapper/maven-wrapper.jar',
+    owner: 'generated',
+    raw: true,
+    binary: true,
+    when: maven,
+    output: () => '.mvn/wrapper/maven-wrapper.jar',
+  },
   {
     template: 'maven-wrapper/maven-wrapper.properties',
     owner: 'generated',

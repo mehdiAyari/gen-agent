@@ -10,6 +10,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.CrossOriginEmbedderPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter;
 
 /**
  * Every request needs a JWT from the OIDC issuer of {@code application.yml}. No session and no cookie: the token is
@@ -48,15 +51,27 @@ public class SecurityConfiguration {
             .oauth2ResourceServer(server -> server.jwt(Customizer.withDefaults()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .csrf(AbstractHttpConfigurer::disable)
+            // Nothing of the agent can be framed, embedded or opened by another site.
             .headers(headers ->
-                headers.contentSecurityPolicy(csp ->
-                    csp.policyDirectives(
-                        "default-src 'self'; img-src 'self' data:; connect-src 'self' " +
-                            providerOrigin +
-                            "; frame-ancestors 'none'; form-action 'self' " +
-                            providerOrigin
+                headers
+                    .contentSecurityPolicy(csp ->
+                        csp.policyDirectives(
+                            "default-src 'self'; img-src 'self' data:; connect-src 'self' " +
+                                providerOrigin +
+                                "; frame-ancestors 'none'; form-action 'self' " +
+                                providerOrigin
+                        )
                     )
-                )
+                    .crossOriginOpenerPolicy(policy ->
+                        policy.policy(CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy.SAME_ORIGIN)
+                    )
+                    .crossOriginEmbedderPolicy(policy ->
+                        policy.policy(CrossOriginEmbedderPolicyHeaderWriter.CrossOriginEmbedderPolicy.REQUIRE_CORP)
+                    )
+                    .crossOriginResourcePolicy(policy ->
+                        policy.policy(CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy.SAME_ORIGIN)
+                    )
+                    .permissionsPolicyHeader(policy -> policy.policy("camera=(), microphone=(), geolocation=()"))
             )
             .build();
     }

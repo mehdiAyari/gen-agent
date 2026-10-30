@@ -151,7 +151,11 @@ class HrAssistantApplicationTests {
             .hasValue(
                 "Content-Security-Policy",
                 "default-src 'self'; img-src 'self' data:; connect-src 'self' https://issuer.example.org; frame-ancestors 'none'; form-action 'self' https://issuer.example.org"
-            );
+            )
+            .hasValue("Cross-Origin-Opener-Policy", "same-origin")
+            .hasValue("Cross-Origin-Embedder-Policy", "require-corp")
+            .hasValue("Cross-Origin-Resource-Policy", "same-origin")
+            .hasValue("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
         assertThat(mockMvc.get().uri("/chat-config.json"))
             .hasStatusOk()
             .bodyJson()

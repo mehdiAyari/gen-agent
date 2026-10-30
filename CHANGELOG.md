@@ -93,6 +93,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Found by following the README on a machine with only Java and Node: without `unzip`, the Maven Wrapper downloaded
+  the `.tar.gz` of Maven and checked it against the SHA-256 of the `.zip`, so no generated project could build. The
+  wrapper is now of type `bin`: Java downloads Maven, checks it and unpacks it. An end-to-end test builds a Maven and
+  a Gradle project in that clean room on every change.
 - Found by attacking the production agent: the prompt injection patterns caught 27 of 58 common attacks (now all of
   them, with no false alarm on ordinary messages; 8 of 30 attacks never seen before); "developer mode" in an ordinary
   question was refused; the responses lacked the cross-origin and permissions headers an OWASP ZAP scan expects, and

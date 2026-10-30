@@ -36,7 +36,9 @@ test('downloads the same project as the CLI, and it passes mvnw verify', async (
     [...expected.map((file) => `weather-agent/${file.path}`), 'weather-agent/agent.yaml'].sort(),
   );
   for (const file of expected) {
-    expect(await zip.file(`weather-agent/${file.path}`)?.async('string'), file.path).toBe(file.content);
+    // Binary files (the jar of the wrapper) are compared byte for byte, in base64.
+    const format = file.encoding === 'base64' ? 'base64' : 'string';
+    expect(await zip.file(`weather-agent/${file.path}`)?.async(format), file.path).toBe(file.content);
   }
 
   // Unzipped as a user would, permissions included, then built with the Maven Wrapper.
