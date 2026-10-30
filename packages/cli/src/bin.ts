@@ -94,7 +94,10 @@ add
   .option('--url <url>', 'URL of an HTTP tool; path parameters written {name}')
   .option('--method <method>', 'method of an HTTP tool (default GET)')
   .option('--description <text>', 'what the tool does: the model reads it to decide when to call it')
-  .option('--param <spec...>', 'parameter as name:type[:required], e.g. orderId:string:required')
+  .option(
+    '--param <spec...>',
+    'parameter as name:type[:required][:description], e.g. "orderId:string:required:the id on the receipt"',
+  )
   .option('--approval', 'each call waits for the approval of the user who asked')
   .option('--dir <dir>', 'project directory', '.')
   .action(

@@ -21,7 +21,7 @@ export interface AddToolOptions extends ProjectOptions {
   url?: string;
   method?: string;
   description?: string;
-  /** name:type[:required], e.g. orderId:string:required. */
+  /** name:type[:required][:description], e.g. orderId:string:required:the id on the receipt. */
   params?: string[];
   /** Each call waits for the approval of the user who asked. */
   approval?: boolean;
@@ -45,8 +45,14 @@ export async function addToolCommand(options: AddToolOptions, out: Output): Prom
   return updateProject(options, out, (document) => {
     if (names(document, 'tools').includes(options.name)) return `${options.name} is already a tool of the agent`;
     const params = (options.params ?? []).map((spec) => {
-      const [name = '', type = 'string', required] = spec.split(':');
-      return { name, type, ...(required === 'required' ? { required: true } : {}) };
+      const [name = '', type = 'string', required, ...description] = spec.split(':');
+      return {
+        name,
+        type,
+        ...(required === 'required' ? { required: true } : {}),
+        // The description may hold colons of its own.
+        ...(description.length > 0 ? { description: description.join(':') } : {}),
+      };
     });
     const tool = {
       name: options.name,

@@ -82,6 +82,18 @@ describe('gen-agent add tool', () => {
     expect(readFileSync(join(cwd, 'leave-desk/agent.yaml'), 'utf8')).toMatch(/approval:\n\s+required: true/);
   });
 
+  it('gives each parameter the description the model reads', async () => {
+    const params = ['date:string:required:the day, as YYYY-MM-DD', 'note:string::why: optional'];
+    expect(await addToolCommand({ name: 'book', type: 'java', params, dir: 'shop-bot', cwd }, out)).toBe(0);
+
+    const tools = validateAgentYaml(read('agent.yaml'));
+    if (!tools.ok) throw new Error(JSON.stringify(tools.errors));
+    expect(tools.config.agent.tools.find((tool) => tool.name === 'book')?.params).toMatchObject([
+      { name: 'date', type: 'string', required: true, description: 'the day, as YYYY-MM-DD' },
+      { name: 'note', type: 'string', required: false, description: 'why: optional' },
+    ]);
+  });
+
   it('refuses approval where users do not sign in, and changes nothing', async () => {
     const before = read('agent.yaml');
 

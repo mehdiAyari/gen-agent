@@ -73,7 +73,8 @@ Grow the project later without losing your changes:
 
 ```bash
 gen-agent add tool order-status --url 'https://shop.example.org/orders/{orderId}' --param orderId:string:required
-gen-agent add tool cancel-order --type java --param orderId:string:required --approval   # each call waits for the user
+gen-agent add tool cancel-order --type java --approval \
+  --param 'orderId:string:required:the id printed on the receipt'   # each call waits for the user
 gen-agent add mcp files --package @modelcontextprotocol/server-filesystem --version 2.0.0 --arg /srv/docs
 gen-agent update        # after editing agent.yaml by hand
 ```
