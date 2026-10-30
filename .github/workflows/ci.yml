@@ -51,6 +51,23 @@ jobs:
         with:
           version: v4.3.1
       - run: pnpm install --frozen-lockfile
-      # Maven builds of the reference projects (Testcontainers runs in the runner's Docker), then the web generator in
-      # the runner's Google Chrome.
+      # The live tests start agents for real and ask Ollama, with a small model: they check that answers arrive, not
+      # how good they are.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.ollama/models
+          key: ollama-qwen2.5-0.5b-nomic-embed-text
+      - name: Start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          # The installer starts a system service whose models live elsewhere: serve the cached folder instead.
+          sudo systemctl stop ollama || true
+          OLLAMA_MODELS="$HOME/.ollama/models" ollama serve > /tmp/ollama.log 2>&1 &
+          until curl -s localhost:11434 > /dev/null; do sleep 1; done
+          ollama pull qwen2.5:0.5b
+          ollama pull nomic-embed-text
+      # Maven builds of the reference projects, the examples and a pairwise sample of every option (Testcontainers runs
+      # in the runner's Docker), a clean room, the live agents, then the web generator in the runner's Google Chrome.
       - run: pnpm e2e
+        env:
+          LIVE_MODEL: qwen2.5:0.5b

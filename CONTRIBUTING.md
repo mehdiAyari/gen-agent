@@ -15,12 +15,14 @@ pnpm lint && pnpm knip && pnpm typecheck && pnpm test
 pnpm coverage   # the unit tests with their coverage, per package
 pnpm e2e        # builds the reference projects (./mvnw verify or ./gradlew build) and lints their Helm charts,
                 # then drives the web generator and the packed CLI
+LIVE_MODEL=qwen2.5:0.5b pnpm e2e   # also starts agents for real and asks Ollama (ollama pull qwen2.5:0.5b nomic-embed-text)
 ```
 
-The end-to-end tests build the reference projects and an agent made from the official Petstore spec, download
-projects from the web generator (one after an OpenAPI import), check they are identical to the CLI output and build
-them, drive `gen-agent mcp` from the packed npm package with an MCP client, and check the pages with
-[axe](https://github.com/dequelabs/axe-core).
+The end-to-end tests build the reference projects, the examples, a pairwise sample of every option and an agent made
+from the official Petstore spec, each with its tests; they build projects in a clean room with only Java and Node, and
+start agents for real on Ollama when `LIVE_MODEL` is set. They also download projects from the web generator (one after
+an OpenAPI import), check they are identical to the CLI output and build them, drive `gen-agent mcp` from the packed
+npm package with an MCP client, and check the pages with [axe](https://github.com/dequelabs/axe-core).
 
 ## How the code is organized
 

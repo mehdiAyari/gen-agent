@@ -56,10 +56,8 @@ function pairwiseSample(size: number): AgentFile[] {
 const sample = pairwiseSample(Number(process.env.COMBINATIONS ?? 16));
 
 describe.each(sample.map((config, index) => [index, config] as const))('combination %i', (index, config) => {
-  // Every project compiles with its tests; a few run them too (they start Postgres and Redis in Docker).
-  const goal = index % 5 === 0 ? 'verify' : 'test-compile';
-
-  it(`passes ${goal}`, async () => {
+  // Every project starts in its tests and passes them: Postgres and Redis run in Docker.
+  it('passes its build, tests included', async () => {
     const project = join(output, String(index));
     rmSync(project, { recursive: true, force: true });
     for (const file of await generateProject(config, '0.0.0-e2e')) {
@@ -71,9 +69,7 @@ describe.each(sample.map((config, index) => [index, config] as const))('combinat
     const gradle = config.agent.build === 'gradle';
     const build = spawnSync(
       join(project, gradle ? 'gradlew' : 'mvnw'),
-      gradle
-        ? ['--no-daemon', '--quiet', goal === 'verify' ? 'build' : 'testClasses']
-        : ['--batch-mode', '--no-transfer-progress', '--quiet', goal],
+      gradle ? ['--no-daemon', '--quiet', 'build'] : ['--batch-mode', '--no-transfer-progress', '--quiet', 'verify'],
       { cwd: project, encoding: 'utf8' },
     );
     const log = `${build.stdout}${build.stderr}`;
