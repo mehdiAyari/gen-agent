@@ -93,6 +93,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Found by walking the paths never walked (MCP servers local and remote, Gradle, routing and fallback, a kind cluster):
+  the Helm chart ran two replicas of an agent that keeps its conversations in memory, so each one forgot half of
+  them; its README did not say how to build and push the image, nor what `my-values.yaml` holds.
 - Found by cutting the dependencies of a running agent: when Postgres or Redis is down, a request answered 500 after 30
   or 60 seconds; it now answers 503 with `Retry-After` within seconds. When the provider is down, a failing embedding
   (semantic cache, knowledge base) answered 500 instead of the fallback model and the fallback answer. A refused first

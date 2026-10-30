@@ -1,6 +1,12 @@
 # Values of the <%= project.artifactId %> chart: helm install <%= project.artifactId %> ./helm/<%= project.artifactId %> -f my-values.yaml
 
+<%_ if (features.jdbcMemory || features.redisMemory) { _%>
 replicaCount: 2
+<%_ } else { _%>
+# Conversations are kept in the memory of the pod: a second replica would not know them. Keep them in Postgres or
+# Redis (memory.type in agent.yaml) to run more.
+replicaCount: 1
+<%_ } _%>
 
 image:
   # Built from the Dockerfile and pushed to your registry.

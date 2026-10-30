@@ -127,15 +127,18 @@ threshold. `.github/workflows/ci.yml` runs the tests, then the evaluations with 
 
 ## Kubernetes
 
-`helm/claims-desk` deploys the image built from the Dockerfile:
+`helm/claims-desk` deploys the image built from the Dockerfile, pushed to a registry your cluster pulls from:
 
 ```bash
+docker build -t registry.example.org/claims-desk:0.0.1 .
+docker push registry.example.org/claims-desk:0.0.1
 kubectl create secret generic claims-desk-secrets --from-literal=ANTHROPIC_API_KEY=... --from-literal=OPENAI_API_KEY=... --from-literal=DATABASE_PASSWORD=...
-helm install claims-desk ./helm/claims-desk -f my-values.yaml
+helm install claims-desk ./helm/claims-desk \
+  --set image.repository=registry.example.org/claims-desk --set image.tag=0.0.1 -f my-values.yaml
 ```
 
-Secrets are only referenced (`existingSecret`); Postgres, Redis, the identity provider run apart, set in `env`
-of `values.yaml`. Kubernetes probes liveness and readiness on the management port, which no Service exposes; the
+`my-values.yaml` holds what differs from `values.yaml`: the Secret it reads (`existingSecret`; values are never in the chart); where Postgres, Redis and the identity provider run, in `env`.
+Kubernetes probes liveness and readiness on the management port, which no Service exposes; the
 container runs as a non-root user on a read-only file system. An ingress is ready in `values.yaml` (`ingress.enabled`).
 
 ## Where to put your code

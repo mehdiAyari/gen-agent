@@ -322,18 +322,29 @@ threshold. `.github/workflows/ci.yml` runs the tests, then the evaluations with 
 
 ## Kubernetes
 
-`helm/<%= project.artifactId %>` deploys the image built from the Dockerfile:
+`helm/<%= project.artifactId %>` deploys the image built from the Dockerfile, pushed to a registry your cluster pulls from:
 
 ```bash
+docker build -t registry.example.org/<%= project.artifactId %>:0.0.1 .
+docker push registry.example.org/<%= project.artifactId %>:0.0.1
 <%_   const secretNames = [...secrets, ...(features.postgres ? ['DATABASE_PASSWORD'] : [])]; _%>
 <%_   if (secretNames.length > 0) { _%>
 kubectl create secret generic <%= project.artifactId %>-secrets <%- secretNames.map((name) => `--from-literal=${name}=...`).join(' ') %>
 <%_   } _%>
-helm install <%= project.artifactId %> ./helm/<%= project.artifactId %> -f my-values.yaml
+helm install <%= project.artifactId %> ./helm/<%= project.artifactId %> \
+  --set image.repository=registry.example.org/<%= project.artifactId %> --set image.tag=0.0.1 -f my-values.yaml
 ```
 
-Secrets are only referenced (`existingSecret`); <%= [features.postgres ? 'Postgres' : '', features.redis ? 'Redis' : '', features.oidc ? 'the identity provider' : ''].filter(Boolean).join(', ') || 'the services' %> run apart, set in `env`
-of `values.yaml`. Kubernetes probes liveness and readiness on the management port, which no Service exposes; the
+<%_   const elsewhere = [features.postgres ? 'Postgres' : '', features.redis ? 'Redis' : '', features.oidc ? 'the identity provider' : '', provider.id === 'ollama' ? 'Ollama' : ''].filter(Boolean); _%>
+<%_   const differences = [
+        ...(secretNames.length > 0 ? ['the Secret it reads (`existingSecret`; values are never in the chart)'] : []),
+        ...(elsewhere.length > 0 ? [`where ${elsewhere.join(', ').replace(/, ([^,]*)$/, ' and $1')} run, in \`env\``] : []),
+      ]; _%>
+`my-values.yaml` holds what differs from `values.yaml`: <%- differences.join('; ') || 'the host of the ingress' %>.
+<%_   if (!features.jdbcMemory && !features.redisMemory) { _%>
+Conversations are kept in memory: the chart runs one replica.
+<%_   } _%>
+Kubernetes probes liveness and readiness on the management port, which no Service exposes; the
 container runs as a non-root user on a read-only file system. An ingress is ready in `values.yaml` (`ingress.enabled`).
 <%_ } _%>
 

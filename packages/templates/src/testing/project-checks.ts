@@ -80,6 +80,17 @@ export function problemsOf(files: GeneratedFile[]): string[] {
     }
   }
 
+  // Conversations kept in a pod's memory stay on one replica: a second one would not know them.
+  const config = JSON.parse(text('.gen-agent.json') ?? '{}') as { config?: { agent?: { memory?: { type?: string } } } };
+  const values = files.find((file) => /^helm\/[^/]+\/values\.yaml$/.test(file.path));
+  if (
+    values !== undefined &&
+    config.config?.agent?.memory?.type === 'in-memory' &&
+    !/^replicaCount: 1$/m.test(values.content)
+  ) {
+    problems.push(`${values.path}: several replicas, but conversations are kept in memory`);
+  }
+
   // Every owner of .gen-agent.json is a file of the project, and the other way round.
   const manifest = JSON.parse(text('.gen-agent.json') ?? '{"files": {}}') as { files: Record<string, unknown> };
   for (const path of Object.keys(manifest.files))
