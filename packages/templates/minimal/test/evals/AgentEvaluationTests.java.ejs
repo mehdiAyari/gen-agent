@@ -159,7 +159,7 @@ class AgentEvaluationTests {
                 + results.stream()
                         .map(result -> "| %s | %s | %s |".formatted(result.passed() ? "pass" : "FAIL", result.name().replace("|", "\\|"), result.detail().replace("|", "\\|")))
                         .collect(<%= type('java.util.stream.Collectors') %>.joining("\n")));
-        Files.writeString(Path.of("<%= build.output %>", "evals-report.md"), "# Evaluations of <%= project.artifactId %>\n\n" + String.join("\n\n", report) + "\n");
+        <%= type('java.nio.file.Files') %>.writeString(<%= type('java.nio.file.Path') %>.of("<%= build.output %>", "evals-report.md"), "# Evaluations of <%= project.artifactId %>\n\n" + String.join("\n\n", report) + "\n");
         System.out.println(report.getLast());
         return score;
     }

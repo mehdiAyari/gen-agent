@@ -93,6 +93,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Found by generating every combination of options and building them: a semantic cache without the exact one did not
+  compile (it now brings the exact cache, which it is looked up after); `ToolGuard` and the evaluations missed imports
+  in some combinations; empty `evals` evaluated nothing (they now score the reference set); a signed-in agent without
+  Compose never said to set `OIDC_ISSUER_URI`; tools were registered through an API Spring AI deprecates for removal;
+  two generated tests (summaries without sign-in, the semantic cache with a classifier) were wrong.
 - Found by the examples, and checked again on them: approval cards show the tool name of agent.yaml and one line per
   argument, not the Java name and raw JSON; answers and tool calls are logged without their content; Compose projects
   are named after the agent; guard and feedback counters exist from the start, so the dashboard counts the first

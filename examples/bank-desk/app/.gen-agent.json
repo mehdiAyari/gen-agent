@@ -191,7 +191,7 @@
     },
     "src/main/java/com/example/bankdesk/generated/AgentConfiguration.java": {
       "owner": "generated",
-      "sha256": "e55ef34fa51a26837d1c76ec21fe53a0a1977743a67a2d69dc1a5120daf12d57"
+      "sha256": "83e8c9fc2e9ae97c192040c8efc03c9656acf4000c1a396facd4c530f01362e7"
     },
     "src/main/java/com/example/bankdesk/generated/AgentProperties.java": {
       "owner": "generated",

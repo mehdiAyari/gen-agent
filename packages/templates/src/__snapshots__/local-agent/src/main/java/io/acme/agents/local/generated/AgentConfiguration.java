@@ -37,7 +37,7 @@ class AgentConfiguration {
             .defaultSystem(properties.systemPrompt())
             .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
             // Every call is logged: the tool and how long it took, never what it was given.
-            .defaultToolCallbacks(LoggedToolCallback.logged(ToolCallbacks.from(currentTimeTool)))
+            .defaultTools(LoggedToolCallback.logged(ToolCallbacks.from(currentTimeTool)))
             .build();
     }
 }

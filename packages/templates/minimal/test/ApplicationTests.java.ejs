@@ -206,6 +206,9 @@ class <%= project.applicationClass %>Tests {
     @Test
     void answersAQuestionOfTheSameMeaningFromTheSemanticCache() {
         int calls = chatModel.calls();
+<%_     if (routing?.strategy === 'classifier') { _%>
+        // The classifier of the routing, then the answer: two calls for the first question, none for the second.
+<%_     } _%>
 
         post("iris", """
                 {"message": "What are your opening hours?"}
@@ -214,7 +217,7 @@ class <%= project.applicationClass %>Tests {
                 {"message": "What are your opening hours!!"}
                 """);
 
-        assertThat(chatModel.calls()).isEqualTo(calls + 1);
+        assertThat(chatModel.calls()).isEqualTo(calls + <%= routing?.strategy === 'classifier' ? 2 : 1 %>);
     }
 
 <%_   } _%>
@@ -536,7 +539,7 @@ class <%= project.applicationClass %>Tests {
         String conversationId = startConversation("sam", "My name is Sam");
 <%_   } else { _%>
         String conversationId = "summarized";
-        ask("My name is Sam");
+        post("{\"conversationId\": \"summarized\", \"message\": \"My name is Sam\"}");
 <%_   } _%>
         for (int message = 1; message <= <%= Math.ceil(memory.window / 2) + 1 %>; message++) {
             <%- features.oidc ? 'post("sam", ' : 'post(' %>"{\"conversationId\": \"" + conversationId + "\", \"message\": \"Message " + message + "\"}");
@@ -610,7 +613,7 @@ class <%= project.applicationClass %>Tests {
                 .exchange();
     }
 <%_ } _%>
-<%_ if (features.injectionDetection || features.outputGuard || features.requestTimeout || features.resilience || routing || features.summarize || features.rag) { _%>
+<%_ if (features.injectionDetection || features.outputGuard || features.requestTimeout || features.resilience || routing || features.rag) { _%>
 
     private <%= type('org.springframework.test.web.servlet.assertj.MvcTestResult') %> ask(String message) {
         return <%- features.oidc ? 'post("ada", ' : 'post(' %>"{\"message\": \"" + message + "\"}");

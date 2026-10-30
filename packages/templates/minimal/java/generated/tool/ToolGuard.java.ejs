@@ -33,7 +33,7 @@ public class ToolGuard {
 <%_ } _%>
 <%_ if (features.approval || features.killSwitches) { _%>
 
-    private final Map<String, <%= type('org.springframework.ai.tool.ToolCallback') %>> tools = new <%= type('java.util.concurrent.ConcurrentHashMap') %><>();
+    private final <%= type('java.util.Map') %><String, <%= type('org.springframework.ai.tool.ToolCallback') %>> tools = new <%= type('java.util.concurrent.ConcurrentHashMap') %><>();
 <%_ } _%>
 <%_ if (features.pii || features.approval) { _%>
 

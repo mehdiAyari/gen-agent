@@ -108,6 +108,13 @@ describe('gen-agent generate --from', () => {
     ).toBe(true);
   });
 
+  it('asks for the identity provider of an agent users sign in to without Compose', async () => {
+    writeFileSync(join(cwd, 'agent.yaml'), agentYaml.replace('  tools:', '  security: { auth: oidc }\n  tools:'));
+
+    expect(await generateCommand({ from: 'agent.yaml', cwd }, out)).toBe(0);
+    expect(out.text()).toMatch(/ {2}export OIDC_ISSUER_URI=\.\.\./);
+  });
+
   it('pulls the embedding model of the semantic cache with Ollama', async () => {
     writeFileSync(
       join(cwd, 'agent.yaml'),

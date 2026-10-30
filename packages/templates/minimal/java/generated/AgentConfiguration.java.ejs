@@ -77,7 +77,7 @@ const allTools = () => tools.length > 0 && features.mcp
 _%>
 <%_ if (tools.length > 0 || features.mcp) { _%>
                 // Every call is logged: the tool and how long it took, never what it was given.
-                .defaultToolCallbacks(<%= type(`${project.generatedPackage}.tool.LoggedToolCallback`) %>.logged(<%- features.guardTools ? `toolGuard.guard(${allTools()})` : allTools() %>))
+                .defaultTools(<%= type(`${project.generatedPackage}.tool.LoggedToolCallback`) %>.logged(<%- features.guardTools ? `toolGuard.guard(${allTools()})` : allTools() %>))
 <%_ } _%>
                 .build();
     }

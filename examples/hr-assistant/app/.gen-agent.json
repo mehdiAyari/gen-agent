@@ -116,7 +116,7 @@
     },
     "src/main/java/com/example/hrassistant/generated/AgentConfiguration.java": {
       "owner": "generated",
-      "sha256": "74c92794b68c00f87d6bbfb5ca39ba97569dfecfbd2afb8f82270c1760a45d69"
+      "sha256": "f6367a214a45e3374d7f10275d846187a0047a43f83f242dddc70d4646506beb"
     },
     "src/main/java/com/example/hrassistant/generated/AgentProperties.java": {
       "owner": "generated",

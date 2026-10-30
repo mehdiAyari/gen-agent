@@ -184,6 +184,8 @@ async function generateFromSource(
         ? ['  ./docker/mcp/build-images.sh']
         : []),
       ...secrets.map((secret) => `  export ${secret}=...`),
+      // Without Compose, the identity provider is the user's own.
+      ...(features.oidc && !features.dockerCompose ? ['  export OIDC_ISSUER_URI=...   # your identity provider'] : []),
       // With Compose, the agent starts with its database, Redis and identity provider.
       features.dockerCompose ? '  docker compose up --build' : `  ${features.devServices ? build.testRun : build.run}`,
     ].join('\n'),

@@ -61,7 +61,7 @@ class AgentConfiguration {
             )
             .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build(), resilientModelAdvisor)
             // Every call is logged: the tool and how long it took, never what it was given.
-            .defaultToolCallbacks(
+            .defaultTools(
                 LoggedToolCallback.logged(toolGuard.guard(ToolCallbacks.from(transferStatusTool, blockCardTool)))
             )
             .build();
