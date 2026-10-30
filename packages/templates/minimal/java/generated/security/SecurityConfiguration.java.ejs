@@ -12,7 +12,7 @@ public class SecurityConfiguration {
 
 <%_ if (features.chatUi) { _%>
     /** The chat page and its settings are public; the page talks only to the agent and to the OIDC provider. */
-    private static final String[] CHAT_PAGE = {"/", "/index.html", "/chat.js", "/chat.css", "/chat-config.json"};
+    private static final String[] CHAT_PAGE = {"/", "/index.html", "/chat.js", "/approval-text.js", "/chat.css", "/chat-config.json"};
 
 <%_ } _%>
 <%_ const value = (key) => `@${type('org.springframework.beans.factory.annotation.Value')}("\${${key}}")`; _%>
