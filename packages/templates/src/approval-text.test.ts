@@ -6,7 +6,7 @@ interface Call {
 }
 
 // The chat page of the generated agents: plain JavaScript, served as it is, hence untyped.
-const { describeCall } = (await import('../minimal/static/approval-text.js')) as {
+const { describeCall } = (await import(new URL('../minimal/static/approval-text.js', import.meta.url).href)) as {
   describeCall: (approval: Call) => { tool: string; arguments: string[] };
 };
 
