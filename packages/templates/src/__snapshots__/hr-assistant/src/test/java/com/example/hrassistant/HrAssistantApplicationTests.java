@@ -2,6 +2,8 @@ package com.example.hrassistant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -15,6 +17,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
@@ -49,7 +52,7 @@ class HrAssistantApplicationTests {
     }
 
     @Test
-    void sendsTheSystemPromptAndRemembersTheConversation() {
+    void sendsTheSystemPromptAndRemembersTheConversation() throws Exception {
         post(
             """
             {"conversationId": "c1", "message": "My name is Ada"}
@@ -61,7 +64,7 @@ class HrAssistantApplicationTests {
             """
         );
 
-        assertThat(chatModel.lastPrompt().getContents()).contains("You are", "My name is Ada", "What is my name?");
+        assertThat(chatModel.lastPrompt().getContents()).contains(systemPrompt(), "My name is Ada", "What is my name?");
     }
 
     @Test
@@ -80,6 +83,11 @@ class HrAssistantApplicationTests {
 
     private MvcTestResult post(String body) {
         return mockMvc.post().uri("/api/chat").contentType(MediaType.APPLICATION_JSON).content(body).exchange();
+    }
+
+    /** The system prompt as written in its file, whatever it says. */
+    private static String systemPrompt() throws IOException {
+        return new ClassPathResource("prompts/system.md").getContentAsString(StandardCharsets.UTF_8).strip();
     }
 
     @TestConfiguration(proxyBeanMethods = false)

@@ -10,6 +10,8 @@ import com.example.claimsdesk.generated.resilience.ResilientModelAdvisor;
 import com.jayway.jsonpath.JsonPath;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,6 +38,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -99,7 +102,11 @@ class ClaimsDeskApplicationTests {
             """.formatted(conversationId)
         );
 
-        assertThat(chatModel.lastPrompt().getContents()).contains("You are", "My name is Grace", "What is my name?");
+        assertThat(chatModel.lastPrompt().getContents()).contains(
+            systemPrompt(),
+            "My name is Grace",
+            "What is my name?"
+        );
     }
 
     @Test
@@ -462,6 +469,11 @@ class ClaimsDeskApplicationTests {
 
     private MvcTestResult ask(String message) {
         return post("ada", "{\"message\": \"" + message + "\"}");
+    }
+
+    /** The system prompt as written in its file, whatever it says. */
+    private static String systemPrompt() throws IOException {
+        return new ClassPathResource("prompts/system.md").getContentAsString(StandardCharsets.UTF_8).strip();
     }
 
     @TestConfiguration(proxyBeanMethods = false)

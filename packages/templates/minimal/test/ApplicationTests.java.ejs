@@ -54,7 +54,7 @@ class <%= project.applicationClass %>Tests {
                 {"conversationId": "%s", "message": "What is my name?"}
                 """.formatted(conversationId));
 
-        assertThat(chatModel.lastPrompt().getContents()).contains("You are", "My name is Grace", "What is my name?");
+        assertThat(chatModel.lastPrompt().getContents()).contains(systemPrompt(), "My name is Grace", "What is my name?");
     }
 <%_   if (prompt.aiDisclosure) { _%>
 
@@ -397,7 +397,7 @@ class <%= project.applicationClass %>Tests {
     }
 
     @Test
-    void sendsTheSystemPromptAndRemembersTheConversation() {
+    void sendsTheSystemPromptAndRemembersTheConversation() throws Exception {
         post("""
                 {"conversationId": "c1", "message": "My name is Ada"}
                 """);
@@ -405,7 +405,7 @@ class <%= project.applicationClass %>Tests {
                 {"conversationId": "c1", "message": "What is my name?"}
                 """);
 
-        assertThat(chatModel.lastPrompt().getContents()).contains("You are", "My name is Ada", "What is my name?");
+        assertThat(chatModel.lastPrompt().getContents()).contains(systemPrompt(), "My name is Ada", "What is my name?");
     }
 <%_   if (prompt.aiDisclosure) { _%>
 
@@ -613,6 +613,11 @@ class <%= project.applicationClass %>Tests {
         return <%- features.oidc ? 'post("ada", ' : 'post(' %>"{\"message\": \"" + message + "\"}");
     }
 <%_ } _%>
+
+    /** The system prompt as written in its file, whatever it says. */
+    private static String systemPrompt() throws <%= type('java.io.IOException') %> {
+        return new <%= type('org.springframework.core.io.ClassPathResource') %>("<%= prompt.resource %>").getContentAsString(<%= type('java.nio.charset.StandardCharsets') %>.UTF_8).strip();
+    }
 
     @<%= type('org.springframework.boot.test.context.TestConfiguration') %>(proxyBeanMethods = false)
     static class FakeModelConfiguration {

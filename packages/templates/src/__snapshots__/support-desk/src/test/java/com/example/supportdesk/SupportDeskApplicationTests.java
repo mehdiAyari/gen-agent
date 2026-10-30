@@ -6,6 +6,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import com.example.supportdesk.generated.AgentProperties;
 import com.example.supportdesk.generated.TestcontainersConfiguration;
 import com.jayway.jsonpath.JsonPath;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
@@ -24,6 +26,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -82,7 +85,11 @@ class SupportDeskApplicationTests {
             """.formatted(conversationId)
         );
 
-        assertThat(chatModel.lastPrompt().getContents()).contains("You are", "My name is Grace", "What is my name?");
+        assertThat(chatModel.lastPrompt().getContents()).contains(
+            systemPrompt(),
+            "My name is Grace",
+            "What is my name?"
+        );
     }
 
     @Test
@@ -258,6 +265,11 @@ class SupportDeskApplicationTests {
             .getResponse()
             .getContentAsString();
         return JsonPath.read(reply, "$.conversationId");
+    }
+
+    /** The system prompt as written in its file, whatever it says. */
+    private static String systemPrompt() throws IOException {
+        return new ClassPathResource("prompts/system.md").getContentAsString(StandardCharsets.UTF_8).strip();
     }
 
     @TestConfiguration(proxyBeanMethods = false)
